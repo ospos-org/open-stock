@@ -1,6 +1,5 @@
-use redis::{self};
+use redis;
 use std::env;
-use serde::{Serialize, Deserialize};
 use serde_json;
 
 mod helpers; 
@@ -45,9 +44,9 @@ fn start_api(url: &str) -> redis::RedisResult<()> {
             let (serialized, ) = response;
 
             let json: helpers::Product = serde_json::from_str(&serialized.to_string()).unwrap();
-            println!("{:?}", json);
+            // println!("{:?}", json);
 
-            // helpers::log("redis", json)
+            helpers::log("redis", &serialized);
         }
     }
 

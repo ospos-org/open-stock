@@ -1,7 +1,8 @@
 use chrono::prelude::*;
-use std::fmt;
-use redis::{self};
 use serde::{Serialize, Deserialize};
+
+use std::io::{self, Write};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 pub fn title(input: &str) -> String {
     return format!("{}{}{}", "[", input.to_uppercase(), "]");
@@ -10,7 +11,15 @@ pub fn title(input: &str) -> String {
 pub fn log(origin: &str, descriptor: &str) {
     let time = Local::now();
 
-    println!("{} {} - {}",time.format("%Y-%m-%d %H:%M:%S").to_string(), title(origin), descriptor);
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)));
+    write!(&mut stdout, "\n{}", time.format("%Y-%m-%d %H:%M:%S").to_string());
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)));
+    write!(&mut stdout, " {}", title(origin));
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Black)));
+    write!(&mut stdout, "\t{}", descriptor);
+
+    // println!("{} {} - {}",time.format("%Y-%m-%d %H:%M:%S").to_string(), title(origin), descriptor);
 }
 
 #[derive(Serialize, Deserialize, Debug)]
