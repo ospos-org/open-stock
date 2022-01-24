@@ -5,26 +5,22 @@ use futures::future::join_all;
 use redis_async::{resp::RespValue, resp_array};
 use serde::Deserialize;
 
-mod helpers;
-
-async fn get_product(
-    info: web::Json<helpers::Product>,
-    redis: web::Data<Addr<RedisActor>>
-) -> Result<HttpResponse, AWError> {
-    // let info = info.into_inner();
-
-    // let _res = redis.send(Command(resp_array!["GET", info.one]));
-
-    Ok(HttpResponse::Ok().json(info.0))
+#[derive(Deserialize)]
+pub struct CacheInfo {
+    one: String,
+    two: String,
+    three: String,
 }
 
-async fn create_product(
-    info: web::Json<helpers::Product>,
+async fn cache_stuff(
+    info: web::Json<CacheInfo>,
     redis: web::Data<Addr<RedisActor>>,
 ) -> Result<HttpResponse, AWError> {
     let info = info.into_inner();
 
-    let setting = redis.send(Command(resp_array!["SET", info.id.to_string(), serde_json::to_string(&info).unwrap()]));
+    let one = redis.send(Command(resp_array!["SET", "mydomain:one", info.one]));
+    let two = redis.send(Command(resp_array!["SET", "mydomain:two", info.two]));
+    let three = redis.send(Command(resp_array!["SET", "mydomain:three", info.three]));
 
     // Creates a future which represents a collection of the results of the futures
     // given. The returned future will drive execution for all of its underlying futures,
@@ -34,7 +30,7 @@ async fn create_product(
     // successfully, however, then the returned future will succeed with a `Vec` of
     // all the successful results.
     let res: Vec<Result<RespValue, AWError>> =
-        join_all(vec![setting].into_iter())
+        join_all(vec![one, two, three].into_iter())
             .await
             .into_iter()
             .map(|item| {
@@ -54,11 +50,13 @@ async fn create_product(
     }
 }
 
-async fn delete_product(info: web::Json<helpers::Product>, redis: web::Data<Addr<RedisActor>>) -> Result<HttpResponse, AWError> {
+async fn del_stuff(redis: web::Data<Addr<RedisActor>>) -> Result<HttpResponse, AWError> {
     let res = redis
         .send(Command(resp_array![
             "DEL",
-            info.id.to_string()
+            "mydomain:one",
+            "mydomain:two",
+            "mydomain:three"
         ]))
         .await?;
 
@@ -85,10 +83,9 @@ async fn main() -> std::io::Result<()> {
             .data(redis_addr)
             .wrap(middleware::Logger::default())
             .service(
-                web::resource("/product")
-                    .route(web::get().to(get_product))
-                    .route(web::post().to(create_product))
-                    .route(web::delete().to(delete_product))
+                web::resource("/stuff")
+                    .route(web::post().to(cache_stuff))
+                    .route(web::delete().to(del_stuff)),
             )
     })
     .bind("0.0.0.0:8080")?
