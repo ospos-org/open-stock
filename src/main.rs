@@ -1,60 +1,32 @@
 use redis;
 use std::env;
-use serde_json;
+#[macro_use] extern crate rocket;
 
 mod helpers; 
 
+#[get("/")]
+fn index() -> &'static str {
+    "Hello, world!"
+}
+
+#[get("/product/<product>")]
+fn get_product(product: String) -> String {
+    format!("Hello, {}!", product.as_str())
+}
+
 /// Runs all the examples and propagates errors up.
-fn start_api(url: &str) -> redis::RedisResult<()> {
+fn start_redis(url: &str) -> redis::RedisResult<()> {
     // general connection handling
     let client = redis::Client::open(url)?;
     let mut con = client.get_connection()?;
 
-    helpers::log("redis", "connected");
-    
-    let demo = helpers::Product {
-        base_name: "demo_product".to_string(),
-        id: 019238190283018,
-        handle: "pd25932918".to_string(),
-        variations: vec![
-            helpers::Variation {
-                stock_locations: vec![
-                    helpers::Location {
-                        l_id: 1237197395129,
-                        items: 15
-                    }
-                ],
-                price: 162.99,
-                name: "demo_product small".to_string()
-            }
-        ]
-    };
-
-    let response: Option<(String,)> = redis::pipe()
-        .atomic()
-        .cmd("SET").arg(demo.id).arg(serde_json::to_string(&demo).unwrap()).ignore()
-        .cmd("GET").arg(demo.id)
-        .query(&mut con)?;
-
-    match response {
-        None => {
-            helpers::log("redis", "no response");
-        }
-        Some(response) => {
-            let (serialized, ) = response;
-
-            let json: helpers::Product = serde_json::from_str(&serialized.to_string()).unwrap();
-            // println!("{:?}", json);
-
-            helpers::log("redis", &serialized);
-        }
-    }
+    assert_eq!(helpers::redis_test(&mut con), "{\"base_name\":\"demo_product\",\"id\":19238190283018,\"handle\":\"pd25932918\",\"variations\":[{\"stock_locations\":[{\"l_id\":1237197395129,\"items\":15}],\"price\":162.99,\"name\":\"demo_product small\"}]}".to_string());
 
     Ok(())
 }
 
-
-fn main() {
+#[rocket::main]
+async fn main() {
     // at this point the errors are fatal, let's just fail hard.
     let url = if env::args().nth(1) == Some("--tls".into()) {
         "redis://127.0.0.1:6380/#insecure"
@@ -62,13 +34,24 @@ fn main() {
         "redis://127.0.0.1:6379/"
     };
 
-    match start_api(url) {
+    helpers::log("rust", "Starting stock.[REDIS]");
+
+    match start_redis(url) {
         Err(err) => {
-            println!("Could not execute example:");
-            println!("  {}: {}", err.category(), err);
+            helpers::log("redis", &format!("Failed to start redis: {}", err).to_string());
         }
         Ok(()) => {
-            helpers::log("rust", "execution->complete");
+            helpers::log("rust", "Redis Connected");
+            helpers::log("rust", "Starting stock.[ROCKET]::launch");
+
+            let result = rocket::build()
+                .mount("/hello", routes![index])
+                .mount("/", routes![get_product])
+                .launch()
+                .await;
+
+            helpers::log("rocket", &format!("{:#?}", result).to_string());
+            helpers::log("rust", "Ending stock.[ROCKET]::deorbit")
         }
     }
 }
