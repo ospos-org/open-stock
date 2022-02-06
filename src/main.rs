@@ -1,97 +1,45 @@
-use actix::prelude::*;
-use actix_redis::{Command, RedisActor};
-use actix_web::{middleware, web, App, Error as AWError, HttpResponse, HttpServer};
-use futures::future::join_all;
-use redis_async::{resp::RespValue, resp_array};
-use serde::Deserialize;
+use std::io::prelude::*;
+use std::net::TcpStream;
+use std::net::TcpListener;
+use std::fs::File;
+use std::thread;
+use std::time::Duration;
 
-mod helpers;
+mod lib;
+use lib::ThreadPool;
 
-async fn get_product(
-    info: web::Json<helpers::Product>,
-    redis: web::Data<Addr<RedisActor>>
-) -> Result<HttpResponse, AWError> {
-    // let info = info.into_inner();
-
-    // let _res = redis.send(Command(resp_array!["GET", info.one]));
-
-    Ok(HttpResponse::Ok().json(info.0))
-}
-
-async fn create_product(
-    info: web::Json<helpers::Product>,
-    redis: web::Data<Addr<RedisActor>>,
-) -> Result<HttpResponse, AWError> {
-    let info = info.into_inner();
-
-    let setting = redis.send(Command(resp_array!["SET", info.id.to_string(), serde_json::to_string(&info).unwrap()]));
-
-    // Creates a future which represents a collection of the results of the futures
-    // given. The returned future will drive execution for all of its underlying futures,
-    // collecting the results into a destination `Vec<RespValue>` in the same order as they
-    // were provided. If any future returns an error then all other futures will be
-    // canceled and an error will be returned immediately. If all futures complete
-    // successfully, however, then the returned future will succeed with a `Vec` of
-    // all the successful results.
-    let res: Vec<Result<RespValue, AWError>> =
-        join_all(vec![setting].into_iter())
-            .await
-            .into_iter()
-            .map(|item| {
-                item.map_err(AWError::from)
-                    .and_then(|res| res.map_err(AWError::from))
-            })
-            .collect();
-
-    // successful operations return "OK", so confirm that all returned as so
-    if !res
-        .iter()
-        .all(|res| matches!(res,Ok(RespValue::SimpleString(x)) if x == "OK"))
-    {
-        Ok(HttpResponse::InternalServerError().finish())
-    } else {
-        Ok(HttpResponse::Ok().body("successfully cached values"))
+fn main() {
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
+    for stream in listener.incoming() {
+        let stream = stream.unwrap();
+        pool.execute(||{
+            handle_connection(stream);
+        });
     }
 }
 
-async fn delete_product(info: web::Json<helpers::Product>, redis: web::Data<Addr<RedisActor>>) -> Result<HttpResponse, AWError> {
-    let res = redis
-        .send(Command(resp_array![
-            "DEL",
-            info.id.to_string()
-        ]))
-        .await?;
+fn handle_connection(mut stream: TcpStream){
+    let mut buffer = [0;1024];
+    stream.read(&mut buffer).unwrap();
 
-    match res {
-        Ok(RespValue::Integer(x)) if x == 3 => {
-            Ok(HttpResponse::Ok().body("successfully deleted values"))
-        }
-        _ => {
-            println!("---->{:?}", res);
-            Ok(HttpResponse::InternalServerError().finish())
-        }
+    let get = b"GET / HTTP/1.1\r\n";
+    let sleep = b"GET /sleep HTTP/1.1\r\n";
+    let (status_line, _filename) = if buffer.starts_with(get){
+        ("HTTP/1.1 200 OK\r\n\r\n", "hello.html")}
+    else if buffer.starts_with(sleep){
+        thread::sleep(Duration::from_secs(5));
+        ("HTTP/1.1 200 OK\r\n\r\n","hello.html")
     }
-}
+    else {
+        ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "404.html")
+    };
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "actix_web=trace,actix_redis=trace");
-    env_logger::init();
+    let mut file = File::open("hello.html").unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
 
-    HttpServer::new(|| {
-        let redis_addr = RedisActor::start("127.0.0.1:6379");
-
-        App::new()
-            .data(redis_addr)
-            .wrap(middleware::Logger::default())
-            .service(
-                web::resource("/product")
-                    .route(web::get().to(get_product))
-                    .route(web::post().to(create_product))
-                    .route(web::delete().to(delete_product))
-            )
-    })
-    .bind("0.0.0.0:8080")?
-    .run()
-    .await
+    let response = format!("{}{}", status_line, contents);
+    stream.write(response.as_bytes()).unwrap();
+    stream.flush().unwrap();
 }

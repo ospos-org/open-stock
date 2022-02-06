@@ -4,26 +4,4 @@ version = "0.1.0"
 edition = "2018"
 authors = ["unrealg@UnRealReincarlution"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-actix = "0.10"
-actix-web = "3"
-actix-redis = "0.9"
-futures = "0.3"
-redis-async = "0.6.3"
-serde = { version = "1", features = ["derive"] }
-env_logger = "0.8"
-
-rocket_codegen = "0.4.4"
-chrono = "*"
-termcolor = "1.1"
-
-redis = "*"
-
-actix-service = "1.0.0"
-serde_json = "*"
-json = "*"
-
-[dev-dependencies]
-actix-rt = "1.0.0"
