@@ -32,20 +32,20 @@ impl MobileNumber {
 
 pub type OrderList = Vec<Order>;
 pub type NoteList = Vec<Note>;
-pub type HistoryList = Vec<History>;
+pub type HistoryList = Vec<History<ProductExchange>>;
 
 #[derive(Debug)]
-pub struct History {
-    pub method_type: TransactionType,
-    pub item: ProductExchange,
-    pub reason: String
+pub struct History<T> {
+    pub item: T,
+    pub reason: String,
+    pub date: DateTime<Utc>
 }
 
 #[derive(Clone, Debug)]
 pub struct Email {
-    root: String,
-    domain: String,
-    full: String
+    pub root: String,
+    pub domain: String,
+    pub full: String
 }
 
 impl Email {
@@ -74,8 +74,6 @@ impl Email {
         }
     }
 }
-
-
 
 #[derive(Debug)]
 pub struct Note {

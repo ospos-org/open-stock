@@ -4,7 +4,9 @@ mod transaction;
 mod product;
 mod payment;
 mod customer;
+mod employee;
 
+pub use self::employee::*;
 pub use self::customer::*;
 pub use self::payment::*;
 pub use self::product::*;

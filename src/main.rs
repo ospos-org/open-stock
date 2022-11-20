@@ -65,7 +65,7 @@ fn main() {
         },
         order_date: Utc::now(),
         order_notes: vec![Note { message: "Order packaged from warehouse.".into(), timestamp: Utc::now() }],
-        order_history: vec![History { method_type: methods::TransactionType::Out, item: ProductExchange { product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into() }],
+        order_history: vec![History { item: ProductExchange { method_type: methods::TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), date: Utc::now() }],
         salesperson: "...".into(),
         till: "...".into(),
     };

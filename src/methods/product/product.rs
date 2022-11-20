@@ -1,8 +1,8 @@
-use crate::methods::{Url, TagList, DiscountValue};
+use crate::methods::{Url, TagList, DiscountValue, TransactionType};
 
 use super::{VariantCategoryList, VariantIdTag};
 
-struct Product {
+pub struct Product {
     pub name: String,
     pub variants: VariantCategoryList,
     pub image: Url,
@@ -24,6 +24,7 @@ pub struct ProductPurchase {
 
 #[derive(Debug)]
 pub struct ProductExchange {
+    pub method_type: TransactionType,
     pub product_code: ProductCode,
     pub variant: VariantIdTag,
     pub quantity: i128,
