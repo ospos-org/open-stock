@@ -1,7 +1,8 @@
 use crate::methods::{Name, ContactInformation, OrderList, NoteList};
+use uuid::Uuid;
 
 pub struct Customer {
-    pub id: String,
+    pub id: Uuid,
     pub name: Name,
     pub contact: ContactInformation,
     pub order_history: OrderList,

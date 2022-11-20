@@ -1,7 +1,7 @@
 use crate::methods::stml::Order;
 use chrono::{Utc, DateTime};
 
-use super::{TransactionType, Payment, DiscountValue};
+use super::{TransactionType, ProductExchange};
 
 pub struct Name {
     pub first: String,
@@ -34,9 +34,10 @@ pub type OrderList = Vec<Order>;
 pub type NoteList = Vec<Note>;
 pub type HistoryList = Vec<History>;
 
+#[derive(Debug)]
 pub struct History {
     pub method_type: TransactionType,
-    pub quantity: i128,
+    pub item: ProductExchange,
     pub reason: String
 }
 
@@ -102,3 +103,4 @@ pub type Url = String;
 
 pub type TagList = Vec<Tag>;
 pub type Tag = String;
+pub type Id = String;

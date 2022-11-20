@@ -23,8 +23,8 @@ pub struct Order {
 
 #[derive(Debug)]
 pub struct OrderState {
-    date: DateTime<Utc>,
-    status: OrderStatus
+    pub date: DateTime<Utc>,
+    pub status: OrderStatus
 }
 
 #[derive(Debug)]

@@ -22,5 +22,12 @@ pub struct ProductPurchase {
     pub quantity: i128,
 }
 
+#[derive(Debug)]
+pub struct ProductExchange {
+    pub product_code: ProductCode,
+    pub variant: VariantIdTag,
+    pub quantity: i128,
+}
+
 pub type ProductCode = String;
 pub type ProductPurchaseList = Vec<ProductPurchase>;

@@ -1,11 +1,11 @@
 use std::{fs::File, thread, time::Duration, net::{TcpStream, TcpListener}, io::prelude::*};
-use methods::{Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email};
+use methods::{Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email, Transaction};
 
 use uuid::Uuid;
 use chrono::Utc;
 use lib::ThreadPool;
 
-use crate::methods::{ProductPurchase, DiscountValue};
+use crate::methods::{ProductPurchase, DiscountValue, Payment, NoteList, History, OrderState, ProductExchange};
 
 mod lib;
 mod methods;
@@ -35,8 +35,8 @@ fn main() {
             contact: torpedo7.clone()
         },
         products: vec![
-            ProductPurchase { product_code:"13252-20-10-10".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["22".into()], quantity: 5 },
-            ProductPurchase { product_code:"13252-20-10-10".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["23".into()], quantity: 5 }
+            ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["22".into()], quantity: 5 },
+            ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["23".into()], quantity: 5 }
         ],
         status: OrderStatus::Transit(
             TransitInformation {
@@ -49,11 +49,28 @@ fn main() {
         reference: "TOR-19592".into(),
         creation_date: Utc::now(),
         id: Uuid::new_v4(),
-        status_history: todo!(),
-        discount: todo!(),
+        status_history: vec![OrderState { status: OrderStatus::Queued, date: Utc::now() }],
+        discount: DiscountValue::Absolute(0),
+    };
+    
+    let transaction = Transaction {
+        id: Uuid::new_v4(),
+        customer: "...".into(),
+        transaction_type: methods::TransactionType::In,
+        products: vec![order],
+        order_total: 115,
+        payment: Payment {
+            payment_method: methods::PaymentMethod::Card,
+            fulfillment_date: Utc::now(),
+        },
+        order_date: Utc::now(),
+        order_notes: vec![Note { message: "Order packaged from warehouse.".into(), timestamp: Utc::now() }],
+        order_history: vec![History { method_type: methods::TransactionType::Out, item: ProductExchange { product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into() }],
+        salesperson: "...".into(),
+        till: "...".into(),
     };
 
-    println!("Creating Order: {:?}", order);
+    println!("Authored transaction of {:?}", transaction);
 
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
     let pool = ThreadPool::new(4);

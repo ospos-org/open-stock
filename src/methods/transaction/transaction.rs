@@ -1,6 +1,7 @@
 use chrono::{Utc, DateTime};
 
-use crate::methods::{OrderList, NoteList, HistoryList, Payment, Order};
+use crate::methods::{OrderList, NoteList, HistoryList, Payment, Id};
+use uuid::Uuid;
 
 // Discounts on the transaction are applied per-order - such that they are unique to each item, i.e. each item can be discounted individually where needed to close a sale.
 // A discount placed upon the payment object is an order-discount, such that it will act upon the basket: 
@@ -20,25 +21,26 @@ use crate::methods::{OrderList, NoteList, HistoryList, Payment, Order};
     OUT:    A sale - It can occur in-store or online and is comprised of the sale of goods outlined in the order list.
 */
 
+#[derive(Debug)]
 pub struct Transaction {
-    id: String,
+    pub id: Uuid,
 
-    customer: String,
-    transaction_type: TransactionType,
+    pub customer: Id,
+    pub transaction_type: TransactionType,
 
-    products: OrderList,
-    order_total: i128,
-    payment: Payment,
+    pub products: OrderList,
+    pub order_total: i128,
+    pub payment: Payment,
 
-    order_date: DateTime<Utc>,
-    order_notes: NoteList,
-    order_history: HistoryList,
+    pub order_date: DateTime<Utc>,
+    pub order_notes: NoteList,
+    pub order_history: HistoryList,
 
-    salesperson: String,
-    till: String,
-    payment_method: Payment
+    pub salesperson: Id,
+    pub till: Id,
 }
 
+#[derive(Debug)]
 pub enum TransactionType {
     In, Out
 }
@@ -47,5 +49,5 @@ pub enum TransactionType {
 pub struct Intent {
     request: Transaction,
     // Employee ID for the dispatcher (instigator) for an In-store Purchase (i.e. Tills person) or website deployment ID
-    dispatcher: String,
+    dispatcher: Id,
 }

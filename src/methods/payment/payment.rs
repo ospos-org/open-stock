@@ -1,7 +1,12 @@
 use chrono::{DateTime, Utc};
-use crate::methods::Customer;
 
+#[derive(Debug)]
 pub struct Payment {
-    payment_method: String,
-    fulfillment_date: DateTime<Utc>
+    pub payment_method: PaymentMethod,
+    pub fulfillment_date: DateTime<Utc>
+}
+
+#[derive(Debug)]
+pub enum PaymentMethod {
+    Card, Cash, Transfer
 }
