@@ -5,3 +5,11 @@ edition = "2018"
 authors = ["unrealg@UnRealReincarlution"]
 
 [dependencies]
+chrono = "0.4.23"
+
+[dependencies.uuid]
+version = "1.2.2"
+features = [
+    "v4",
+    "fast-rng"
+]
