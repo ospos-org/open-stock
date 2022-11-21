@@ -99,13 +99,13 @@ fn example_transaction() -> Transaction {
         order_notes: vec![Note { message: "Order Shipped from Depot".into(), timestamp: Utc::now() }],
         reference: "TOR-19592".into(),
         creation_date: Utc::now(),
-        id: Uuid::new_v4(),
+        id: Uuid::new_v4().to_string(),
         status_history: vec![OrderState { status: OrderStatus::Queued, date: Utc::now() }],
         discount: DiscountValue::Absolute(0),
     };
     
     let transaction = Transaction {
-        id: Uuid::new_v4(),
+        id: Uuid::new_v4().to_string(),
         customer: "...".into(),
         transaction_type: methods::TransactionType::In,
         products: vec![order],

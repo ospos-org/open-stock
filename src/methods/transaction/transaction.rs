@@ -3,10 +3,9 @@ use std::fmt::{Display};
 
 use chrono::{Utc, DateTime};
 use serde::{Serialize, Deserialize};
-use sqlx::{Transaction as SqlxTransaction, MySql, mysql::MySqlQueryResult};
+use sqlx::{Transaction as SqlxTransaction, MySql, mysql::{MySqlQueryResult}, FromRow};
 
-use crate::methods::{OrderList, NoteList, HistoryList, Payment, Id};
-use uuid::Uuid;
+use crate::methods::{OrderList, NoteList, HistoryList, Payment, Id, Order};
 
 // Discounts on the transaction are applied per-order - such that they are unique to each item, i.e. each item can be discounted individually where needed to close a sale.
 // A discount placed upon the payment object is an order-discount, such that it will act upon the basket: 
@@ -26,15 +25,15 @@ use uuid::Uuid;
     OUT:    A sale - It can occur in-store or online and is comprised of the sale of goods outlined in the order list.
 */
 
-#[derive(Debug)]
+#[derive(Debug, FromRow)]
 pub struct Transaction {
-    pub id: Uuid,
+    pub id: Id,
 
     pub customer: Id,
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
-    pub order_total: i128,
+    pub order_total: i32,
     pub payment: Payment,
 
     pub order_date: DateTime<Utc>,
@@ -70,6 +69,31 @@ impl Transaction {
             Err(error) => Err(error)
         }
     }
+
+    // pub async fn fetch_all_transactions(mut conn: SqlxTransaction<'_, MySql>) -> Result<sqlx::Result<Transaction>, sqlx::Error> {
+    //     match sqlx::query_as!(Transaction, "SELECT * FROM Transactions LIMIT 50").fetch_all(&mut conn).await {
+    //         Ok(res) => {
+    //             match conn.commit().await {
+    //                 Ok(_) => Ok(res),
+    //                 Err(e) => Err(e)
+    //             }
+    //         }
+    //         Err(error) => Err(error)
+    //     }
+    // }
+
+    pub async fn fetch_transaction_by_id(id: &str, mut conn: SqlxTransaction<'_, MySql>) -> Result<Transaction, sqlx::Error> {
+        match sqlx::query_as!(
+            Transaction,
+            r#"SELECT id, customer, transaction_type as "transaction_type: TransactionType", products as "products: Vec<Order>", order_total, payment as "payment: Payment", order_date as "order_date: DateTime<Utc>", order_notes as "order_notes: NoteList", order_history as "order_history: HistoryList", salesperson, till FROM Transactions WHERE id = ?"#,
+            id
+        ).fetch_one(&mut conn).await {
+            Ok(res) => {
+                Ok(res)
+            },
+            Err(err) => Err(err),
+        }
+    }
 }
 
 impl Display for Transaction {
@@ -78,19 +102,54 @@ impl Display for Transaction {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, sqlx::Type)]
 pub enum TransactionType {
     In, Out
 }
 
-impl TransactionType {
-    fn to_string(&self) -> String {
-        match self {
-            TransactionType::In => "in".to_string(),
-            TransactionType::Out => "out".to_string(),
-        }
+impl fmt::Display for TransactionType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
+
+// impl Type<MySql> for TransactionType {
+//     fn compatible(ty: &<MySql as Database>::TypeInfo) -> bool {
+//         *ty == Self::type_info()
+//     }
+
+//     fn type_info() -> MySqlTypeInfo {
+//         MySqlTypeInfo::from(MySqlTypeInfo::name("json"))
+//     }
+// }
+
+// impl TypeInfo for TransactionType {
+//     fn is_null(&self) -> bool {
+//         false
+//     }
+
+//     fn name(&self) -> &str {
+//         "json"
+//     }
+
+//     fn is_void(&self) -> bool {
+//         false
+//     }
+// }
+
+// impl<'r> Decode<'r, MySql> for TransactionType {
+//     fn decode(
+//         value: <MySql as HasValueRef<'r>>::ValueRef,
+//     ) -> std::result::Result<TransactionType, Box<(dyn std::error::Error + Send + Sync + 'static)>> {
+//         let value = <&str as Decode<MySql>>::decode(value)?;
+
+//         match value {
+//             "in" | "IN" => Ok(TransactionType::In),
+//             "out" | "OUT" => Ok(TransactionType::Out),
+//             _ => Err(Box::new(sqlx::Error::Decode(Box::new(serde_json::Error::invalid_value(Unexpected::Str(&format!("Unexpected Value: {}", value)), &"IN or OUT")))))
+//         }
+//     }
+// }
 
 // impl! Implement the intent as a builder. 
 pub struct Intent {

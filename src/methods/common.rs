@@ -32,6 +32,7 @@ impl MobileNumber {
     }
 }
 
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 pub type OrderList = Vec<Order>;
 pub type NoteList = Vec<Note>;
 pub type HistoryList = Vec<History<ProductExchange>>;

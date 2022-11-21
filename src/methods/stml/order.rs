@@ -1,11 +1,11 @@
 use chrono::{Utc, DateTime};
 use serde::{Serialize, Deserialize};
-use uuid::Uuid;
-use crate::methods::{Location, ProductPurchaseList, NoteList, ContactInformation, Url, DiscountValue};
+use crate::methods::{Location, ProductPurchaseList, NoteList, ContactInformation, Url, DiscountValue, Id};
 
-#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
+#[derive(Debug, Clone, Serialize, sqlx::Type)]
 pub struct Order {
-    pub id: Uuid,
+    pub id: Id,
 
     pub destination: Location,
     pub origin: Location,
@@ -20,6 +20,15 @@ pub struct Order {
     pub creation_date: DateTime<Utc>,
     
     pub discount: DiscountValue
+}
+
+impl ToString for Order {
+    fn to_string(&self) -> String {
+        match serde_json::to_string(self) {
+            Ok(s) => s,
+            Err(_) => "{}".to_string()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]

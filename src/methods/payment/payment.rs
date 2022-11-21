@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, sqlx::Type)]
 pub struct Payment {
     pub payment_method: PaymentMethod,
     pub fulfillment_date: DateTime<Utc>
