@@ -1,4 +1,9 @@
+use core::fmt;
+use std::fmt::{Display};
+
 use chrono::{Utc, DateTime};
+use serde::{Serialize, Deserialize};
+use sqlx::{Transaction as SqlxTransaction, MySql, mysql::MySqlQueryResult};
 
 use crate::methods::{OrderList, NoteList, HistoryList, Payment, Id};
 use uuid::Uuid;
@@ -40,9 +45,51 @@ pub struct Transaction {
     pub till: Id,
 }
 
-#[derive(Debug)]
+impl Transaction {
+    pub async fn insert_transaction(tsn: Transaction, mut conn: SqlxTransaction<'_, MySql>) -> Result<MySqlQueryResult, sqlx::Error> {
+        match sqlx::query!(
+            "INSERT INTO Transactions (id, customer, transaction_type, products, order_total, payment, order_date, order_notes, order_history, salesperson, till) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+            tsn.id.to_string(), 
+            tsn.customer, 
+            tsn.transaction_type.to_string(), 
+            serde_json::to_string(&tsn.products).unwrap(), 
+            tsn.order_total.to_string(),
+            serde_json::to_string(&tsn.payment).unwrap(),
+            tsn.order_date.to_rfc3339(),
+            serde_json::to_string(&tsn.order_notes).unwrap(),
+            serde_json::to_string(&tsn.order_history).unwrap(), 
+            tsn.salesperson,
+            tsn.till
+        ).execute(&mut conn).await {
+            Ok(res) => {
+                match conn.commit().await {
+                    Ok(_) => Ok(res),
+                    Err(error) => Err(error)
+                }
+            },
+            Err(error) => Err(error)
+        }
+    }
+}
+
+impl Display for Transaction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Transaction ({}) \nProducts:\t\n", self.id)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub enum TransactionType {
     In, Out
+}
+
+impl TransactionType {
+    fn to_string(&self) -> String {
+        match self {
+            TransactionType::In => "in".to_string(),
+            TransactionType::Out => "out".to_string(),
+        }
+    }
 }
 
 // impl! Implement the intent as a builder. 

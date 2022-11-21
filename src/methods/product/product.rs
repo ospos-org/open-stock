@@ -1,5 +1,5 @@
+use serde::{Serialize, Deserialize};
 use crate::methods::{Url, TagList, DiscountValue, TransactionType};
-
 use super::{VariantCategoryList, VariantIdTag};
 
 pub struct Product {
@@ -15,7 +15,7 @@ pub struct Product {
     pub specifications: Vec<(String, String)>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductPurchase {
     // Includes variant
     pub product_code: ProductCode,
@@ -26,7 +26,7 @@ pub struct ProductPurchase {
     pub quantity: i128,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProductExchange {
     pub method_type: TransactionType,
     pub product_code: ProductCode,

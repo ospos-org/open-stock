@@ -1,15 +1,17 @@
 use crate::methods::stml::Order;
 use chrono::{Utc, DateTime};
+use serde::{Serialize, Deserialize};
 
 use super::{TransactionType, ProductExchange};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Name {
     pub first: String,
     pub middle: String,
     pub last: String
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ContactInformation {
     pub name: String,
     pub mobile: MobileNumber,
@@ -18,7 +20,7 @@ pub struct ContactInformation {
     pub address: Address
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MobileNumber {
     pub region_code: String,
     pub root: String
@@ -34,14 +36,14 @@ pub type OrderList = Vec<Order>;
 pub type NoteList = Vec<Note>;
 pub type HistoryList = Vec<History<ProductExchange>>;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct History<T> {
     pub item: T,
     pub reason: String,
     pub date: DateTime<Utc>
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Email {
     pub root: String,
     pub domain: String,
@@ -75,13 +77,13 @@ impl Email {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Note {
     pub message: String,
     pub timestamp: DateTime<Utc>
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Address {
     pub street: String,
     pub street2: String,
@@ -90,7 +92,7 @@ pub struct Address {
     pub po_code: String
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Location {
     pub code: String,
     // Address is stored in the contact information.

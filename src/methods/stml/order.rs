@@ -1,8 +1,9 @@
 use chrono::{Utc, DateTime};
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use crate::methods::{Location, ProductPurchaseList, NoteList, ContactInformation, Url, DiscountValue};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Order {
     pub id: Uuid,
 
@@ -21,13 +22,13 @@ pub struct Order {
     pub discount: DiscountValue
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub struct OrderState {
     pub date: DateTime<Utc>,
     pub status: OrderStatus
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub enum OrderStatus {
     // Open Cart, Till Cart or Being Processed
     Queued,
@@ -43,7 +44,7 @@ pub enum OrderStatus {
     Failed(String)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransitInformation {
     pub shipping_company: ContactInformation,
     pub query_url: Url,

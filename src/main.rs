@@ -1,13 +1,12 @@
 use std::{fs::File, thread, time::Duration, net::{TcpStream, TcpListener}, io::prelude::*};
 use methods::{Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email, Transaction};
 
-use sqlx::mysql::{MySqlPoolOptions, MySqlConnectOptions};
+use sqlx::mysql::{MySqlPoolOptions};
 use uuid::Uuid;
-use sqlx::ConnectOptions;
 use chrono::Utc;
 use lib::ThreadPool;
 
-use crate::methods::{ProductPurchase, DiscountValue, Payment, NoteList, History, OrderState, ProductExchange};
+use crate::methods::{ProductPurchase, DiscountValue, Payment, History, OrderState, ProductExchange};
 
 mod lib;
 mod methods;
@@ -28,20 +27,29 @@ async fn main() {
 
     println!("{}", database_url);
 
-    let pool = match MySqlConnectOptions::new()
-            .host("localhost")
-            .username("root")
-            .password("example")
-            .database("")
-            .connect().await {
-                Ok(pool) => {
-                    println!("[service] sqlx::success Successfully started pool.");
-                    pool
-                },
-                Err(error) => {
-                    panic!("[service] sqlx::error Failed to initialize SQLX pool. Reason: {}", error);
-                }
-        };
+    let pool = match MySqlPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url).await {
+            Ok(pool) => {
+                println!("[service] sqlx::success Successfully started pool.");
+                pool
+            },
+            Err(error) => {
+                panic!("[service] sqlx::error Failed to initialize SQLX pool. Reason: {}", error);
+            }
+    };
+
+    match pool.begin().await {
+        Ok(tnsc) => {
+            match Transaction::insert_transaction(example_transaction(), tnsc).await {
+                Ok(res) => println!("Success, with result: {:?}", res),
+                Err(err) => println!("failed, with result: {}", err),
+            }
+        },
+        Err(_) => {
+            println!("failed.");
+        },
+    };
 
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
     let pool = ThreadPool::new(4);
@@ -53,7 +61,7 @@ async fn main() {
     }
 }
 
-fn example_transaction() {
+fn example_transaction() -> Transaction {
     let torpedo7 = ContactInformation {
         name: "Torpedo7".into(),
         mobile: MobileNumber::from("021212120".to_string()),
@@ -114,6 +122,8 @@ fn example_transaction() {
     };
 
     println!("Authored transaction of {:?}", transaction);
+
+    transaction
 }
 
 fn handle_connection(mut stream: TcpStream){

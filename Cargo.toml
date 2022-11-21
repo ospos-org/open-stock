@@ -6,8 +6,10 @@ authors = ["bennjii"]
 description = "An Inventory Management Database Interface Layer for MySQL"
 
 [dependencies]
-chrono = "0.4.23"
+chrono = { version = "0.4.23", features = ["serde"] }
 dotenv = "0.15.0"
 tokio = { version = "1.22.0", features = ["full"] }
 sqlx = { version = "0.6.2", features = [ "mysql", "runtime-tokio-rustls", "macros" ] }
-uuid = { version = "1.2.2", features = [ "v4", "fast-rng" ] }
+uuid = { version = "1.2.2", features = [ "v4", "fast-rng", "serde" ] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
