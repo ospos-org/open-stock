@@ -5,7 +5,8 @@ pub struct Employee {
     pub id: Id,
     pub name: Name,
     pub contact: ContactInformation,
-    pub clock_history: Vec<History<Attendance>>
+    pub clock_history: Vec<History<Attendance>>,
+    pub level: i8
 }
 
 pub struct Attendance {

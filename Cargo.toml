@@ -2,14 +2,12 @@
 name = "stock"
 version = "0.1.0"
 edition = "2018"
-authors = ["unrealg@UnRealReincarlution"]
+authors = ["bennjii"]
+description = "An Inventory Management Database Interface Layer for MySQL"
 
 [dependencies]
 chrono = "0.4.23"
-
-[dependencies.uuid]
-version = "1.2.2"
-features = [
-    "v4",
-    "fast-rng"
-]
+dotenv = "0.15.0"
+tokio = { version = "1.22.0", features = ["full"] }
+sqlx = { version = "0.6.2", features = [ "mysql", "runtime-tokio-rustls", "macros" ] }
+uuid = { version = "1.2.2", features = [ "v4", "fast-rng" ] }

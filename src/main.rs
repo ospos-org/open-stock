@@ -1,7 +1,9 @@
 use std::{fs::File, thread, time::Duration, net::{TcpStream, TcpListener}, io::prelude::*};
 use methods::{Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email, Transaction};
 
+use sqlx::mysql::{MySqlPoolOptions, MySqlConnectOptions};
 use uuid::Uuid;
+use sqlx::ConnectOptions;
 use chrono::Utc;
 use lib::ThreadPool;
 
@@ -10,7 +12,48 @@ use crate::methods::{ProductPurchase, DiscountValue, Payment, NoteList, History,
 mod lib;
 mod methods;
 
-fn main() {
+use dotenv::dotenv;
+use std::env;
+
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
+
+    let database_url = match env::var("DATABASE_URL") {
+        Ok(url) => url,
+        Err(err) => {
+            panic!("Was unable to initialize, could not determine the database url. Reason: {}", err)
+        },
+    };
+
+    println!("{}", database_url);
+
+    let pool = match MySqlConnectOptions::new()
+            .host("localhost")
+            .username("root")
+            .password("example")
+            .database("")
+            .connect().await {
+                Ok(pool) => {
+                    println!("[service] sqlx::success Successfully started pool.");
+                    pool
+                },
+                Err(error) => {
+                    panic!("[service] sqlx::error Failed to initialize SQLX pool. Reason: {}", error);
+                }
+        };
+
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
+    for stream in listener.incoming() {
+        let stream = stream.unwrap();
+        pool.execute(||{
+            handle_connection(stream);
+        });
+    }
+}
+
+fn example_transaction() {
     let torpedo7 = ContactInformation {
         name: "Torpedo7".into(),
         mobile: MobileNumber::from("021212120".to_string()),
@@ -71,15 +114,6 @@ fn main() {
     };
 
     println!("Authored transaction of {:?}", transaction);
-
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
-    let pool = ThreadPool::new(4);
-    for stream in listener.incoming() {
-        let stream = stream.unwrap();
-        pool.execute(||{
-            handle_connection(stream);
-        });
-    }
 }
 
 fn handle_connection(mut stream: TcpStream){

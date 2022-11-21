@@ -5,10 +5,14 @@ use super::{VariantCategoryList, VariantIdTag};
 pub struct Product {
     pub name: String,
     pub variants: VariantCategoryList,
-    pub image: Url,
     pub sku: String,
+    
     pub loyalty_discount: DiscountValue,
-    pub tags: TagList
+
+    pub images: Vec<Url>,
+    pub tags: TagList,
+    pub description: String,
+    pub specifications: Vec<(String, String)>
 }
 
 #[derive(Debug)]

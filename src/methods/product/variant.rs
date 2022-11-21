@@ -1,4 +1,4 @@
-use crate::methods::{StockList, HistoryList};
+use crate::methods::{StockList, HistoryList, Url};
 
 pub type VariantIdTag = Vec<VariantId>;
 type VariantId = String;
@@ -14,6 +14,7 @@ pub struct VariantCategory {
 pub struct Variant {
     pub name: String,
     pub stock: StockList,
+    pub images: Vec<Url>,
     pub marginal_price: i128,
     pub variant_code: String,
     pub order_history: HistoryList
