@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::methods::{StockList, HistoryList, Url};
@@ -10,7 +12,7 @@ pub type VariantCategoryList = Vec<VariantCategory>;
 #[derive(Deserialize, Serialize)]
 pub struct VariantCategory {
     pub category: String,
-    pub variants: Variant
+    pub variants: Vec<Variant>
 }
 
 #[derive(Deserialize, Serialize)]
@@ -21,4 +23,13 @@ pub struct Variant {
     pub marginal_price: i32,
     pub variant_code: String,
     pub order_history: HistoryList
+}
+
+impl Display for Variant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+            "\t{} ({}) ${}", 
+            self.name, self.variant_code, self.marginal_price 
+        )
+    }
 }

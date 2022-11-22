@@ -96,11 +96,11 @@ impl Display for Transaction {
                     .iter()
                     .map(|p| 
                         format!(
-                            "\t${} ({}:{}) x{} [-]{}\n", 
+                            "\t{}: ${} ({}:{})  [-]{}\n", 
+                            p.quantity, 
                             p.product_cost, 
                             p.product_code, 
                             p.variant.concat(), 
-                            p.quantity, 
                             p.discount.to_string()
                         )
                     ).collect();
@@ -114,8 +114,8 @@ impl Display for Transaction {
                     ).collect();
 
                 format!(
-                    "-\t{}:{} {} {} -> {} {} [-]{} \n{}\n\t{}\n", 
-                    f.id, f.reference, f.status, f.origin.code, f.destination.code, f.creation_date.format("%d/%m/%Y %H:%M"), f.discount.to_string(), pdts, notes
+                    "-\t{} {} {} -> {} {} [-]{} \n{}\n\t{}\n", 
+                    f.reference, f.status, f.origin.code, f.destination.code, f.creation_date.format("%d/%m/%Y %H:%M"), f.discount.to_string(), pdts, notes
                 )
             }).collect();
 
@@ -128,16 +128,15 @@ impl Display for Transaction {
             ).collect();
 
         let order_history: String = self.order_history.iter()
-            .map(|f| 
+            .map(|f| {
                 format!(
-                    "{}: {} ({})\n", 
+                    "{}: {}\n", 
                     f.date.format("%d/%m/%Y %H:%M"), 
-                    f.item.method_type.to_string(), 
-                    f.item
+                    f.item,
                 )
-            ).collect();
+            }).collect();
 
-        write!(f, "Transaction ({}) {}\nOrders:\n{}\n---\nTotal: {}\nPayment: {:?}\nNotes:\n{}\nHistory:\n{}\n{} on {}", self.id, self.order_date.format("%d/%m/%Y %H:%M"), products, self.order_total, self.payment, notes, order_history, self.salesperson, self.till)
+        write!(f, "Transaction ({}) {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {}\nNotes:\n{}\nHistory:\n{}\n{} on {}", self.id, self.order_date.format("%d/%m/%Y %H:%M"), products, self.order_total, self.payment, notes, order_history, self.salesperson, self.till)
     }
 }
 

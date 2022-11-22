@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS `Products` (
   `sku` varchar(100) NOT NULL,
   `name` varchar(100) NOT NULL,
+  `company` text NOT NULL,
   `variants` json NOT NULL,
   `loyalty_discount` text NOT NULL,
   `images` json NOT NULL,

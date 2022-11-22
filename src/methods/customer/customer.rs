@@ -29,7 +29,7 @@ impl Customer {
         }
     }
 
-    pub async fn fetch_transaction_by_id(id: &str, db: &DbConn) -> Result<Customer, DbErr> {
+    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Customer, DbErr> {
         let cust = Cust::find_by_id(id.to_string()).one(db).await?;
         let c = cust.unwrap();
 

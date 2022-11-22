@@ -10,6 +10,7 @@ use crate::entities::prelude::Products;
 #[derive(Deserialize, Serialize)]
 pub struct Product {
     pub name: String,
+    pub company: String,
     pub variants: VariantCategoryList,
     pub sku: String,
     
@@ -21,11 +22,33 @@ pub struct Product {
     pub specifications: Vec<(String, String)>
 }
 
+impl Display for Product {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let variant_categories: String = self.variants
+            .iter()
+            .map(|p| {
+                let variants: String = p.variants
+                    .iter()
+                    .map(|p| {
+                        format!("{}\n", p)
+                    }).collect();
+
+                format!(
+                    "{}(s):\n{}", 
+                    p.category, variants
+                )
+            }).collect();
+
+        write!(f, "{}: {} ({})\n{}", self.sku, self.name, self.company, variant_categories)
+    }
+}
+
 impl Product {
     pub async fn insert(pdt: Product, db: &DbConn) -> Result<(), DbErr> {
         let insert_crud = products::ActiveModel {
             sku: Set(pdt.sku),
             name: Set(pdt.name),
+            company: Set(pdt.company),
             variants: Set(json!(pdt.variants)),
             loyalty_discount: Set(DiscountValue::to_string(&pdt.loyalty_discount)),
             images: Set(json!(pdt.images)),
@@ -46,6 +69,7 @@ impl Product {
 
         Ok(Product { 
             name: p.name, 
+            company: p.company,
             variants: serde_json::from_value::<VariantCategoryList>(p.variants).unwrap(), 
             sku: p.sku, 
             loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
@@ -78,7 +102,12 @@ pub struct ProductExchange {
 
 impl Display for ProductExchange {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}-{} x{}", self.method_type, self.product_code, self.variant.concat(), self.quantity)
+        let method = match self.method_type {
+            TransactionType::In => "IN",
+            TransactionType::Out => "OUT",
+        };
+
+        write!(f, "{}: {}-{} x{}", method, self.product_code, self.variant.concat(), self.quantity)
     }
 }
 

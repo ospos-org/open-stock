@@ -9,6 +9,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub sku: String,
     pub name: String,
+    pub company: String,
     pub variants: Json,
     #[sea_orm(column_type = "Text")]
     pub loyalty_discount: String,
