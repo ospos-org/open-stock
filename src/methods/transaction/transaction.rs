@@ -90,7 +90,54 @@ impl Transaction {
 
 impl Display for Transaction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Transaction ({}) \nProducts:\t\n", self.id)
+        let products: String = self.products.iter()
+            .map(|f| {
+                let pdts: String = f.products
+                    .iter()
+                    .map(|p| 
+                        format!(
+                            "\t${} ({}:{}) x{} [-]{}\n", 
+                            p.product_cost, 
+                            p.product_code, 
+                            p.variant.concat(), 
+                            p.quantity, 
+                            p.discount.to_string()
+                        )
+                    ).collect();
+
+                let notes: String = f.order_notes
+                    .iter()
+                    .map(|p| 
+                        format!(
+                            "{}", p, 
+                        )
+                    ).collect();
+
+                format!(
+                    "-\t{}:{} {} {} -> {} {} [-]{} \n{}\n\t{}\n", 
+                    f.id, f.reference, f.status, f.origin.code, f.destination.code, f.creation_date.format("%d/%m/%Y %H:%M"), f.discount.to_string(), pdts, notes
+                )
+            }).collect();
+
+        let notes: String = self.order_notes
+            .iter()
+            .map(|p| 
+                format!(
+                    "{}", p
+                )
+            ).collect();
+
+        let order_history: String = self.order_history.iter()
+            .map(|f| 
+                format!(
+                    "{}: {} ({})\n", 
+                    f.date.format("%d/%m/%Y %H:%M"), 
+                    f.item.method_type.to_string(), 
+                    f.item
+                )
+            ).collect();
+
+        write!(f, "Transaction ({}) {}\nOrders:\n{}\n---\nTotal: {}\nPayment: {:?}\nNotes:\n{}\nHistory:\n{}\n{} on {}", self.id, self.order_date.format("%d/%m/%Y %H:%M"), products, self.order_total, self.payment, notes, order_history, self.salesperson, self.till)
     }
 }
 

@@ -1,3 +1,5 @@
+use std::fmt::{Display, self};
+
 use sea_orm::{DbConn, DbErr, Set, EntityTrait};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
@@ -11,6 +13,30 @@ pub struct Employee {
     pub contact: ContactInformation,
     pub clock_history: Vec<History<Attendance>>,
     pub level: i32
+}
+
+impl Display for Employee {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let clock_history: String = self.clock_history.iter()
+            .map(|f| 
+                format!(
+                    "{}: {} ({})\n", 
+                    f.date.format("%d/%m/%Y %H:%M"), 
+                    f.item.track_type.to_string(), 
+                    f.item.till
+                )
+            ).collect();
+
+        write!(
+            f, 
+            "{} {} ({})\n{}\n({}) {} {}\n\n[Clock History]\n{}
+            ", 
+            self.name.first, self.name.last, self.level, 
+            self.id, 
+            self.contact.mobile.region_code, self.contact.mobile.root, self.contact.email.full,
+            clock_history
+        )
+    }
 }
 
 impl Employee {
@@ -52,4 +78,14 @@ pub struct Attendance {
 #[derive(Serialize, Deserialize)]
 pub enum TrackType {
     In, Out
+}
+
+impl ToString for TrackType {
+    fn to_string(&self) -> String {
+        match self {
+            TrackType::In => "IN".to_string(),
+            TrackType::Out => "OUT".to_string(),
+            _ => "UNDEF".to_string()
+        }
+    }
 }

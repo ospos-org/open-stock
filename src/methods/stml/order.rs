@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use chrono::{Utc, DateTime};
 use serde::{Serialize, Deserialize};
 use crate::methods::{Location, ProductPurchaseList, NoteList, ContactInformation, Url, DiscountValue, Id};
@@ -50,6 +52,27 @@ pub enum OrderStatus {
     Fulfilled,
     // Was unable to fulfill, reason is given
     Failed(String)
+}
+
+impl Display for OrderStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let output = match self {
+            OrderStatus::Queued => "QUEUED",
+            OrderStatus::Transit(_) => "TRANSIT",
+            OrderStatus::Processing(_) => "PROCESSING",
+            OrderStatus::InStore => "IN-STORE",
+            OrderStatus::Fulfilled => "FULFILLED",
+            OrderStatus::Failed(reason) => {
+                "FAILED:"
+            },
+        };
+
+        write!(
+            f, 
+            "{}",
+            output
+        )
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

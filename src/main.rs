@@ -1,4 +1,4 @@
-use methods::{Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email, Transaction};
+use methods::{Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email, Transaction, Employee, Name, Attendance};
 use crate::{methods::{ProductPurchase, DiscountValue, Payment, History, OrderState, ProductExchange}, entities::sea_orm_active_enums::TransactionType};
 
 use sea_orm::Database;
@@ -22,21 +22,71 @@ async fn main() {
         },
     };
 
-    println!("{}", database_url);
-
     let db = Database::connect(database_url) 
         .await
         .unwrap();
 
+    // Create Transaction
     let (tsn, id) = example_transaction();
-
+    // Insert & Fetch Transaction
     Transaction::insert(tsn, &db).await.unwrap();
     match Transaction::fetch_by_id(&id, &db).await {
         Ok(ts) => {
-            println!("Retrieved Transaction: {}", ts);
+            println!("Retrieved Transaction:\n{}", ts);
         }
         Err(e) => panic!("{}", e)
     }
+
+    // Create Employee
+    let (empl, id) = example_employee();
+    // Insert & Fetch Employee
+    Employee::insert(empl, &db).await.unwrap();
+    match Employee::fetch_by_id(&id, &db).await {
+        Ok(emp) => {
+            println!("Retrieved Employee:\n{}", emp);
+        }
+        Err(e) => panic!("{}", e)
+    }
+
+}
+
+fn example_employee() -> (Employee, String) {
+    let id = Uuid::new_v4().to_string();
+
+    let employee = Employee {
+        id: id.clone(),
+        name: Name {
+            first: "Carl".to_string(),
+            middle: "".to_string(),
+            last: "Kennith".to_string()
+        },
+        contact: ContactInformation {
+            name: "Carl Kennith".into(),
+            mobile: MobileNumber::from("021212120".to_string()),
+            email: Email::from("carl@kennith.com".to_string()),
+            landline: "".into(),
+            address: Address {
+                street: "9 Carbine Road".into(),
+                street2: "".into(),
+                city: "Auckland".into(),
+                country: "New Zealand".into(),
+                po_code: "100".into(),
+            },
+        },
+        clock_history: vec![
+            History::<Attendance> { item: Attendance { track_type: methods::TrackType::In, till: "5".to_string() }, reason: "".to_string(), date: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: methods::TrackType::Out, till: "6".to_string() }, reason: "".to_string(), date: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: methods::TrackType::In, till: "1".to_string() }, reason: "".to_string(), date: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: methods::TrackType::Out, till: "3".to_string() }, reason: "".to_string(), date: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: methods::TrackType::In, till: "4".to_string() }, reason: "".to_string(), date: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: methods::TrackType::Out, till: "4".to_string() }, reason: "Left Early".to_string(), date: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: methods::TrackType::In, till: "4".to_string() }, reason: "".to_string(), date: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: methods::TrackType::Out, till: "5".to_string() }, reason: "".to_string(), date: Utc::now() },
+        ],
+        level: 2,
+    };
+
+    (employee, id)
 }
 
 fn example_transaction() -> (Transaction, String) {
@@ -100,8 +150,6 @@ fn example_transaction() -> (Transaction, String) {
         salesperson: "...".into(),
         till: "...".into(),
     };
-
-    println!("Authored transaction of {:?}", transaction);
 
     (transaction, id)
 }

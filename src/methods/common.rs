@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::methods::stml::Order;
 use chrono::{Utc, DateTime};
 use serde::{Serialize, Deserialize};
@@ -81,6 +83,16 @@ impl Email {
 pub struct Note {
     pub message: String,
     pub timestamp: DateTime<Utc>
+}
+
+impl Display for Note {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f, 
+            "{}: {}",
+            self.timestamp.format("%d/%m/%Y %H:%M"), self.message
+        )
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, fmt::Display};
 
 use sea_orm::{DbConn, DbErr, EntityTrait, Set};
 use serde::{Serialize, Deserialize};
@@ -74,6 +74,12 @@ pub struct ProductExchange {
     pub product_code: ProductCode,
     pub variant: VariantIdTag,
     pub quantity: i32,
+}
+
+impl Display for ProductExchange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}-{} x{}", self.method_type, self.product_code, self.variant.concat(), self.quantity)
+    }
 }
 
 pub type ProductCode = String;

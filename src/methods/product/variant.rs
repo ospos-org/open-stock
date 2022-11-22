@@ -6,7 +6,6 @@ pub type VariantIdTag = Vec<VariantId>;
 type VariantId = String;
 
 pub type VariantCategoryList = Vec<VariantCategory>;
-pub type VariantList = Vec<Variant>;
 
 #[derive(Deserialize, Serialize)]
 pub struct VariantCategory {
