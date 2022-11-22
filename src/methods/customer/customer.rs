@@ -7,5 +7,5 @@ pub struct Customer {
     pub contact: ContactInformation,
     pub order_history: OrderList,
     pub customer_notes: NoteList,
-    pub balance: i128,
+    pub balance: i32,
 }

@@ -1,20 +1,17 @@
-use std::{fs::File, thread, time::Duration, net::{TcpStream, TcpListener}, io::prelude::*};
 use methods::{Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email, Transaction};
+use crate::{methods::{ProductPurchase, DiscountValue, Payment, History, OrderState, ProductExchange}, entities::sea_orm_active_enums::TransactionType};
 
-use sqlx::mysql::{MySqlPoolOptions};
+use sea_orm::Database;
 use uuid::Uuid;
 use chrono::Utc;
-use lib::ThreadPool;
 
-use crate::methods::{ProductPurchase, DiscountValue, Payment, History, OrderState, ProductExchange};
-
-mod lib;
 mod methods;
+mod entities;
 
 use dotenv::dotenv;
 use std::env;
 
-#[tokio::main]
+#[async_std::main]
 async fn main() {
     dotenv().ok();
 
@@ -27,41 +24,22 @@ async fn main() {
 
     println!("{}", database_url);
 
-    let pool = match MySqlPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url).await {
-            Ok(pool) => {
-                println!("[service] sqlx::success Successfully started pool.");
-                pool
-            },
-            Err(error) => {
-                panic!("[service] sqlx::error Failed to initialize SQLX pool. Reason: {}", error);
-            }
-    };
+    let db = Database::connect(database_url) 
+        .await
+        .unwrap();
 
-    match pool.begin().await {
-        Ok(tnsc) => {
-            match Transaction::insert_transaction(example_transaction(), tnsc).await {
-                Ok(res) => println!("Success, with result: {:?}", res),
-                Err(err) => println!("failed, with result: {}", err),
-            }
-        },
-        Err(_) => {
-            println!("failed.");
-        },
-    };
+    let (tsn, id) = example_transaction();
 
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
-    let pool = ThreadPool::new(4);
-    for stream in listener.incoming() {
-        let stream = stream.unwrap();
-        pool.execute(||{
-            handle_connection(stream);
-        });
+    Transaction::insert_transaction(tsn, &db).await.unwrap();
+    match Transaction::fetch_transaction_by_id(&id, &db).await {
+        Ok(ts) => {
+            println!("Retrieved Transaction: {}", ts);
+        }
+        Err(e) => panic!("{}", e)
     }
 }
 
-fn example_transaction() -> Transaction {
+fn example_transaction() -> (Transaction, String) {
     let torpedo7 = ContactInformation {
         name: "Torpedo7".into(),
         mobile: MobileNumber::from("021212120".to_string()),
@@ -103,11 +81,13 @@ fn example_transaction() -> Transaction {
         status_history: vec![OrderState { status: OrderStatus::Queued, date: Utc::now() }],
         discount: DiscountValue::Absolute(0),
     };
+
+    let id = Uuid::new_v4().to_string();
     
     let transaction = Transaction {
-        id: Uuid::new_v4().to_string(),
+        id: id.clone(),
         customer: "...".into(),
-        transaction_type: methods::TransactionType::In,
+        transaction_type: TransactionType::In,
         products: vec![order],
         order_total: 115,
         payment: Payment {
@@ -116,37 +96,12 @@ fn example_transaction() -> Transaction {
         },
         order_date: Utc::now(),
         order_notes: vec![Note { message: "Order packaged from warehouse.".into(), timestamp: Utc::now() }],
-        order_history: vec![History { item: ProductExchange { method_type: methods::TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), date: Utc::now() }],
+        order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), date: Utc::now() }],
         salesperson: "...".into(),
         till: "...".into(),
     };
 
     println!("Authored transaction of {:?}", transaction);
 
-    transaction
-}
-
-fn handle_connection(mut stream: TcpStream){
-    let mut buffer = [0;1024];
-    stream.read(&mut buffer).unwrap();
-
-    let get = b"GET / HTTP/1.1\r\n";
-    let sleep = b"GET /sleep HTTP/1.1\r\n";
-    let (status_line, _filename) = if buffer.starts_with(get){
-        ("HTTP/1.1 200 OK\r\n\r\n", "hello.html")}
-    else if buffer.starts_with(sleep){
-        thread::sleep(Duration::from_secs(5));
-        ("HTTP/1.1 200 OK\r\n\r\n","hello.html")
-    }
-    else {
-        ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "404.html")
-    };
-
-    let mut file = File::open("hello.html").unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-
-    let response = format!("{}{}", status_line, contents);
-    stream.write(response.as_bytes()).unwrap();
-    stream.flush().unwrap();
+    (transaction, id)
 }

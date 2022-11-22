@@ -2,8 +2,7 @@ use chrono::{Utc, DateTime};
 use serde::{Serialize, Deserialize};
 use crate::methods::{Location, ProductPurchaseList, NoteList, ContactInformation, Url, DiscountValue, Id};
 
-#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
-#[derive(Debug, Clone, Serialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Order {
     pub id: Id,
 
@@ -31,13 +30,13 @@ impl ToString for Order {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderState {
     pub date: DateTime<Utc>,
     pub status: OrderStatus
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OrderStatus {
     // Open Cart, Till Cart or Being Processed
     Queued,

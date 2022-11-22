@@ -2,7 +2,7 @@ use crate::methods::stml::Order;
 use chrono::{Utc, DateTime};
 use serde::{Serialize, Deserialize};
 
-use super::{TransactionType, ProductExchange};
+use super::{ProductExchange};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Name {
@@ -32,7 +32,6 @@ impl MobileNumber {
     }
 }
 
-#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 pub type OrderList = Vec<Order>;
 pub type NoteList = Vec<Note>;
 pub type HistoryList = Vec<History<ProductExchange>>;
