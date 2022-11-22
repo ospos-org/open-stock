@@ -1,9 +1,13 @@
 use std::{str::FromStr, fmt::Display};
 
-use sea_orm::{DbConn, DbErr, EntityTrait, Set};
+use sea_orm_rocket::Connection;
+use sea_orm::{entity::*, query::*, DatabaseConnection};
+use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, QueryFilter, ConditionalStatement, sea_query::{Query, Expr, tests_cfg::Glyph}, ColumnTrait, DbBackend, QueryTrait};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
-use crate::{methods::{Url, TagList, DiscountValue}, entities::{sea_orm_active_enums::TransactionType, products}};
+use crate::pool::Db;
+
+use crate::{methods::{Url, TagList, DiscountValue}, entities::{sea_orm_active_enums::TransactionType, products}, pool};
 use super::{VariantCategoryList, VariantIdTag};
 use crate::entities::prelude::Products;
 
@@ -78,6 +82,50 @@ impl Product {
             description: p.description, 
             specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap() 
         })
+    }
+
+    pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Product>, DbErr> {
+        let res = products::Entity::find()
+            .having(products::Column::Name.contains(name))
+            .all(db).await?;
+            
+        let mapped = res.iter().map(|p| 
+            Product { 
+                name: p.name.clone(), 
+                company: p.company.clone(),
+                variants: serde_json::from_value::<VariantCategoryList>(p.variants.clone()).unwrap(), 
+                sku: p.sku.clone(), 
+                loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
+                images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
+                tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
+                description: p.description.clone(), 
+                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+            }
+        ).collect();
+
+        Ok(mapped)
+    }
+
+    pub async fn fetch_by_name_exact(name: &str, db: &DbConn) -> Result<Vec<Product>, DbErr> {
+        let res = products::Entity::find()
+            .having(products::Column::Name.eq(name))
+            .all(db).await?;
+            
+        let mapped = res.iter().map(|p| 
+            Product { 
+                name: p.name.clone(), 
+                company: p.company.clone(),
+                variants: serde_json::from_value::<VariantCategoryList>(p.variants.clone()).unwrap(), 
+                sku: p.sku.clone(), 
+                loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
+                images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
+                tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
+                description: p.description.clone(), 
+                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+            }
+        ).collect();
+
+        Ok(mapped)
     }
 }
 
