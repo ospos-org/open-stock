@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{methods::{Name, ContactInformation, OrderList, NoteList, Id}, entities::customer};
 use sea_orm::{DbConn, DbErr, Set, EntityTrait};
 use serde_json::json;
@@ -41,5 +43,38 @@ impl Customer {
             customer_notes: serde_json::from_value::<NoteList>(c.customer_notes).unwrap(),
             balance: c.balance, 
         })
+    }
+}
+
+impl Display for Customer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let order_history: String = self.order_history.iter()
+            .map(|f| 
+                format!(
+                    "{}: {}\n", 
+                    f.creation_date.format("%d/%m/%Y %H:%M"), 
+                    f.status, 
+                )
+            ).collect();
+
+        let customer_notes: String = self.customer_notes.iter()
+            .map(|f| 
+                format!(
+                    "{}: {}\n", 
+                    f.timestamp.format("%d/%m/%Y %H:%M"), 
+                    f.message, 
+                )
+            ).collect();
+
+        write!(
+            f, 
+            "{} {} (${})\n{}\n({}) {} {}\n\n[Clock History]\n{}\n[Notes]\n{}
+            ", 
+            self.name.first, self.name.last, self.balance, 
+            self.id, 
+            self.contact.mobile.region_code, self.contact.mobile.root, self.contact.email.full,
+            order_history,
+            customer_notes
+        )
     }
 }

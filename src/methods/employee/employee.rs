@@ -21,7 +21,7 @@ impl Display for Employee {
             .map(|f| 
                 format!(
                     "{}: {} ({})\n", 
-                    f.date.format("%d/%m/%Y %H:%M"), 
+                    f.timestamp.format("%d/%m/%Y %H:%M"), 
                     f.item.track_type.to_string(), 
                     f.item.till
                 )
@@ -85,7 +85,6 @@ impl ToString for TrackType {
         match self {
             TrackType::In => "IN".to_string(),
             TrackType::Out => "OUT".to_string(),
-            _ => "UNDEF".to_string()
         }
     }
 }

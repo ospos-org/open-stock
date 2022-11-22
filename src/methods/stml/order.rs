@@ -34,7 +34,7 @@ impl ToString for Order {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderState {
-    pub date: DateTime<Utc>,
+    pub timestamp: DateTime<Utc>,
     pub status: OrderStatus
 }
 
@@ -62,7 +62,7 @@ impl Display for OrderStatus {
             OrderStatus::Processing(_) => "PROCESSING",
             OrderStatus::InStore => "IN-STORE",
             OrderStatus::Fulfilled => "FULFILLED",
-            OrderStatus::Failed(reason) => {
+            OrderStatus::Failed(_reason) => {
                 "FAILED:"
             },
         };

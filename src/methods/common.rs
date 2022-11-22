@@ -42,7 +42,7 @@ pub type HistoryList = Vec<History<ProductExchange>>;
 pub struct History<T> {
     pub item: T,
     pub reason: String,
-    pub date: DateTime<Utc>
+    pub timestamp: DateTime<Utc>
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

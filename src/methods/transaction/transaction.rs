@@ -131,7 +131,7 @@ impl Display for Transaction {
             .map(|f| {
                 format!(
                     "{}: {}\n", 
-                    f.date.format("%d/%m/%Y %H:%M"), 
+                    f.timestamp.format("%d/%m/%Y %H:%M"), 
                     f.item,
                 )
             }).collect();
