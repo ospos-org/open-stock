@@ -16,7 +16,7 @@ sea-orm-rocket = { version = "0.5.2" }
 sea-orm = { version = "^0.10.3", features = [
   "macros",
   "runtime-tokio-native-tls",
-], default-features = false }
+]}
 futures = { version = "^0.3" }
 async-stream = { version = "^0.3" }
 futures-util = { version = "^0.3" }

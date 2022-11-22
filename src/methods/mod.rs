@@ -1,10 +1,11 @@
 mod common;
 mod stml;
-mod transaction;
-mod product;
 mod payment;
-mod customer;
-mod employee;
+
+pub(crate) mod transaction;
+pub(crate) mod product;
+pub(crate) mod customer;
+pub(crate) mod employee;
 
 pub use self::employee::*;
 pub use self::customer::*;
