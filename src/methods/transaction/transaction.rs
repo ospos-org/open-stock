@@ -5,7 +5,7 @@ use chrono::{Utc, DateTime};
 use sea_orm::*;
 use serde_json::json;
 
-use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, Product, Order}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -47,7 +47,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub async fn insert_transaction(tsn: Transaction, db: &DbConn) -> Result<(), DbErr> {
+    pub async fn insert(tsn: Transaction, db: &DbConn) -> Result<(), DbErr> {
         let insert_crud = transactions::ActiveModel {
             id: Set(tsn.id),
             customer: Set(tsn.customer),
@@ -68,7 +68,7 @@ impl Transaction {
         }
     }
 
-    pub async fn fetch_transaction_by_id(id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
+    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
         let tsn = Transactions::find_by_id(id.to_string()).one(db).await?;
         let t = tsn.unwrap();
 

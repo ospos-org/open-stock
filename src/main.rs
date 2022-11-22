@@ -30,8 +30,8 @@ async fn main() {
 
     let (tsn, id) = example_transaction();
 
-    Transaction::insert_transaction(tsn, &db).await.unwrap();
-    match Transaction::fetch_transaction_by_id(&id, &db).await {
+    Transaction::insert(tsn, &db).await.unwrap();
+    match Transaction::fetch_by_id(&id, &db).await {
         Ok(ts) => {
             println!("Retrieved Transaction: {}", ts);
         }

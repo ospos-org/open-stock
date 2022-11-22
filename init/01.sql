@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS `Products` (
 
 CREATE TABLE IF NOT EXISTS `Customer` (
   `id` varchar(100) NOT NULL,
-  `name` text NOT NULL,
+  `name` json NOT NULL,
   `contact` json NOT NULL,
   `order_history` json NOT NULL,
   `customer_notes` json NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `Customer` (
 
 CREATE TABLE IF NOT EXISTS `Employee` (
   `id` varchar(100) NOT NULL,
-  `name` text NOT NULL,
+  `name` json NOT NULL,
   `contact` json NOT NULL,
   `clock_history` json NOT NULL,
   `level` int(11) NOT NULL,
