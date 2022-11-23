@@ -9,13 +9,13 @@ type VariantId = String;
 
 pub type VariantCategoryList = Vec<VariantCategory>;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct VariantCategory {
     pub category: String,
     pub variants: Vec<Variant>
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Variant {
     pub name: String,
     pub stock: StockList,

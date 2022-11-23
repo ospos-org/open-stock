@@ -1,6 +1,6 @@
 use std::{str::FromStr, fmt::Display};
 
-use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait};
+use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
@@ -8,7 +8,7 @@ use crate::{methods::{Url, TagList, DiscountValue}, entities::{sea_orm_active_en
 use super::{VariantCategoryList, VariantIdTag};
 use crate::entities::prelude::Products;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Product {
     pub name: String,
     pub company: String,
@@ -45,7 +45,7 @@ impl Display for Product {
 }
 
 impl Product {
-    pub async fn insert(pdt: Product, db: &DbConn) -> Result<(), DbErr> {
+    pub async fn insert(pdt: Product, db: &DbConn) -> Result<InsertResult<products::ActiveModel>, DbErr> {
         let insert_crud = products::ActiveModel {
             sku: Set(pdt.sku),
             name: Set(pdt.name),
@@ -59,7 +59,7 @@ impl Product {
         };
 
         match Products::insert(insert_crud).exec(db).await {
-            Ok(_) => Ok(()),
+            Ok(res) => Ok(res),
             Err(err) => Err(err)
         }
     }

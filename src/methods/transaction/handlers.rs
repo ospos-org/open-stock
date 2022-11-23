@@ -21,7 +21,7 @@ pub async fn get(conn: Connection<'_, Db>, id: String) -> Result<Json<Transactio
     Ok(Json(transaction))
 }
 
-#[get("/name/<name>")]
+#[get("/ref/<name>")]
 pub async fn get_by_name(conn: Connection<'_, Db>, name: &str) -> Result<Json<Vec<Transaction>>, Status> {
     let db = conn.into_inner();
 

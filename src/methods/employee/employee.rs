@@ -1,15 +1,24 @@
 use std::fmt::{Display, self};
 
-use sea_orm::{DbConn, DbErr, Set, EntityTrait};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
+use uuid::Uuid;
 
 use crate::{methods::{Id, Name, ContactInformation, History}, entities::employee};
 use crate::entities::prelude::Employee as Epl;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Employee {
     pub id: Id,
+    pub name: Name,
+    pub contact: ContactInformation,
+    pub clock_history: Vec<History<Attendance>>,
+    pub level: i32
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct EmployeeInput {
     pub name: Name,
     pub contact: ContactInformation,
     pub clock_history: Vec<History<Attendance>>,
@@ -41,9 +50,11 @@ impl Display for Employee {
 }
 
 impl Employee {
-    pub async fn insert(empl: Employee, db: &DbConn) -> Result<(), DbErr> {
+    pub async fn insert(empl: EmployeeInput, db: &DbConn) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
+        let id = Uuid::new_v4().to_string();
+
         let insert_crud = employee::ActiveModel {
-            id: Set(empl.id),
+            id: Set(id),
             name: Set(json!(empl.name)),
             contact: Set(json!(empl.contact)),
             clock_history: Set(json!(empl.clock_history)),
@@ -51,7 +62,7 @@ impl Employee {
         };
 
         match Epl::insert(insert_crud).exec(db).await {
-            Ok(_) => Ok(()),
+            Ok(res) => Ok(res),
             Err(err) => Err(err)
         }
     }
@@ -68,15 +79,69 @@ impl Employee {
             level: e.level
         })
     }
+
+    pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
+        let res = employee::Entity::find()
+            .having(employee::Column::Name.contains(name))
+            .all(db).await?;
+            
+        let mapped = res.iter().map(|e| 
+            Employee { 
+                id: e.id.clone(), 
+                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
+                level: e.level
+            }
+        ).collect();
+
+        Ok(mapped)
+    }
+
+    pub async fn fetch_by_name_exact(name: serde_json::Value, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
+        let res = employee::Entity::find()
+            .having(employee::Column::Name.eq(name))
+            .all(db).await?;
+            
+        let mapped = res.iter().map(|e| 
+            Employee { 
+                id: e.id.clone(), 
+                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
+                level: e.level
+            }
+        ).collect();
+
+        Ok(mapped)
+    }
+
+    pub async fn fetch_by_level(level: i32, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
+        let res = employee::Entity::find()
+            .having(employee::Column::Level.eq(level))
+            .all(db).await?;
+            
+        let mapped = res.iter().map(|e| 
+            Employee { 
+                id: e.id.clone(), 
+                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
+                level: e.level
+            }
+        ).collect();
+
+        Ok(mapped)
+    }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Attendance {
     pub track_type: TrackType,
     pub till: Id
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum TrackType {
     In, Out
 }

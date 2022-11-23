@@ -12,7 +12,7 @@ async fn index() -> &'static str {
 }
 
 #[launch] // The "main" function of the program
-fn rocket() -> _ {
+fn rocket() -> _ {  
     rocket::build()
         .attach(Db::init())  
         .mount("/product", methods::product::handlers::routes())  
