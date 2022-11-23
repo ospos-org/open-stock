@@ -16,5 +16,8 @@ fn rocket() -> _ {
     rocket::build()
         .attach(Db::init())  
         .mount("/product", methods::product::handlers::routes())  
+        .mount("/customer", methods::customer::handlers::routes()) 
+        .mount("/employee", methods::employee::handlers::routes())  
+        .mount("/transaction", methods::transaction::handlers::routes())  
         .mount("/", routes![index])
 }

@@ -2,9 +2,11 @@ use std::fmt::Display;
 
 use crate::{methods::{Name, ContactInformation, OrderList, NoteList, Id}, entities::customer};
 use sea_orm::{DbConn, DbErr, Set, EntityTrait};
+use serde::Serialize;
 use serde_json::json;
 use crate::entities::prelude::Customer as Cust;
 
+#[derive(Serialize)]
 pub struct Customer {
     pub id: Id,
     pub name: Name,

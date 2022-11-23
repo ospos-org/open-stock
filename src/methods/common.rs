@@ -38,7 +38,7 @@ pub type OrderList = Vec<Order>;
 pub type NoteList = Vec<Note>;
 pub type HistoryList = Vec<History<ProductExchange>>;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct History<T> {
     pub item: T,
     pub reason: String,

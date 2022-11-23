@@ -1,13 +1,10 @@
 use std::{str::FromStr, fmt::Display};
 
-use sea_orm_rocket::Connection;
-use sea_orm::{entity::*, query::*, DatabaseConnection};
-use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, QueryFilter, ConditionalStatement, sea_query::{Query, Expr, tests_cfg::Glyph}, ColumnTrait, DbBackend, QueryTrait};
+use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
-use crate::pool::Db;
 
-use crate::{methods::{Url, TagList, DiscountValue}, entities::{sea_orm_active_enums::TransactionType, products}, pool};
+use crate::{methods::{Url, TagList, DiscountValue}, entities::{sea_orm_active_enums::TransactionType, products}};
 use super::{VariantCategoryList, VariantIdTag};
 use crate::entities::prelude::Products;
 
@@ -140,7 +137,7 @@ pub struct ProductPurchase {
     pub quantity: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProductExchange {
     pub method_type: TransactionType,
     pub product_code: ProductCode,

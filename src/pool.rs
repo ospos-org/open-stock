@@ -2,7 +2,7 @@ use std::env;
 
 use async_trait::async_trait;
 use dotenv::dotenv;
-use sea_orm_rocket::{rocket::figment::Figment, Config, Database};
+use sea_orm_rocket::{rocket::figment::Figment, Database};
 
 #[derive(Database, Debug)]
 #[database("stock")]
@@ -19,7 +19,7 @@ impl sea_orm_rocket::Pool for RocketDbPool {
 
     type Connection = sea_orm::DatabaseConnection;
 
-    async fn init(figment: &Figment) -> Result<Self, Self::Error> {
+    async fn init(_: &Figment) -> Result<Self, Self::Error> {
         dotenv().ok();
 
         let database_url = match env::var("DATABASE_URL") {

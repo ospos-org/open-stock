@@ -1,9 +1,11 @@
 use core::fmt;
-use std::fmt::{Display};
+use std::{fmt::{Display}, time::Instant};
 
 use chrono::{Utc, DateTime};
 use sea_orm::*;
+use serde::{Serialize, Deserialize};
 use serde_json::json;
+use uuid::Uuid;
 
 use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
@@ -27,7 +29,7 @@ use crate::entities::prelude::Transactions;
     OUT:    A sale - It can occur in-store or online and is comprised of the sale of goods outlined in the order list.
 */
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Transaction {
     pub id: Id,
 
@@ -46,10 +48,29 @@ pub struct Transaction {
     pub till: Id,
 }
 
+#[derive(Deserialize, Clone)]
+pub struct TransactionInput {
+    pub customer: Id,
+    pub transaction_type: TransactionType,
+
+    pub products: OrderList,
+    pub order_total: i32,
+    pub payment: Payment,
+
+    pub order_date: DateTime<Utc>,
+    pub order_notes: NoteList,
+    pub order_history: HistoryList,
+
+    pub salesperson: Id,
+    pub till: Id,
+}
+
 impl Transaction {
-    pub async fn insert(tsn: Transaction, db: &DbConn) -> Result<(), DbErr> {
+    pub async fn insert(tsn: TransactionInput, db: &DbConn) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
+        let id = Uuid::new_v4().to_string();
+
         let insert_crud = transactions::ActiveModel {
-            id: Set(tsn.id),
+            id: Set(id),
             customer: Set(tsn.customer),
             transaction_type: Set(tsn.transaction_type),
             products: Set(json!(tsn.products)),
@@ -63,16 +84,17 @@ impl Transaction {
         };
 
         match Transactions::insert(insert_crud).exec(db).await {
-            Ok(_) => Ok(()),
+            Ok(res) => Ok(res),
             Err(err) => Err(err)
         }
     }
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
+        // 15ms Overhead -> Hopefully SeaORM becomes further optimized in the future :D
         let tsn = Transactions::find_by_id(id.to_string()).one(db).await?;
         let t = tsn.unwrap();
 
-        Ok(Transaction {
+        let t = Transaction {
             id: t.id,
             customer: t.customer,
             transaction_type: t.transaction_type,
@@ -84,7 +106,33 @@ impl Transaction {
             order_history: serde_json::from_value::<HistoryList>(t.order_history).unwrap(),
             salesperson: t.salesperson,
             till: t.till,
-        })
+        };
+
+        Ok(t)
+    }
+
+    pub async fn fetch_by_ref(reference: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
+        let res = Transactions::find()
+            .having(transactions::Column::Products.contains(reference))
+            .all(db).await?;
+        
+        let mapped = res.iter().map(|t| 
+            Transaction {
+                id: t.id.clone(),
+                customer: t.customer.clone(),
+                transaction_type: t.transaction_type.clone(),
+                products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
+                order_total: t.order_total,
+                payment: serde_json::from_value::<Payment>(t.payment.clone()).unwrap(),
+                order_date: DateTime::from_utc(t.order_date, Utc),
+                order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
+                order_history: serde_json::from_value::<HistoryList>(t.order_history.clone()).unwrap(),
+                salesperson: t.salesperson.clone(),
+                till: t.till.clone(),
+            }
+        ).collect();
+
+        Ok(mapped)
     }
 }
 

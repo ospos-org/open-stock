@@ -7,6 +7,7 @@ use serde_json::json;
 use crate::{methods::{Id, Name, ContactInformation, History}, entities::employee};
 use crate::entities::prelude::Employee as Epl;
 
+#[derive(Serialize)]
 pub struct Employee {
     pub id: Id,
     pub name: Name,
