@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use rocket::{http::Status, get};
+use rocket::{http::Status, get, put};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
@@ -10,7 +10,7 @@ use super::{Transaction, TransactionInput};
 
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, create]
+    routes![get, get_by_name, create, update]
 }
 
 #[get("/<id>")]
@@ -29,6 +29,22 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str) -> Result<Json<Ve
     Ok(Json(transaction))
 }
 
+#[put("/<id>", data = "<input_data>")]
+async fn update(
+    conn: Connection<'_, Db>,
+    id: &str,
+    input_data: Json<TransactionInput>,
+) -> Result<Json<Transaction>, Status> {
+    let input_data = input_data.clone().into_inner();
+    let db = conn.into_inner();
+
+    match Transaction::update(input_data, id, db).await {
+        Ok(res) => {
+            Ok(Json(res))
+        },
+        Err(_) => Err(Status::BadRequest),
+    }
+}
 
 #[post("/", data = "<input_data>")]
 pub async fn create(conn: Connection<'_, Db>, input_data: Json<TransactionInput>) -> Result<Json<Transaction>, Status> {

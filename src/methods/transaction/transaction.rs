@@ -2,6 +2,7 @@ use core::fmt;
 use std::{fmt::{Display}, time::Instant};
 
 use chrono::{Utc, DateTime};
+use rocket::serde::json::Json;
 use sea_orm::*;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
@@ -133,6 +134,24 @@ impl Transaction {
         ).collect();
 
         Ok(mapped)
+    }
+
+    pub async fn update(tsn: TransactionInput, id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
+        let insert_crud = transactions::ActiveModel {
+            id: Set(id.to_string()),
+            customer: Set(tsn.customer),
+            transaction_type: Set(tsn.transaction_type),
+            products: Set(json!(tsn.products)),
+            order_total: Set(tsn.order_total),
+            payment: Set(json!(tsn.payment)),
+            order_date: Set(tsn.order_date.naive_utc()),
+            order_notes: Set(json!(tsn.order_notes)),
+            order_history: Set(json!(tsn.order_history)),
+            salesperson: Set(tsn.salesperson),
+            till: Set(tsn.till)
+        }.update(db).await;
+
+        Self::fetch_by_id(id, db).await
     }
 }
 
