@@ -9,6 +9,8 @@ use super::{VariantCategoryList, VariantIdTag};
 use crate::entities::prelude::Products;
 
 #[derive(Deserialize, Serialize, Clone)]
+/// A product, containing a list of `Vec<Variant>`, an identifiable `sku` along with identifying information such as `tags`, `description` and `specifications`.
+/// > Stock-relevant information about a product is kept under each variant, thus allowing for modularity of different variants and a fine-grained control over your inventory. 
 pub struct Product {
     pub name: String,
     pub company: String,
@@ -20,7 +22,7 @@ pub struct Product {
     pub images: Vec<Url>,
     pub tags: TagList,
     pub description: String,
-    pub specifications: Vec<(String, String)>
+    pub specifications: Vec<(String, String)>,
 }
 
 impl Display for Product {

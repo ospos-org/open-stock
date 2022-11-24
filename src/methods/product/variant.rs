@@ -22,7 +22,31 @@ pub struct Variant {
     pub images: Vec<Url>,
     pub marginal_price: i32,
     pub variant_code: String,
-    pub order_history: HistoryList
+    pub order_history: HistoryList,
+    pub stock_information: StockInformation
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct StockInformation {
+    pub stock_group: String,
+    pub sales_group: String,
+    pub value_stream: String,
+
+    pub brand: String,
+    pub unit: String,
+    pub tax_code: String,
+    pub weight: String,
+    /// The volume of the product, if this changes between variants - 
+    pub volume: String,
+
+    /// If the product's supply cannot be fulfilled at the current time, due to a lack of availability. 
+    /// 
+    /// By setting `back_order` to `true`, it allows for the purchase of the product on the promise it will be delivered to the customer or collected from the store at a later date. **This must be made clear and known to the customer.**
+    pub back_order: bool,
+    /// A product which is no longer source-able. Once the product's inventory is consumed it is indicated to never be replenished.
+    pub discontinued: bool,
+    /// A `non_diminishing` product is often a service rather than a product, i.e. freight. It is **not removed** from inventory upon consumption, rather attached.
+    pub non_diminishing: bool 
 }
 
 impl Display for Variant {
