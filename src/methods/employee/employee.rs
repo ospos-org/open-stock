@@ -12,15 +12,24 @@ use crate::entities::prelude::Employee as Epl;
 pub struct Employee {
     pub id: Id,
     pub name: Name,
+    pub auth: EmployeeAuth,
     pub contact: ContactInformation,
     pub clock_history: Vec<History<Attendance>>,
     pub level: i32
+}
+
+/// Stores a password hash, signed as a key using the users login ID.
+/// Upon logging in using a client portal, the pre-sign object is signed using the provided ID - if the hash matches that which is given, authentication can be approved.
+#[derive(Serialize, Deserialize, Clone)]
+pub struct EmployeeAuth {
+    pub hash: String
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EmployeeInput {
     pub name: Name,
     pub contact: ContactInformation,
+    pub auth: EmployeeAuth,
     pub clock_history: Vec<History<Attendance>>,
     pub level: i32
 }
@@ -56,6 +65,7 @@ impl Employee {
         let insert_crud = employee::ActiveModel {
             id: Set(id),
             name: Set(json!(empl.name)),
+            auth: Set(json!(empl.auth)),
             contact: Set(json!(empl.contact)),
             clock_history: Set(json!(empl.clock_history)),
             level: Set(empl.level),
@@ -73,7 +83,8 @@ impl Employee {
 
         Ok(Employee { 
             id: e.id, 
-            name: serde_json::from_value::<Name>(e.name).unwrap(), 
+            name: serde_json::from_value::<Name>(e.name).unwrap(),
+            auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
             contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(), 
             clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history).unwrap(), 
             level: e.level
@@ -89,6 +100,7 @@ impl Employee {
             Employee { 
                 id: e.id.clone(), 
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
                 level: e.level
@@ -107,6 +119,7 @@ impl Employee {
             Employee { 
                 id: e.id.clone(), 
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
                 level: e.level
@@ -125,6 +138,7 @@ impl Employee {
             Employee { 
                 id: e.id.clone(), 
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
                 level: e.level

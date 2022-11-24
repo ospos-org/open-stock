@@ -10,6 +10,7 @@ pub struct Model {
     pub id: String,
     #[sea_orm(column_type = "Text")]
     pub name: Json,
+    pub auth: Json,
     pub contact: Json,
     pub clock_history: Json,
     pub level: i32,
