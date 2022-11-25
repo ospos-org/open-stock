@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{methods::{Name, ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment}, entities::customer};
 use chrono::Utc;
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -128,6 +128,19 @@ impl Customer {
             }
             Err(e) => panic!("{}", e)
         }
+    }
+
+    pub async fn update(cust: CustomerInput, id: &str, db: &DbConn) -> Result<Customer, DbErr> {
+        customer::ActiveModel {
+            id: Set(id.to_string()),
+            name: Set(json!(cust.name)),
+            contact: Set(json!(cust.contact)),
+            order_history: Set(json!(cust.order_history)),
+            customer_notes: Set(json!(cust.customer_notes)),
+            balance: Set(cust.balance),
+        }.update(db).await?;
+
+        Self::fetch_by_id(id, db).await
     }
 }
 
