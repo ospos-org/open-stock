@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use rocket::{http::Status, get, put};
 use rocket::{routes, post};
 use rocket::serde::json::Json;

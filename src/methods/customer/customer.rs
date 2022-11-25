@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{methods::{Name, ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation}, entities::customer};
+use crate::{methods::{Name, ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment}, entities::customer};
 use chrono::Utc;
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult};
 use serde::{Serialize, Deserialize};
@@ -117,6 +117,7 @@ impl Customer {
         Ok(mapped)
     }
 
+    /// Generate and insert a default customer.
     pub async fn generate(db: &DbConn) {
         let cust = example_customer();
         // Insert & Fetch Customer
@@ -135,7 +136,7 @@ impl Display for Customer {
         let order_history: String = self.order_history.iter()
             .map(|f| 
                 format!(
-                    "{}: {}\n", 
+                    "{}: {:?}\n", 
                     f.creation_date.format("%d/%m/%Y %H:%M"), 
                     f.status, 
                 )
@@ -163,8 +164,6 @@ impl Display for Customer {
     }
 }
 
-
-
 pub fn example_customer() -> CustomerInput {
     let customer = ContactInformation {
         name: "Carl Kennith".into(),
@@ -180,7 +179,7 @@ pub fn example_customer() -> CustomerInput {
         },
     };
 
-    (CustomerInput {
+    CustomerInput {
         name: Name { first: "".into(), middle: "".into(), last: "".into() },
         contact: customer.clone(),
         order_history: vec![
@@ -197,13 +196,17 @@ pub fn example_customer() -> CustomerInput {
                     ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["22".into()], quantity: 5 },
                     ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["23".into()], quantity: 5 }
                 ],
-                status: OrderStatus::Transit(
-                    TransitInformation {
-                        shipping_company: customer.clone(),
-                        query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
-                        tracking_code: "1523123".into(),
-                    }
-                ),
+                status: vec![OrderStatusAssignment {
+                    status: OrderStatus::Transit(
+                        TransitInformation {
+                            shipping_company: customer.clone(),
+                            query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
+                            tracking_code: "1523123".into(),
+                            assigned_products: vec![]
+                        }
+                    ),
+                    assigned_products: vec![]
+                }],
                 order_notes: vec![Note { message: "Order Shipped from Depot".into(), timestamp: Utc::now() }],
                 reference: "TOR-19592".into(),
                 creation_date: Utc::now(),
@@ -214,5 +217,5 @@ pub fn example_customer() -> CustomerInput {
         ],
         customer_notes: vec![],
         balance: 0,
-    })
+    }
 }

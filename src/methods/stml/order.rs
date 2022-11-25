@@ -13,7 +13,7 @@ pub struct Order {
 
     pub products: ProductPurchaseList,
 
-    pub status: OrderStatus,
+    pub status: OrderStatusAssignmentList,
     pub status_history: Vec<OrderState>,
 
     pub order_notes: NoteList,
@@ -22,6 +22,8 @@ pub struct Order {
     
     pub discount: DiscountValue
 }
+
+pub type OrderStatusAssignmentList = Vec<OrderStatusAssignment>; 
 
 impl ToString for Order {
     fn to_string(&self) -> String {
@@ -39,18 +41,24 @@ pub struct OrderState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderStatusAssignment {
+    pub status: OrderStatus,
+    pub assigned_products: Vec<Id>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OrderStatus {
-    // Open Cart, Till Cart or Being Processed
+    /// Open Cart, Till Cart or Being Processed
     Queued,
-    // Delivery items
+    /// Delivery items: Contains a transit information docket - with assigned items and tracking information.
     Transit(TransitInformation),
-    // Click-n-collect item or Delivery being processed with date when processing started.
+    /// Click-n-collect item or Delivery being processed with date when processing started.
     Processing(DateTime<Utc>),
-    // Click-n-collect item
+    /// Click-n-collect item
     InStore,
-    // In-store purchase or Delivered Item
+    /// In-store purchase or Delivered Item
     Fulfilled,
-    // Was unable to fulfill, reason is given
+    /// Was unable to fulfill, reason is given
     Failed(String)
 }
 
@@ -75,9 +83,30 @@ impl Display for OrderStatus {
     }
 }
 
+impl Display for OrderStatusAssignment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let pdts: String = self.assigned_products
+        .iter()
+        .map(|p| 
+            format!(
+                "{}", p, 
+            )
+        ).collect();
+
+        write!(
+            f,
+            "Status:{}\nItems:\n{}",
+            self.status, pdts
+        )
+    }
+}
+
+
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransitInformation {
     pub shipping_company: ContactInformation,
     pub query_url: Url,
-    pub tracking_code: String
+    pub tracking_code: String,
+    pub assigned_products: Vec<Id>
 }

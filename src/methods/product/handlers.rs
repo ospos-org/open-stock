@@ -1,7 +1,7 @@
 use rocket::{http::Status, get};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
-use sea_orm_rocket::{Connection, Database};
+use sea_orm_rocket::{Connection};
 use crate::pool::Db;
 
 use super::Product;

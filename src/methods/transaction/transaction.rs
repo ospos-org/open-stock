@@ -1,8 +1,7 @@
 use core::fmt;
-use std::{fmt::{Display}, time::Instant};
+use std::{fmt::{Display}};
 
 use chrono::{Utc, DateTime};
-use rocket::serde::json::Json;
 use sea_orm::*;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
@@ -137,7 +136,7 @@ impl Transaction {
     }
 
     pub async fn update(tsn: TransactionInput, id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
-        let insert_crud = transactions::ActiveModel {
+        transactions::ActiveModel {
             id: Set(id.to_string()),
             customer: Set(tsn.customer),
             transaction_type: Set(tsn.transaction_type),
@@ -149,7 +148,7 @@ impl Transaction {
             order_history: Set(json!(tsn.order_history)),
             salesperson: Set(tsn.salesperson),
             till: Set(tsn.till)
-        }.update(db).await;
+        }.update(db).await?;
 
         Self::fetch_by_id(id, db).await
     }
@@ -180,9 +179,17 @@ impl Display for Transaction {
                         )
                     ).collect();
 
+                let statuses: String = f.status
+                    .iter()
+                    .map(|p| 
+                        format!(
+                            "{}", p, 
+                        )
+                    ).collect();
+
                 format!(
                     "-\t{} {} {} -> {} {} [-]{} \n{}\n\t{}\n", 
-                    f.reference, f.status, f.origin.code, f.destination.code, f.creation_date.format("%d/%m/%Y %H:%M"), f.discount.to_string(), pdts, notes
+                    f.reference, statuses, f.origin.code, f.destination.code, f.creation_date.format("%d/%m/%Y %H:%M"), f.discount.to_string(), pdts, notes
                 )
             }).collect();
 
@@ -212,4 +219,8 @@ pub struct Intent {
     request: Transaction,
     // Employee ID for the dispatcher (instigator) for an In-store Purchase (i.e. Tills person) or website deployment ID
     dispatcher: Id,
+}
+
+impl Intent {
+    //...
 }
