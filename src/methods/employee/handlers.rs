@@ -1,4 +1,4 @@
-use rocket::{http::Status, get};
+use rocket::{http::Status, get, put};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
@@ -9,7 +9,7 @@ use crate::pool::Db;
 use super::{Employee, EmployeeInput};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_name_exact, get_by_level, create]
+    routes![get, get_by_name, get_by_name_exact, get_by_level, create, update]
 }
 
 #[get("/<id>")]
@@ -48,6 +48,23 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32) -> Result<Json<V
 
     let employee = Employee::fetch_by_level(new_transaction, db).await.unwrap();
     Ok(Json(employee))
+}
+
+#[put("/<id>", data = "<input_data>")]
+async fn update(
+    conn: Connection<'_, Db>,
+    id: &str,
+    input_data: Json<Employee>,
+) -> Result<Json<Employee>, Status> {
+    let input_data = input_data.clone().into_inner();
+    let db = conn.into_inner();
+
+    match Employee::update(input_data, id, db).await {
+        Ok(res) => {
+            Ok(Json(res))
+        },
+        Err(_) => Err(Status::BadRequest),
+    }
 }
 
 #[post("/", data = "<input_data>")]

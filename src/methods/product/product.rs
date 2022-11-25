@@ -1,6 +1,6 @@
 use std::{str::FromStr, fmt::Display};
 
-use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult};
+use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
@@ -125,6 +125,22 @@ impl Product {
         ).collect();
 
         Ok(mapped)
+    }
+
+    pub async fn update(pdt: Product, id: &str, db: &DbConn) -> Result<Product, DbErr> {
+        products::ActiveModel {
+            sku: Set(pdt.sku),
+            name: Set(pdt.name),
+            company: Set(pdt.company),
+            variants: Set(json!(pdt.variants)),
+            loyalty_discount: Set(DiscountValue::to_string(&pdt.loyalty_discount)),
+            images: Set(json!(pdt.images)),
+            tags: Set(json!(pdt.tags)),
+            description: Set(pdt.description),
+            specifications: Set(json!(pdt.specifications)),
+        }.update(db).await?;
+
+        Self::fetch_by_id(id, db).await
     }
 }
 

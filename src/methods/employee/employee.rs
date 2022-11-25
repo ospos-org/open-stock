@@ -1,6 +1,6 @@
 use std::fmt::{Display, self};
 
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -146,6 +146,19 @@ impl Employee {
         ).collect();
 
         Ok(mapped)
+    }
+
+    pub async fn update(empl: Employee, id: &str, db: &DbConn) -> Result<Employee, DbErr> {
+        employee::ActiveModel {
+            id: Set(id.to_string()),
+            name: Set(json!(empl.name)),
+            auth: Set(json!(empl.auth)),
+            contact: Set(json!(empl.contact)),
+            clock_history: Set(json!(empl.clock_history)),
+            level: Set(empl.level),
+        }.update(db).await?;
+
+        Self::fetch_by_id(id, db).await
     }
 }
 

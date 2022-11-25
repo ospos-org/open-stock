@@ -1,4 +1,4 @@
-use rocket::{http::Status, get};
+use rocket::{http::Status, get, put};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
@@ -7,7 +7,7 @@ use crate::pool::Db;
 use super::Product;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_name_exact, create]
+    routes![get, get_by_name, get_by_name_exact, create, update]
 }
 
 #[get("/<id>")]
@@ -33,6 +33,23 @@ pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: &str) -> Result<J
 
     let product = Product::fetch_by_name_exact(name, db).await.unwrap();
     Ok(Json(product))
+}
+
+#[put("/<id>", data = "<input_data>")]
+async fn update(
+    conn: Connection<'_, Db>,
+    id: &str,
+    input_data: Json<Product>,
+) -> Result<Json<Product>, Status> {
+    let input_data = input_data.clone().into_inner();
+    let db = conn.into_inner();
+
+    match Product::update(input_data, id, db).await {
+        Ok(res) => {
+            Ok(Json(res))
+        },
+        Err(_) => Err(Status::BadRequest),
+    }
 }
 
 #[post("/", data = "<input_data>")]
