@@ -1,4 +1,4 @@
-use rocket::{http::Status, get, put};
+use rocket::{http::Status, get, put, patch};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
@@ -8,7 +8,7 @@ use super::{Transaction, TransactionInput};
 
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, create, update]
+    routes![get, get_by_name, get_by_product_sku, create, update, generate]
 }
 
 #[get("/<id>")]
@@ -27,6 +27,14 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str) -> Result<Json<Ve
     Ok(Json(transaction))
 }
 
+#[get("/product/<sku>")]
+pub async fn get_by_product_sku(conn: Connection<'_, Db>, sku: &str) -> Result<Json<Vec<Transaction>>, Status> {
+    let db = conn.into_inner();
+
+    let transaction = Transaction::fetch_by_ref(sku, db).await.unwrap();
+    Ok(Json(transaction))
+}
+
 #[put("/<id>", data = "<input_data>")]
 async fn update(
     conn: Connection<'_, Db>,
@@ -41,6 +49,18 @@ async fn update(
             Ok(Json(res))
         },
         Err(_) => Err(Status::BadRequest),
+    }
+}
+
+#[patch("/generate")]
+async fn generate(
+    conn: Connection<'_, Db>
+) -> Result<Json<Transaction>, Status> {
+    let db = conn.into_inner();
+
+    match Transaction::generate(db).await {
+        Ok(res) => Ok(Json(res)),
+        Err(_) => Err(Status::BadRequest)
     }
 }
 

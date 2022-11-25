@@ -1,12 +1,9 @@
-use methods::{Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email, Transaction, Employee, Name, Attendance, Product, Customer, Variant, VariantCategory, Stock, Quantity};
-use crate::{methods::{ProductPurchase, DiscountValue, Payment, History, OrderState, ProductExchange}, entities::sea_orm_active_enums::TransactionType};
+extern crate stock;
+use ::{methods::{ProductPurchase, DiscountValue, Payment, History, OrderState, ProductExchange, TrackType}, entities::sea_orm_active_enums::TransactionType, Address, ContactInformation, Location, MobileNumber, Note, OrderStatus, TransitInformation, Order, Email, Transaction, Employee, Name, Attendance, Product, Customer, Variant, VariantCategory, Stock, Quantity};
 
 use sea_orm::Database;
 use uuid::Uuid;
 use chrono::Utc;
-
-mod methods;
-mod entities;
 
 use dotenv::dotenv;
 use std::env;
@@ -210,14 +207,14 @@ fn example_employee() -> (Employee, String) {
             },
         },
         clock_history: vec![
-            History::<Attendance> { item: Attendance { track_type: methods::TrackType::In, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: methods::TrackType::Out, till: "6".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: methods::TrackType::In, till: "1".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: methods::TrackType::Out, till: "3".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: methods::TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: methods::TrackType::Out, till: "4".to_string() }, reason: "Left Early".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: methods::TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: methods::TrackType::Out, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "6".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "1".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "3".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "4".to_string() }, reason: "Left Early".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
         ],
         level: 2,
     };

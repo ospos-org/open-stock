@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -115,8 +115,11 @@ impl Transaction {
         let res = Transactions::find()
             .having(transactions::Column::Products.contains(reference))
             .all(db).await?;
+
         
-        let mapped = res.iter().map(|t| 
+        let mapped = res.iter().map(|t| {
+            println!("{:?}", serde_json::from_value::<OrderList>(t.products.clone()));
+
             Transaction {
                 id: t.id.clone(),
                 customer: t.customer.clone(),
@@ -130,7 +133,7 @@ impl Transaction {
                 salesperson: t.salesperson.clone(),
                 till: t.till.clone(),
             }
-        ).collect();
+        }).collect();
 
         Ok(mapped)
     }
@@ -151,6 +154,24 @@ impl Transaction {
         }.update(db).await?;
 
         Self::fetch_by_id(id, db).await
+    }
+
+    pub async fn generate(db: &DbConn) -> Result<Transaction, DbErr> {
+        // Create Transaction
+        let tsn = example_transaction();
+        
+        // Insert & Fetch Transaction
+        match Transaction::insert(tsn, db).await {
+            Ok(data) => {
+                match Transaction::fetch_by_id(&data.last_insert_id, db).await {
+                    Ok(res) => {
+                        Ok(res)
+                    },  
+                    Err(e) => Err(e)
+                }
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -223,4 +244,72 @@ pub struct Intent {
 
 impl Intent {
     //...
+}
+
+fn example_transaction() -> TransactionInput {
+    let torpedo7 = ContactInformation {
+        name: "Torpedo7".into(),
+        mobile: MobileNumber::from("021212120".to_string()),
+        email: Email::from("order@torpedo7.com".to_string()),
+        landline: "".into(),
+        address: Address {
+            street: "9 Carbine Road".into(),
+            street2: "".into(),
+            city: "Auckland".into(),
+            country: "New Zealand".into(),
+            po_code: "100".into(),
+        },
+    };
+
+    let order = Order {
+        destination: Location {
+            code: "001".into(),
+            contact: torpedo7.clone()
+        },
+        origin: Location {
+            code: "002".into(),
+            contact: torpedo7.clone()
+        },
+        products: vec![
+            ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["22".into()], quantity: 5 },
+            ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["23".into()], quantity: 5 }
+        ],
+        status: vec![
+            OrderStatusAssignment { 
+                status: OrderStatus::Transit(
+                    TransitInformation {
+                        shipping_company: torpedo7.clone(),
+                        query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
+                        tracking_code: "1523123".into(),
+                        assigned_products: vec!["132522-22".to_string()]
+                    }
+                ), 
+                assigned_products: vec!["132522-22".to_string()]
+            }
+        ],
+        order_notes: vec![Note { message: "Order Shipped from Depot".into(), timestamp: Utc::now() }],
+        reference: "TOR-19592".into(),
+        creation_date: Utc::now(),
+        id: Uuid::new_v4().to_string(),
+        status_history: vec![OrderState { status: OrderStatus::Queued, timestamp: Utc::now() }],
+        discount: DiscountValue::Absolute(0),
+    };
+
+    let transaction = TransactionInput {
+        customer: "...".into(),
+        transaction_type: TransactionType::In,
+        products: vec![order],
+        order_total: 115,
+        payment: Payment {
+            payment_method: crate::methods::PaymentMethod::Card,
+            fulfillment_date: Utc::now(),
+        },
+        order_date: Utc::now(),
+        order_notes: vec![Note { message: "Order packaged from warehouse.".into(), timestamp: Utc::now() }],
+        order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
+        salesperson: "...".into(),
+        till: "...".into(),
+    };
+
+    transaction
 }

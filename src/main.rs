@@ -2,9 +2,9 @@ use pool::Db;
 use rocket::{*};
 use sea_orm_rocket::{Database};
 
-mod methods;
-mod entities;
-mod pool;
+pub(crate) mod methods;
+pub(crate) mod entities;
+pub(crate) mod pool;
 
 #[get("/")]
 async fn index() -> &'static str {
