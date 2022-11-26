@@ -1,11 +1,12 @@
 use std::fmt::{Display, self};
 
+use chrono::Utc;
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{Id, Name, ContactInformation, History}, entities::employee};
+use crate::{methods::{Id, Name, ContactInformation, History, MobileNumber, Email, Address}, entities::employee};
 use crate::entities::prelude::Employee as Epl;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -158,7 +159,26 @@ impl Employee {
             level: Set(empl.level),
         }.update(db).await?;
 
-        Self::fetch_by_id(id, db).await
+        Ok(empl)
+        // Self::fetch_by_id(id, db).await
+    }
+
+    pub async fn generate(db: &DbConn) -> Result<Employee, DbErr> {
+        // Create Transaction
+        let empl = example_employee();
+        
+        // Insert & Fetch Transaction
+        match Employee::insert(empl, db).await {
+            Ok(data) => {
+                match Employee::fetch_by_id(&data.last_insert_id, db).await {
+                    Ok(res) => {
+                        Ok(res)
+                    },  
+                    Err(e) => Err(e)
+                }
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -179,5 +199,40 @@ impl ToString for TrackType {
             TrackType::In => "IN".to_string(),
             TrackType::Out => "OUT".to_string(),
         }
+    }
+}
+
+pub fn example_employee() -> EmployeeInput {
+    EmployeeInput {
+        auth: EmployeeAuth { hash: "".to_string() },
+        name: Name {
+            first: "Carl".to_string(),
+            middle: "".to_string(),
+            last: "Kennith".to_string()
+        },
+        contact: ContactInformation {
+            name: "Carl Kennith".into(),
+            mobile: MobileNumber::from("021212120".to_string()),
+            email: Email::from("carl@kennith.com".to_string()),
+            landline: "".into(),
+            address: Address {
+                street: "9 Carbine Road".into(),
+                street2: "".into(),
+                city: "Auckland".into(),
+                country: "New Zealand".into(),
+                po_code: "100".into(),
+            },
+        },
+        clock_history: vec![
+            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "6".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "1".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "3".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "4".to_string() }, reason: "Left Early".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+        ],
+        level: 2,
     }
 }

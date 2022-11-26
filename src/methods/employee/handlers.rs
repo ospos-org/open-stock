@@ -1,15 +1,17 @@
+use chrono::Utc;
 use rocket::{http::Status, get, put};
-use rocket::{routes, post};
+use rocket::{routes, post, patch};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
+use serde::{Serialize, Deserialize};
 use serde_json::json;
-use crate::methods::Name;
+use crate::methods::{Name, History};
 use crate::pool::Db;
 
-use super::{Employee, EmployeeInput};
+use super::{Employee, EmployeeInput, Attendance, TrackType};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_name_exact, get_by_level, create, update]
+    routes![get, get_by_name, get_by_name_exact, get_by_level, create, update, log, generate]
 }
 
 #[get("/<id>")]
@@ -50,6 +52,18 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32) -> Result<Json<V
     Ok(Json(employee))
 }
 
+#[patch("/generate")]
+async fn generate(
+    conn: Connection<'_, Db>
+) -> Result<Json<Employee>, Status> {
+    let db = conn.into_inner();
+
+    match Employee::generate(db).await {
+        Ok(res) => Ok(Json(res)),
+        Err(_) => Err(Status::BadRequest)
+    }
+}
+
 #[put("/<id>", data = "<input_data>")]
 async fn update(
     conn: Connection<'_, Db>,
@@ -78,6 +92,54 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>) -
                 Ok(res) => {
                     Ok(Json(res))
                 },  
+                Err(reason) => {
+                    println!("[dberr]: {}", reason);
+                    Err(Status::InternalServerError)
+                }
+            }
+        },
+        Err(reason) => {
+            println!("[dberr]: {}", reason);
+            Err(Status::InternalServerError)
+        },
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct LogRequest {
+    pub till: String,
+    pub reason: String,
+    pub in_or_out: String
+}
+
+#[post("/log/<id>", data="<input_data>")]
+pub async fn log(conn: Connection<'_, Db>, input_data: Json<LogRequest>, id: &str) -> Result<Json<Employee>, Status> {
+    let db = conn.into_inner();
+    let data = input_data.into_inner();
+
+    let track_type = if data.in_or_out.to_lowercase() == "in" {
+        TrackType::In 
+    }else  {
+        TrackType::Out
+    };
+
+    let new_attendance = History::<Attendance> {
+        item: Attendance {
+            track_type: track_type,
+            till: data.till
+        },
+        reason: "".to_string(),
+        timestamp: Utc::now()
+    };
+
+    match Employee::fetch_by_id(id, db).await {
+        Ok(mut data) => {
+            data.clock_history.push(new_attendance);
+
+            match Employee::update(data, id, db).await {
+                Ok(data) => {
+                    Ok(Json(data))
+                }
                 Err(reason) => {
                     println!("[dberr]: {}", reason);
                     Err(Status::InternalServerError)

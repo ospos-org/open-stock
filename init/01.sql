@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS `Employee` (
   `id` varchar(100) NOT NULL,
   `name` json NOT NULL,
   `contact` json NOT NULL,
+  `auth` json NOT NULL,
   `clock_history` json NOT NULL,
   `level` int(11) NOT NULL,
   PRIMARY KEY `id` (`id`)
