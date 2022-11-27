@@ -4,6 +4,7 @@
         "cust",
         "empl",
         "pdts",
+        "reqwest",
         "sqlx",
         "stml",
         "tnsc",
