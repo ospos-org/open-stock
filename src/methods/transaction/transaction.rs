@@ -235,16 +235,16 @@ impl Display for Transaction {
     }
 }
 
-// impl! Implement the intent as a builder. 
-pub struct Intent {
-    request: Transaction,
-    // Employee ID for the dispatcher (instigator) for an In-store Purchase (i.e. Tills person) or website deployment ID
-    dispatcher: Id,
-}
+// // impl! Implement the intent as a builder. 
+// pub struct Intent {
+//     request: Transaction,
+//     // Employee ID for the dispatcher (instigator) for an In-store Purchase (i.e. Tills person) or website deployment ID
+//     dispatcher: Id,
+// }
 
-impl Intent {
-    //...
-}
+// impl Intent {
+//     //...
+// }
 
 fn example_transaction() -> TransactionInput {
     let torpedo7 = ContactInformation {

@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{Utc, Duration};
 use rocket::{http::Status, get, put};
 use rocket::{routes, post, patch};
 use rocket::serde::json::Json;
@@ -102,9 +102,13 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>) ->
                 // User is authenticated, lets give them an API key to work with...
                 let api_key = Uuid::new_v4().to_string();
 
+                let exp = Utc::now().checked_add_signed(Duration::minutes(10)).unwrap();
+
                 match session::Entity::insert(session::ActiveModel {
                     id: Set(id.to_string()),
-                    key: Set(api_key.clone())
+                    key: Set(api_key.clone()),
+                    employee_id: Set(id.to_string()),
+                    expiry: Set(exp.naive_utc()),
                 }).exec(db).await {
                     Ok(_) => Ok(Json(api_key.clone())),
                     Err(_) => Err(Status::InternalServerError)

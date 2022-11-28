@@ -8,9 +8,27 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
     pub key: String,
+    #[sea_orm(column_name = "employeeId")]
+    pub employee_id: String,
+    pub expiry: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::employee::Entity",
+        from = "Column::EmployeeId",
+        to = "super::employee::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Employee,
+}
+
+impl Related<super::employee::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Employee.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

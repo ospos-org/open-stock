@@ -118,15 +118,18 @@ impl Customer {
     }
 
     /// Generate and insert a default customer.
-    pub async fn generate(db: &DbConn) {
+    pub async fn generate(db: &DbConn) -> Result<Customer, DbErr> {
         let cust = example_customer();
         // Insert & Fetch Customer
         let r = Customer::insert(cust, &db).await.unwrap();
         match Customer::fetch_by_id(&r.last_insert_id, &db).await {
             Ok(cust) => {
-                println!("Retrieved Customer:\n{}", cust)
+                println!("Retrieved Customer:\n{}", cust);
+                Ok(cust)
             }
-            Err(e) => panic!("{}", e)
+            Err(e) => {
+                Err(e)
+            }
         }
     }
 

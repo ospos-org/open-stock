@@ -1,4 +1,4 @@
-use rocket::{http::Status, get, put};
+use rocket::{http::Status, get, put, patch};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
@@ -8,7 +8,7 @@ use crate::pool::Db;
 use super::{Customer, CustomerInput};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_phone, get_by_addr, create, update]
+    routes![get, get_by_name, get_by_phone, get_by_addr, create, update, generate]
 }
 
 #[get("/<id>")]
@@ -47,6 +47,18 @@ pub async fn get_by_addr(conn: Connection<'_, Db>, addr: &str) -> Result<Json<Ve
 
     let employee = Customer::fetch_by_addr(new_transaction, db).await.unwrap();
     Ok(Json(employee))
+}
+
+#[patch("/generate")]
+async fn generate(
+    conn: Connection<'_, Db>
+) -> Result<Json<Customer>, Status> {
+    let db = conn.into_inner();
+
+    match Customer::generate(db).await {
+        Ok(res) => Ok(Json(res)),
+        Err(_) => Err(Status::BadRequest)
+    }
 }
 
 #[put("/<id>", data = "<input_data>")]
