@@ -25,6 +25,7 @@ async-trait = { version = "0.1.58" }
 rocket = { version = "0.5.0-rc.2", features = [
   "json",
 ] }
+argonautica = { version = "0.2", features = ["simd"] }
 
 [dev-dependencies]
 tokio = { version = "1.22.0", features = ["rt"] }

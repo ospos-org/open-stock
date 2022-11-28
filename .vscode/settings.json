@@ -3,6 +3,7 @@
         "codegen",
         "cust",
         "empl",
+        "hasher",
         "pdts",
         "reqwest",
         "sqlx",

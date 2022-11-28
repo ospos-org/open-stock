@@ -6,6 +6,8 @@ pub(crate) mod methods;
 pub(crate) mod entities;
 pub(crate) mod pool;
 
+extern crate argonautica;
+
 #[get("/")]
 async fn index() -> &'static str {
     "Hello, bakeries!"

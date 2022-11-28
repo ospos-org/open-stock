@@ -2,7 +2,6 @@
 
 use super::sea_orm_active_enums::TransactionType;
 use sea_orm::entity::prelude::*;
-use std::convert::TryInto;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "Transactions")]

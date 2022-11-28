@@ -1,5 +1,6 @@
 use std::fmt::{Display, self};
 
+use argonautica::{Verifier, Hasher};
 use chrono::Utc;
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait};
 use serde::{Serialize, Deserialize};
@@ -30,7 +31,7 @@ pub struct EmployeeAuth {
 pub struct EmployeeInput {
     pub name: Name,
     pub contact: ContactInformation,
-    pub auth: EmployeeAuth,
+    pub password: String,
     pub clock_history: Vec<History<Attendance>>,
     pub level: i32
 }
@@ -63,10 +64,22 @@ impl Employee {
     pub async fn insert(empl: EmployeeInput, db: &DbConn) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
 
+        let mut hasher = Hasher::default();
+        let hash = hasher
+            .with_password(empl.password)
+            .with_secret_key("\
+                secret key that you should really store in a .env file \
+                instead of in code, but this is just an example\
+            ")
+            .hash()
+            .unwrap();
+
         let insert_crud = employee::ActiveModel {
             id: Set(id),
             name: Set(json!(empl.name)),
-            auth: Set(json!(empl.auth)),
+            auth: Set(json!(EmployeeAuth {
+                hash: hash
+            })),
             contact: Set(json!(empl.contact)),
             clock_history: Set(json!(empl.clock_history)),
             level: Set(empl.level),
@@ -76,6 +89,23 @@ impl Employee {
             Ok(res) => Ok(res),
             Err(err) => Err(err)
         }
+    }
+
+    pub async fn verify(id: &str, pass: &str, db: &DbConn) -> Result<bool, DbErr> {
+        let empl = Self::fetch_by_id(id, db).await?;
+
+        let mut verifier = Verifier::default();
+        let is_valid = verifier
+            .with_hash(empl.auth.hash)
+            .with_password(pass)
+            .with_secret_key("\
+                secret key that you should really store in a .env file \
+                instead of in code, but this is just an example\
+            ")
+            .verify()
+            .unwrap();
+
+        Ok(is_valid)
     }
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Employee, DbErr> {
@@ -204,7 +234,7 @@ impl ToString for TrackType {
 
 pub fn example_employee() -> EmployeeInput {
     EmployeeInput {
-        auth: EmployeeAuth { hash: "".to_string() },
+        password: "1232".to_string(),
         name: Name {
             first: "Carl".to_string(),
             middle: "".to_string(),

@@ -2,16 +2,19 @@ use chrono::Utc;
 use rocket::{http::Status, get, put};
 use rocket::{routes, post, patch};
 use rocket::serde::json::Json;
+use sea_orm::{EntityTrait, Set};
 use sea_orm_rocket::{Connection};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
+use uuid::Uuid;
+use crate::entities::session;
 use crate::methods::{Name, History};
 use crate::pool::Db;
 
 use super::{Employee, EmployeeInput, Attendance, TrackType};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_name_exact, get_by_level, create, update, log, generate]
+    routes![get, get_by_name, get_by_name_exact, get_by_level, create, update, log, generate, auth]
 }
 
 #[get("/<id>")]
@@ -78,6 +81,40 @@ async fn update(
             Ok(Json(res))
         },
         Err(_) => Err(Status::BadRequest),
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct Auth {
+    pub pass: String
+}
+
+#[post("/auth/<id>", data = "<input_data>")]
+pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>) -> Result<Json<String>, Status> {
+    let input = input_data.clone().into_inner();
+    let db = conn.into_inner();
+
+    match Employee::verify(id, &input.pass, db).await {
+        Ok(data) => {
+            if !data {
+                Err(Status::Unauthorized)
+            }else {
+                // User is authenticated, lets give them an API key to work with...
+                let api_key = Uuid::new_v4().to_string();
+
+                match session::Entity::insert(session::ActiveModel {
+                    id: Set(id.to_string()),
+                    key: Set(api_key.clone())
+                }).exec(db).await {
+                    Ok(_) => Ok(Json(api_key.clone())),
+                    Err(_) => Err(Status::InternalServerError)
+                }
+            }
+        },
+        Err(reason) => {
+            println!("[dberr]: {}", reason);
+            Err(Status::InternalServerError)
+        },
     }
 }
 

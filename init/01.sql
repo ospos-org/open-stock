@@ -45,3 +45,13 @@ CREATE TABLE IF NOT EXISTS `Transactions` (
   `till` text NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS `Session` (
+  -- The Employee's ID
+  `id` varchar(100) NOT NULL,
+  -- The API key given
+  `key` varchar(100) NOT NULL,
+
+  -- !impl Add a timeout such that the API key NEEDS to be refreshed etc... + integrate handing API keys on requests.
+  PRIMARY KEY `id` (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
