@@ -110,16 +110,22 @@ impl Employee {
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Employee, DbErr> {
         let empl = Epl::find_by_id(id.to_string()).one(db).await?;
-        let e = empl.unwrap();
-
-        Ok(Employee { 
-            id: e.id, 
-            name: serde_json::from_value::<Name>(e.name).unwrap(),
-            auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
-            contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(), 
-            clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history).unwrap(), 
-            level: e.level
-        })
+        
+        match empl {
+            Some(e) => {
+                Ok(Employee { 
+                    id: e.id, 
+                    name: serde_json::from_value::<Name>(e.name).unwrap(),
+                    auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
+                    contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(), 
+                    clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history).unwrap(), 
+                    level: e.level
+                })
+            },
+            None => {
+                Err(DbErr::RecordNotFound(id.to_string()))
+            },
+        }
     }
 
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
