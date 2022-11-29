@@ -7,6 +7,7 @@ pub(crate) mod entities;
 pub(crate) mod pool;
 
 extern crate argonautica;
+extern crate futures_cpupool;
 
 #[get("/")]
 async fn index() -> &'static str {

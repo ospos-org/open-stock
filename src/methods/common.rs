@@ -1,8 +1,12 @@
 use std::fmt::Display;
 
-use crate::methods::stml::Order;
+use crate::{methods::stml::Order, entities};
 use chrono::{Utc, DateTime};
+use rocket::{http::CookieJar};
+use sea_orm::{DatabaseConnection, DbErr, EntityTrait, QuerySelect, ColumnTrait};
 use serde::{Serialize, Deserialize};
+use crate::entities::session::Entity as SessionEntity;
+use crate::entities::employee::Entity as Employee;
 
 use super::{ProductExchange};
 
@@ -116,3 +120,60 @@ pub type Url = String;
 pub type TagList = Vec<Tag>;
 pub type Tag = String;
 pub type Id = String;
+
+#[derive(Debug)]
+pub struct Session {
+    pub id: String,
+    pub key: String,
+    pub employee_id: String,
+    pub expiry: DateTime<Utc>,
+}
+
+pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
+    match cookies.get("key")
+        .map(|crumb| format!("{}", crumb.value())) {
+            Some(val) => {
+                println!("{}", val);
+                Some(val)
+            }
+            None => {
+                println!("Uh oh, the cookie jar is empty.");
+                None
+            }
+        }
+}
+
+pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Session, DbErr> {
+    let session = SessionEntity::find()
+        .having(entities::session::Column::Key.eq(key.clone()))
+        .find_also_related(Employee)
+        .one(db).await?;
+    
+    match session {
+        Some((val, empl)) => {
+            println!("{:?} and {:?}", val, empl.unwrap());
+            
+            Ok(Session {
+                id: val.id,
+                key: val.key,
+                employee_id: val.employee_id,
+                expiry: DateTime::from_utc(val.expiry, Utc)
+            })
+        },
+        None => Err(DbErr::RecordNotFound(format!("Record {} does not exist.", key))),
+    }
+}
+
+pub async fn handle_cookie(db: &DatabaseConnection, cookies: &CookieJar<'_>) {
+    match get_key_cookie(cookies) {
+        Some(val) => {
+            match verify_cookie(val, db).await {
+                Ok(ses) => {
+                    println!("{:?}", ses);
+                },
+                Err(err) => println!("[err]: {}", err),
+            }
+        },
+        None => {},
+    }
+}

@@ -7,6 +7,9 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
+use argonautica::config::{Backend, Variant, Version};
+use futures_cpupool::CpuPool;
+
 use crate::{methods::{Id, Name, ContactInformation, History, MobileNumber, Email, Address}, entities::employee};
 use crate::entities::prelude::Employee as Epl;
 
@@ -62,9 +65,23 @@ impl Display for Employee {
 
 impl Employee {
     pub async fn insert(empl: EmployeeInput, db: &DbConn) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
+        
         let id = Uuid::new_v4().to_string();
 
         let mut hasher = Hasher::default();
+        hasher
+            .configure_backend(Backend::C) // Default is `Backend::C`
+            .configure_cpu_pool(CpuPool::new(8))
+            .configure_hash_len(16) // Default is `32`
+            .configure_iterations(124) // Default is `192`
+            .configure_lanes(8) // Default is number of logical cores on your machine
+            .configure_memory_size(4096) // Default is `4096`
+            .configure_password_clearing(false) // Default is `false`
+            .configure_secret_key_clearing(false) // Default is `false`
+            .configure_threads(8) // Default is number of logical cores on your machine
+            .configure_variant(Variant::Argon2id) // Default is `Variant::Argon2id`
+            .configure_version(Version::_0x13); // Default is `Version::_0x13`
+
         let hash = hasher
             .with_password(empl.password)
             .with_secret_key("\

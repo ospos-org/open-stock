@@ -1,4 +1,8 @@
-use chrono::{Utc, Duration};
+use std::time::Duration;
+
+use chrono::{Utc, Duration as ChronoDuration};
+use rocket::http::{CookieJar, Cookie};
+use rocket::time::{Instant, OffsetDateTime};
 use rocket::{http::Status, get, put};
 use rocket::{routes, post, patch};
 use rocket::serde::json::Json;
@@ -8,7 +12,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 use crate::entities::session;
-use crate::methods::{Name, History};
+use crate::methods::{Name, History, handle_cookie};
 use crate::pool::Db;
 
 use super::{Employee, EmployeeInput, Attendance, TrackType};
@@ -18,8 +22,9 @@ pub fn routes() -> Vec<rocket::Route> {
 }
 
 #[get("/<id>")]
-pub async fn get(conn: Connection<'_, Db>, id: &str) -> Result<Json<Employee>, Status> {
+pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Status> {
     let db = conn.into_inner();
+    handle_cookie(db, cookies).await;
 
     let employee = Employee::fetch_by_id(&id.to_string(), db).await.unwrap();
     Ok(Json(employee))
@@ -90,7 +95,7 @@ pub struct Auth {
 }
 
 #[post("/auth/<id>", data = "<input_data>")]
-pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>) -> Result<Json<String>, Status> {
+pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, cookies: &CookieJar<'_>) -> Result<Json<String>, Status> {
     let input = input_data.clone().into_inner();
     let db = conn.into_inner();
 
@@ -102,7 +107,7 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>) ->
                 // User is authenticated, lets give them an API key to work with...
                 let api_key = Uuid::new_v4().to_string();
 
-                let exp = Utc::now().checked_add_signed(Duration::minutes(10)).unwrap();
+                let exp = Utc::now().checked_add_signed(ChronoDuration::minutes(10)).unwrap();
 
                 match session::Entity::insert(session::ActiveModel {
                     id: Set(id.to_string()),
@@ -110,7 +115,17 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>) ->
                     employee_id: Set(id.to_string()),
                     expiry: Set(exp.naive_utc()),
                 }).exec(db).await {
-                    Ok(_) => Ok(Json(api_key.clone())),
+                    Ok(_) => {
+                        let mut cookie = Cookie::new("key", api_key.clone());
+                        let mut now = OffsetDateTime::now_utc();
+                        now += Duration::from_secs(10 * 60);
+
+                        cookie.set_expires(now);
+
+                        cookies.add(cookie);
+
+                        Ok(Json(api_key))
+                    },
                     Err(_) => Err(Status::InternalServerError)
                 }
             }
@@ -127,10 +142,16 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>) -
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
 
+    let start = Instant::now();
+
     match Employee::insert(new_transaction, db).await {
         Ok(data) => {
+            println!("function=insert_into cum_duration={:?}", start.elapsed());
+
             match Employee::fetch_by_id(&data.last_insert_id, db).await {
                 Ok(res) => {
+                    println!("function=fetch_by_id cum_duration={:?}", start.elapsed());
+
                     Ok(Json(res))
                 },  
                 Err(reason) => {

@@ -2966,6 +2966,7 @@ dependencies = [
  "chrono",
  "dotenv",
  "futures 0.3.25",
+ "futures-cpupool",
  "futures-util",
  "reqwest",
  "rocket",
