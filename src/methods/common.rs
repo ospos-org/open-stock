@@ -1,16 +1,16 @@
 use std::fmt::Display;
 
-use crate::{methods::stml::Order, entities};
+use crate::{methods::{stml::Order, EmployeeAuth, Attendance}, entities};
 use chrono::{Utc, DateTime};
-use rocket::{http::CookieJar};
+use rocket::{http::{CookieJar, Status}};
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait, QuerySelect, ColumnTrait};
 use serde::{Serialize, Deserialize};
 use crate::entities::session::Entity as SessionEntity;
 use crate::entities::employee::Entity as Employee;
 
-use super::{ProductExchange};
+use super::{ProductExchange, Employee as EmployeeObj};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Name {
     pub first: String,
     pub middle: String,
@@ -122,10 +122,18 @@ pub type Tag = String;
 pub type Id = String;
 
 #[derive(Debug)]
-pub struct Session {
+pub struct SessionRaw {
     pub id: String,
     pub key: String,
     pub employee_id: String,
+    pub expiry: DateTime<Utc>,
+}
+
+#[derive(Debug)]
+pub struct Session {
+    pub id: String,
+    pub key: String,
+    pub employee: EmployeeObj,
     pub expiry: DateTime<Utc>,
 }
 
@@ -151,29 +159,55 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
     
     match session {
         Some((val, empl)) => {
-            println!("{:?} and {:?}", val, empl.unwrap());
-            
-            Ok(Session {
-                id: val.id,
-                key: val.key,
-                employee_id: val.employee_id,
-                expiry: DateTime::from_utc(val.expiry, Utc)
-            })
+            println!("{:?} and {:?}", val, empl);
+
+            match empl {
+                Some(e) => {
+                    Ok(Session {
+                        id: val.id,
+                        key: val.key,
+                        employee: EmployeeObj { 
+                            id: e.id.clone(), 
+                            name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                            auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
+                            contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
+                            clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
+                            level: e.level
+                        },
+                        expiry: DateTime::from_utc(val.expiry, Utc)
+                    })
+                },
+                None => {
+                    Err(DbErr::RecordNotFound(format!("Record {} does not exist.", key)))
+                },
+            }
         },
         None => Err(DbErr::RecordNotFound(format!("Record {} does not exist.", key))),
     }
 }
 
-pub async fn handle_cookie(db: &DatabaseConnection, cookies: &CookieJar<'_>) {
+pub async fn _handle_cookie(db: &DatabaseConnection, cookies: &CookieJar<'_>) -> Result<Session, DbErr> {
+    match get_key_cookie(cookies) {
+        Some(val) => {
+            verify_cookie(val, db).await
+        },
+        None => Err(DbErr::Custom(format!("Cookies not set."))),
+    }
+}
+
+pub async fn cookie_status_wrapper(db: &DatabaseConnection, cookies: &CookieJar<'_>) -> Result<Session, Status> {
     match get_key_cookie(cookies) {
         Some(val) => {
             match verify_cookie(val, db).await {
-                Ok(ses) => {
-                    println!("{:?}", ses);
+                Ok(v) => {
+                    Ok(v)
                 },
-                Err(err) => println!("[err]: {}", err),
+                Err(err) => {
+                    println!("[err]: {}", err);
+                    Err(Status::Unauthorized)
+                },
             }
         },
-        None => {},
+        None => Err(Status::Unauthorized),
     }
 }

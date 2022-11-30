@@ -1,7 +1,9 @@
+use rocket::http::CookieJar;
 use rocket::{http::Status, get, put};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
+use crate::methods::cookie_status_wrapper;
 use crate::pool::Db;
 
 use super::Product;
@@ -11,16 +13,18 @@ pub fn routes() -> Vec<rocket::Route> {
 }
 
 #[get("/<id>")]
-pub async fn get(conn: Connection<'_, Db>, id: i32) -> Result<Json<Product>, Status> {
+pub async fn get(conn: Connection<'_, Db>, id: i32, cookies: &CookieJar<'_>) -> Result<Json<Product>, Status> {
     let db = conn.into_inner();
+    let _session = cookie_status_wrapper(db, cookies).await?;
 
     let product = Product::fetch_by_id(&id.to_string(), db).await.unwrap();
     Ok(Json(product))
 }
 
 #[get("/name/<name>")]
-pub async fn get_by_name(conn: Connection<'_, Db>, name: &str) -> Result<Json<Vec<Product>>, Status> {
+pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Product>>, Status> {
     let db = conn.into_inner();
+    let _session = cookie_status_wrapper(db, cookies).await?;
 
     let product = Product::fetch_by_name(name, db).await.unwrap();
     Ok(Json(product))
@@ -28,8 +32,9 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str) -> Result<Json<Ve
 
 /// References exact name
 #[get("/!name/<name>")]
-pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: &str) -> Result<Json<Vec<Product>>, Status> {
+pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Product>>, Status> {
     let db = conn.into_inner();
+    let _session = cookie_status_wrapper(db, cookies).await?;
 
     let product = Product::fetch_by_name_exact(name, db).await.unwrap();
     Ok(Json(product))
@@ -39,10 +44,12 @@ pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: &str) -> Result<J
 async fn update(
     conn: Connection<'_, Db>,
     id: &str,
-    input_data: Json<Product>,
+    input_data: Json<Product>, 
+    cookies: &CookieJar<'_>
 ) -> Result<Json<Product>, Status> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
+    let _session = cookie_status_wrapper(db, cookies).await?;
 
     match Product::update(input_data, id, db).await {
         Ok(res) => {
@@ -53,10 +60,11 @@ async fn update(
 }
 
 #[post("/", data = "<input_data>")]
-pub async fn create(conn: Connection<'_, Db>, input_data: Json<Product>) -> Result<Json<Product>, Status> {
+pub async fn create(conn: Connection<'_, Db>, input_data: Json<Product>, cookies: &CookieJar<'_>) -> Result<Json<Product>, Status> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
-
+    let _session = cookie_status_wrapper(db, cookies).await?;
+    
     match Product::insert(new_transaction, db).await {
         Ok(data) => {
             match Product::fetch_by_id(&data.last_insert_id, db).await {

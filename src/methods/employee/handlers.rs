@@ -12,7 +12,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 use crate::entities::session;
-use crate::methods::{Name, History, handle_cookie};
+use crate::methods::{Name, History, cookie_status_wrapper};
 use crate::pool::Db;
 
 use super::{Employee, EmployeeInput, Attendance, TrackType};
@@ -24,35 +24,47 @@ pub fn routes() -> Vec<rocket::Route> {
 #[get("/<id>")]
 pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Status> {
     let db = conn.into_inner();
-    handle_cookie(db, cookies).await;
+    let session = cookie_status_wrapper(db, cookies).await?;
 
-    let employee = Employee::fetch_by_id(&id.to_string(), db).await.unwrap();
-    Ok(Json(employee))
+    if session.employee.id == id {
+        Ok(Json(session.employee))
+    }else {
+        let employee = Employee::fetch_by_id(&id.to_string(), db).await.unwrap();
+        Ok(Json(employee))
+    }
 }
 
 #[get("/name/<name>")]
-pub async fn get_by_name(conn: Connection<'_, Db>, name: &str) -> Result<Json<Vec<Employee>>, Status> {
+pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Status> {
     let db = conn.into_inner();
+    let _session = cookie_status_wrapper(db, cookies).await?;
 
     let employee = Employee::fetch_by_name(name, db).await.unwrap();
     Ok(Json(employee))
 }
 
 #[get("/!name", data = "<name>")]
-pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: Json<Name>) -> Result<Json<Vec<Employee>>, Status> {
+pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: Json<Name>, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Status> {
     let db = conn.into_inner();
     let new_transaction = name.clone().into_inner();
+    let session = cookie_status_wrapper(db, cookies).await?;
 
     println!("{}", json!(new_transaction));
 
-    let employee = Employee::fetch_by_name_exact(json!(new_transaction), db).await.unwrap();
-    Ok(Json(employee))
+    if session.employee.name == new_transaction {
+        Ok(Json(vec![session.employee]))
+    }else {
+        let employee = Employee::fetch_by_name_exact(json!(new_transaction), db).await.unwrap();
+        Ok(Json(employee))
+    }
 }
 
 #[get("/level/<level>")]
-pub async fn get_by_level(conn: Connection<'_, Db>, level: i32) -> Result<Json<Vec<Employee>>, Status> {
+pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Status> {
     let db = conn.into_inner();
     let new_transaction = level.clone();
+
+    let _session = cookie_status_wrapper(db, cookies).await?;
 
     println!("{}", json!(new_transaction));
 
@@ -62,9 +74,11 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32) -> Result<Json<V
 
 #[patch("/generate")]
 async fn generate(
-    conn: Connection<'_, Db>
+    conn: Connection<'_, Db>,
+    cookies: &CookieJar<'_>
 ) -> Result<Json<Employee>, Status> {
     let db = conn.into_inner();
+    let _session = cookie_status_wrapper(db, cookies).await?;
 
     match Employee::generate(db).await {
         Ok(res) => Ok(Json(res)),
@@ -76,16 +90,22 @@ async fn generate(
 async fn update(
     conn: Connection<'_, Db>,
     id: &str,
+    cookies: &CookieJar<'_>,
     input_data: Json<Employee>,
 ) -> Result<Json<Employee>, Status> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
+    let session = cookie_status_wrapper(db, cookies).await?;
 
-    match Employee::update(input_data, id, db).await {
-        Ok(res) => {
-            Ok(Json(res))
-        },
-        Err(_) => Err(Status::BadRequest),
+    if session.employee.level > 1 {
+        match Employee::update(input_data, id, db).await {
+            Ok(res) => {
+                Ok(Json(res))
+            },
+            Err(_) => Err(Status::BadRequest),
+        }
+    }else {
+        Err(Status::Unauthorized)
     }
 }
 
@@ -106,11 +126,11 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
             }else {
                 // User is authenticated, lets give them an API key to work with...
                 let api_key = Uuid::new_v4().to_string();
-
+                let session_id = Uuid::new_v4().to_string();
                 let exp = Utc::now().checked_add_signed(ChronoDuration::minutes(10)).unwrap();
 
                 match session::Entity::insert(session::ActiveModel {
-                    id: Set(id.to_string()),
+                    id: Set(session_id.to_string()),
                     key: Set(api_key.clone()),
                     employee_id: Set(id.to_string()),
                     expiry: Set(exp.naive_utc()),
@@ -138,9 +158,10 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
 }
 
 #[post("/", data = "<input_data>")]
-pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>) -> Result<Json<Employee>, Status> {
+pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Status> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
+    let _session = cookie_status_wrapper(db, cookies).await?;
 
     let start = Instant::now();
 

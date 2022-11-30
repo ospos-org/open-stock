@@ -13,7 +13,7 @@ use futures_cpupool::CpuPool;
 use crate::{methods::{Id, Name, ContactInformation, History, MobileNumber, Email, Address}, entities::employee};
 use crate::entities::prelude::Employee as Epl;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Employee {
     pub id: Id,
     pub name: Name,
@@ -25,7 +25,7 @@ pub struct Employee {
 
 /// Stores a password hash, signed as a key using the users login ID.
 /// Upon logging in using a client portal, the pre-sign object is signed using the provided ID - if the hash matches that which is given, authentication can be approved.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EmployeeAuth {
     pub hash: String
 }
@@ -235,13 +235,13 @@ impl Employee {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Attendance {
     pub track_type: TrackType,
     pub till: Id
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum TrackType {
     In, Out
 }

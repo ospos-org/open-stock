@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange, Session}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -65,8 +65,24 @@ pub struct TransactionInput {
     pub till: Id,
 }
 
+#[derive(Deserialize, Clone)]
+pub struct TransactionInit {
+    pub customer: Id,
+    pub transaction_type: TransactionType,
+
+    pub products: OrderList,
+    pub order_total: i32,
+    pub payment: Payment,
+
+    pub order_date: DateTime<Utc>,
+    pub order_notes: NoteList,
+    pub order_history: HistoryList,
+
+    pub till: Id,
+}
+
 impl Transaction {
-    pub async fn insert(tsn: TransactionInput, db: &DbConn) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
+    pub async fn insert(tsn: TransactionInit, session: Session, db: &DbConn) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
 
         let insert_crud = transactions::ActiveModel {
@@ -79,7 +95,7 @@ impl Transaction {
             order_date: Set(tsn.order_date.naive_utc()),
             order_notes: Set(json!(tsn.order_notes)),
             order_history: Set(json!(tsn.order_history)),
-            salesperson: Set(tsn.salesperson),
+            salesperson: Set(session.employee.id),
             till: Set(tsn.till)
         };
 
@@ -156,12 +172,12 @@ impl Transaction {
         Self::fetch_by_id(id, db).await
     }
 
-    pub async fn generate(db: &DbConn) -> Result<Transaction, DbErr> {
+    pub async fn generate(db: &DbConn, session: Session) -> Result<Transaction, DbErr> {
         // Create Transaction
         let tsn = example_transaction();
         
         // Insert & Fetch Transaction
-        match Transaction::insert(tsn, db).await {
+        match Transaction::insert(tsn, session, db).await {
             Ok(data) => {
                 match Transaction::fetch_by_id(&data.last_insert_id, db).await {
                     Ok(res) => {
@@ -246,7 +262,7 @@ impl Display for Transaction {
 //     //...
 // }
 
-fn example_transaction() -> TransactionInput {
+fn example_transaction() -> TransactionInit {
     let torpedo7 = ContactInformation {
         name: "Torpedo7".into(),
         mobile: MobileNumber::from("021212120".to_string()),
@@ -295,7 +311,7 @@ fn example_transaction() -> TransactionInput {
         discount: DiscountValue::Absolute(0),
     };
 
-    let transaction = TransactionInput {
+    let transaction = TransactionInit {
         customer: "...".into(),
         transaction_type: TransactionType::In,
         products: vec![order],
@@ -307,7 +323,6 @@ fn example_transaction() -> TransactionInput {
         order_date: Utc::now(),
         order_notes: vec![Note { message: "Order packaged from warehouse.".into(), timestamp: Utc::now() }],
         order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
-        salesperson: "...".into(),
         till: "...".into(),
     };
 
