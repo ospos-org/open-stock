@@ -1,10 +1,6 @@
 <p align="center">
-   <picture>
-   <source
-      srcset="./docs/open-stock-light.svg"
-      media="(prefers-color-scheme: dark)">
-   <img src="./docs/open-stock.svg" alt="Logo">
-   </picture>
+   ![GitHub-Mark-Light](./docs/open-stock.svg./#gh-dark-mode-only)
+   ![GitHub-Mark-Dark](./docs/open-stock-light.svg#gh-light-mode-only)
 </p>
 
 The open source inventory manager.
