@@ -168,6 +168,8 @@ impl Display for ProductExchange {
         let method = match self.method_type {
             TransactionType::In => "IN",
             TransactionType::Out => "OUT",
+            TransactionType::PendingIn => "PENDING-IN",
+            TransactionType::PendingOut => "PENDING-OUT"
         };
 
         write!(f, "{}: {}-{} x{}", method, self.product_code, self.variant.concat(), self.quantity)

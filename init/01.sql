@@ -28,13 +28,22 @@ CREATE TABLE IF NOT EXISTS `Employee` (
   `auth` json NOT NULL,
   `clock_history` json NOT NULL,
   `level` int(11) NOT NULL,
+  `special_pricing` json NOT NULL,
+  PRIMARY KEY `id` (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS `Supplier` (
+  `id` varchar(100) NOT NULL,
+  `name` json NOT NULL,
+  `contact` json NOT NULL,
+  `transaction_history` json NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 CREATE TABLE IF NOT EXISTS `Transactions` (
   `id` varchar(100) NOT NULL,
   `customer` text NOT NULL,
-  `transaction_type` enum('in', 'out') NOT NULL,
+  `transaction_type` enum('in', 'out', 'pending-in', 'pending-out') NOT NULL,
   `products` json NOT NULL,
   `order_total` int(11) NOT NULL,
   `payment` json NOT NULL,

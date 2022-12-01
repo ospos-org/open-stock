@@ -1,5 +1,10 @@
 <p align="center">
+   <picture>
+   <source
+      srcset="open-stock-light.svg"
+      media="(prefers-color-scheme: dark)">
    <img src="./docs/open-stock.svg" alt="Logo">
+   </picture>
 </p>
 
 The open source inventory manager.

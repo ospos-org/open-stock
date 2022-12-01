@@ -34,10 +34,18 @@ pub struct StockInformation {
 
     pub brand: String,
     pub unit: String,
+
+    /// Non-required field which outlines the tax code of the product if necessary.
     pub tax_code: String,
+
+    /// The variant's weight in kilograms.
     pub weight: String,
-    /// The volume of the product, if this changes between variants - 
+
+    /// The volume of the product in meters cubed, kept specific to each variant.
     pub volume: String,
+
+    /// A quantity considered to be the *maximum*. If the quantity dips below such value, it is suggested a restock should take place.
+    pub max_volume: String,
 
     /// If the product's supply cannot be fulfilled at the current time, due to a lack of availability. 
     /// 
