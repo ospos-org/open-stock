@@ -1,7 +1,9 @@
-<p align="center">
-   ![OpenStock-Dark](https://raw.githubusercontent.com/bennjii/open-stock/c811808ca63d75bfa99d5e4f032bab57dd997bec/docs/open-stock.svg#gh-dark-mode-only)
-   ![OpenStock-Light](https://raw.githubusercontent.com/bennjii/open-stock/c811808ca63d75bfa99d5e4f032bab57dd997bec/docs/open-stock-light.svg#gh-light-mode-only)
-</p>
+
+<div style="text-align:center">
+   <img src="https://raw.githubusercontent.com/bennjii/open-stock/c811808ca63d75bfa99d5e4f032bab57dd997bec/docs/open-stock.svg#gh-dark-mode-only">
+   
+   <img src="https://raw.githubusercontent.com/bennjii/open-stock/c811808ca63d75bfa99d5e4f032bab57dd997bec/docs/open-stock-light.svg#gh-light-mode-only">
+</div>
 
 The open source inventory manager.
 
