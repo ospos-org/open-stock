@@ -262,7 +262,7 @@ impl Display for Transaction {
 //     //...
 // }
 
-fn example_transaction() -> TransactionInit {
+pub fn example_transaction() -> TransactionInit {
     let torpedo7 = ContactInformation {
         name: "Torpedo7".into(),
         mobile: MobileNumber::from("021212120".to_string()),

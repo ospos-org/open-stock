@@ -6,7 +6,9 @@ pub(crate) mod transaction;
 pub(crate) mod product;
 pub(crate) mod customer;
 pub(crate) mod employee;
+pub(crate) mod supplier;
 
+pub use self::supplier::*;
 pub use self::employee::*;
 pub use self::customer::*;
 pub use self::payment::*;

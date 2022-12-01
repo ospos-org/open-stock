@@ -17,4 +17,5 @@ fn rocket() -> _ {
         .mount("/customer", methods::customer::handlers::routes()) 
         .mount("/employee", methods::employee::handlers::routes())  
         .mount("/transaction", methods::transaction::handlers::routes())  
+        .mount("/supplier", methods::supplier::handlers::routes())  
 }
