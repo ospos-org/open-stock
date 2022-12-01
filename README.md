@@ -1,6 +1,6 @@
 <p align="center">
-   ![GitHub-Mark-Light](./docs/open-stock.svg./#gh-dark-mode-only)
-   ![GitHub-Mark-Dark](./docs/open-stock-light.svg#gh-light-mode-only)
+   ![OpenStock-Dark](https://raw.githubusercontent.com/bennjii/open-stock/c811808ca63d75bfa99d5e4f032bab57dd997bec/docs/open-stock.svg#gh-dark-mode-only)
+   ![OpenStock-Light](https://raw.githubusercontent.com/bennjii/open-stock/c811808ca63d75bfa99d5e4f032bab57dd997bec/docs/open-stock-light.svg#gh-light-mode-only)
 </p>
 
 The open source inventory manager.
