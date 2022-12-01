@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `Customer` (
   `order_history` json NOT NULL,
   `customer_notes` json NOT NULL,
   `balance` int(11) NOT NULL,
+  `special_pricing` json NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
@@ -28,7 +29,6 @@ CREATE TABLE IF NOT EXISTS `Employee` (
   `auth` json NOT NULL,
   `clock_history` json NOT NULL,
   `level` int(11) NOT NULL,
-  `special_pricing` json NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 

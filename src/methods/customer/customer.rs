@@ -24,6 +24,7 @@ pub struct CustomerInput {
     pub contact: ContactInformation,
     pub order_history: OrderList,
     pub customer_notes: NoteList,
+    pub special_pricing: String,
     pub balance: i32,
 }
 
@@ -38,6 +39,7 @@ impl Customer {
             order_history: Set(json!(cust.order_history)),
             customer_notes: Set(json!(cust.customer_notes)),
             balance: Set(cust.balance),
+            special_pricing: Set(json!(cust.special_pricing)),
         };
 
         match Cust::insert(insert_crud).exec(db).await {
@@ -140,6 +142,7 @@ impl Customer {
             contact: Set(json!(cust.contact)),
             order_history: Set(json!(cust.order_history)),
             customer_notes: Set(json!(cust.customer_notes)),
+            special_pricing: Set(json!(cust.special_pricing)),
             balance: Set(cust.balance),
         }.update(db).await?;
 
@@ -231,6 +234,7 @@ pub fn example_customer() -> CustomerInput {
                 discount: DiscountValue::Absolute(0),
             }
         ],
+        special_pricing: "".into(),
         customer_notes: vec![],
         balance: 0,
     }
