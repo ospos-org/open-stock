@@ -226,6 +226,7 @@ pub fn example_customer() -> CustomerInput {
                     ),
                     assigned_products: vec![]
                 }],
+                order_history: vec![],
                 order_notes: vec![Note { message: "Order Shipped from Depot".into(), timestamp: Utc::now() }],
                 reference: "TOR-19592".into(),
                 creation_date: Utc::now(),

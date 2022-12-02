@@ -42,7 +42,6 @@ pub struct Transaction {
 
     pub order_date: DateTime<Utc>,
     pub order_notes: NoteList,
-    pub order_history: HistoryList,
 
     pub salesperson: Id,
     pub till: Id,
@@ -119,7 +118,6 @@ impl Transaction {
             payment: serde_json::from_value::<Payment>(t.payment).unwrap(),
             order_date: DateTime::from_utc(t.order_date, Utc),
             order_notes: serde_json::from_value::<NoteList>(t.order_notes).unwrap(),
-            order_history: serde_json::from_value::<HistoryList>(t.order_history).unwrap(),
             salesperson: t.salesperson,
             till: t.till,
         };
@@ -145,7 +143,6 @@ impl Transaction {
                 payment: serde_json::from_value::<Payment>(t.payment.clone()).unwrap(),
                 order_date: DateTime::from_utc(t.order_date, Utc),
                 order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
-                order_history: serde_json::from_value::<HistoryList>(t.order_history.clone()).unwrap(),
                 salesperson: t.salesperson.clone(),
                 till: t.till.clone(),
             }
@@ -238,16 +235,16 @@ impl Display for Transaction {
                 )
             ).collect();
 
-        let order_history: String = self.order_history.iter()
-            .map(|f| {
-                format!(
-                    "{}: {}\n", 
-                    f.timestamp.format("%d/%m/%Y %H:%M"), 
-                    f.item,
-                )
-            }).collect();
+        // let order_history: String = self.order_history.iter()
+        //     .map(|f| {
+        //         format!(
+        //             "{}: {}\n", 
+        //             f.timestamp.format("%d/%m/%Y %H:%M"), 
+        //             f.item,
+        //         )
+        //     }).collect();
 
-        write!(f, "Transaction ({}) {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {}\nNotes:\n{}\nHistory:\n{}\n{} on {}", self.id, self.order_date.format("%d/%m/%Y %H:%M"), products, self.order_total, self.payment, notes, order_history, self.salesperson, self.till)
+    write!(f, "Transaction ({}) {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {}\nNotes:\n{}\n{} on {}", self.id, self.order_date.format("%d/%m/%Y %H:%M"), products, self.order_total, self.payment, notes, self.salesperson, self.till)
     }
 }
 
@@ -303,6 +300,7 @@ pub fn example_transaction() -> TransactionInit {
                 assigned_products: vec!["132522-22".to_string()]
             }
         ],
+        order_history: vec![],
         order_notes: vec![Note { message: "Order Shipped from Depot".into(), timestamp: Utc::now() }],
         reference: "TOR-19592".into(),
         creation_date: Utc::now(),
