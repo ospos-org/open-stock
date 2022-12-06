@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use chrono::{Utc, Duration as ChronoDuration};
-use rocket::http::{CookieJar, Cookie};
+use rocket::http::{CookieJar, Cookie, SameSite};
 use rocket::time::{Instant, OffsetDateTime};
 use rocket::{http::Status, get, put};
 use rocket::{routes, post, patch};
@@ -75,10 +75,9 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &Cookie
 #[patch("/generate")]
 async fn generate(
     conn: Connection<'_, Db>,
-    cookies: &CookieJar<'_>
+    _cookies: &CookieJar<'_>
 ) -> Result<Json<Employee>, Status> {
     let db = conn.into_inner();
-    let _session = cookie_status_wrapper(db, cookies).await?;
 
     match Employee::generate(db).await {
         Ok(res) => Ok(Json(res)),
@@ -136,13 +135,19 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
                     expiry: Set(exp.naive_utc()),
                 }).exec(db).await {
                     Ok(_) => {
-                        let mut cookie = Cookie::new("key", api_key.clone());
-                        let mut now = OffsetDateTime::now_utc();
-                        now += Duration::from_secs(10 * 60);
+                        let now = OffsetDateTime::now_utc();
+                        let expiry = now + Duration::from_secs(10 * 60);
 
-                        cookie.set_expires(now);
+                        let cookie = Cookie::build("open_stock_key", api_key.clone())
+                            .expires(expiry)
+                            .path("/")
+                            .secure(false)
+                            .same_site(SameSite::Lax)
+                            .finish();
 
                         cookies.add(cookie);
+
+                        println!("Created and set cookie!");
 
                         Ok(Json(api_key))
                     },
