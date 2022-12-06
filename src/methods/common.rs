@@ -138,6 +138,10 @@ pub struct Session {
 }
 
 pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
+    for c in cookies.iter() {
+        println!("Name: '{}', Value: '{}'", c.name(), c.value());
+    }
+
     match cookies.get("key")
         .map(|crumb| format!("{}", crumb.value())) {
             Some(val) => {

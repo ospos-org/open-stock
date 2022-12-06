@@ -138,10 +138,10 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
                         let now = OffsetDateTime::now_utc();
                         let expiry = now + Duration::from_secs(10 * 60);
 
-                        let cookie = Cookie::build("open_stock_key", api_key.clone())
+                        let cookie = Cookie::build("key", api_key.clone())
                             .expires(expiry)
                             .path("/")
-                            .secure(false)
+                            .secure(true)
                             .same_site(SameSite::Lax)
                             .finish();
 
