@@ -142,7 +142,8 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
                             .expires(expiry)
                             .path("/")
                             .secure(true)
-                            .same_site(SameSite::Lax)
+                            .same_site(SameSite::None)
+                            .http_only(true)
                             .finish();
 
                         cookies.add(cookie);
