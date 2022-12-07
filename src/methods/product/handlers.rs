@@ -1,6 +1,6 @@
 use rocket::http::CookieJar;
 use rocket::{http::Status, get, put};
-use rocket::{routes, post};
+use rocket::{routes, post, patch};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 use crate::methods::cookie_status_wrapper;
@@ -9,7 +9,7 @@ use crate::pool::Db;
 use super::Product;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_name_exact, create, update]
+    routes![get, get_by_name, get_by_name_exact, create, update, generate]
 }
 
 #[get("/<id>")]
@@ -81,5 +81,18 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<Product>, cookies
             println!("[dberr]: {}", reason);
             Err(Status::InternalServerError)
         },
+    }
+}
+
+#[patch("/generate")]
+async fn generate(
+    conn: Connection<'_, Db>,
+    _cookies: &CookieJar<'_>
+) -> Result<Json<Product>, Status> {
+    let db = conn.into_inner();
+
+    match Product::generate(db).await {
+        Ok(res) => Ok(Json(res)),
+        Err(_) => Err(Status::BadRequest)
     }
 }
