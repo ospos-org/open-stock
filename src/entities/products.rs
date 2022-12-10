@@ -11,6 +11,7 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub company: String,
     pub variants: Json,
+    pub variant_groups: Json,
     #[sea_orm(column_type = "Text")]
     pub loyalty_discount: String,
     pub images: Json,

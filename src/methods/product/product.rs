@@ -4,7 +4,7 @@ use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertR
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
-use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity, StockList}, entities::{sea_orm_active_enums::TransactionType, products}};
+use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity}, entities::{sea_orm_active_enums::TransactionType, products}};
 use super::{VariantCategoryList, VariantIdTag, VariantCategory, Variant, StockInformation, VariantInformation};
 use crate::entities::prelude::Products;
 
@@ -57,6 +57,7 @@ impl Product {
             name: Set(pdt.name),
             company: Set(pdt.company),
             variants: Set(json!(pdt.variants)),
+            variant_groups: Set(json!(pdt.variant_groups)),
             loyalty_discount: Set(DiscountValue::to_string(&pdt.loyalty_discount)),
             images: Set(json!(pdt.images)),
             tags: Set(json!(pdt.tags)),
@@ -97,8 +98,8 @@ impl Product {
             Product { 
                 name: p.name.clone(), 
                 company: p.company.clone(),
-                variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
-                variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(), 
+                variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups.clone()).unwrap(), 
+                variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants.clone()).unwrap(), 
                 sku: p.sku.clone(), 
                 loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
@@ -120,8 +121,8 @@ impl Product {
             Product { 
                 name: p.name.clone(), 
                 company: p.company.clone(),
-                variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
-                variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(),  
+                variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups.clone()).unwrap(), 
+                variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants.clone()).unwrap(),  
                 sku: p.sku.clone(), 
                 loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
@@ -140,6 +141,7 @@ impl Product {
             name: Set(pdt.name),
             company: Set(pdt.company),
             variants: Set(json!(pdt.variants)),
+            variant_groups: Set(json!(pdt.variant_groups)),
             loyalty_discount: Set(DiscountValue::to_string(&pdt.loyalty_discount)),
             images: Set(json!(pdt.images)),
             tags: Set(json!(pdt.tags)),
