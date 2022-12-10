@@ -207,38 +207,6 @@ fn example_product() -> Product {
                 variants: vec![
                     Variant { 
                         name: "White".into(), 
-                        stock: vec![
-                            Stock { 
-                                store: Location {
-                                    code: "001".into(),
-                                    contact: ContactInformation {
-                                        name: "Torpedo7".into(),
-                                        mobile: MobileNumber {
-                                            region_code: "+64".into(),
-                                            root: "021212120".into()
-                                        },
-                                        email: Email {
-                                            root: "order".into(),
-                                            domain: "torpedo7.com".into(),
-                                            full: "order@torpedo7.com".into()
-                                        },
-                                        landline: "".into(),
-                                        address: Address {
-                                            street: "9 Carbine Road".into(),
-                                            street2: "".into(),
-                                            city: "Auckland".into(),
-                                            country: "New Zealand".into(),
-                                            po_code: "100".into()
-                                        }
-                                    }
-                                }, 
-                                quantity: Quantity { 
-                                    quantity_on_hand: 2, 
-                                    quantity_on_order: 1, 
-                                    quantity_on_floor: 1 
-                                }   
-                            }
-                        ], 
                         images: vec![
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
@@ -247,55 +215,9 @@ fn example_product() -> Product {
                         marginal_price: 550, 
                         variant_code: "01".into(), 
                         order_history: vec![], 
-                        stock_information: StockInformation { 
-                            stock_group: "RANDOM".into(), 
-                            sales_group: "RANDOM".into(), 
-                            value_stream: "RANDOM".into(), 
-                            brand: "Torq Group".into(), 
-                            unit: "".into(), 
-                            tax_code: "GSL".into(), 
-                            weight: "5.6".into(), 
-                            volume: "0.123".into(), 
-                            max_volume: "6.00".into(), 
-                            back_order: false, 
-                            discontinued: false, 
-                            non_diminishing: false 
-                        }
                     },
                     Variant { 
                         name: "Black".into(), 
-                        stock: vec![
-                            Stock { 
-                                store: Location {
-                                    code: "001".into(),
-                                    contact: ContactInformation {
-                                        name: "Torpedo7".into(),
-                                        mobile: MobileNumber {
-                                            region_code: "+64".into(),
-                                            root: "021212120".into()
-                                        },
-                                        email: Email {
-                                            root: "order".into(),
-                                            domain: "torpedo7.com".into(),
-                                            full: "order@torpedo7.com".into()
-                                        },
-                                        landline: "".into(),
-                                        address: Address {
-                                            street: "9 Carbine Road".into(),
-                                            street2: "".into(),
-                                            city: "Auckland".into(),
-                                            country: "New Zealand".into(),
-                                            po_code: "100".into()
-                                        }
-                                    }
-                                }, 
-                                quantity: Quantity { 
-                                    quantity_on_hand: 2, 
-                                    quantity_on_order: 1, 
-                                    quantity_on_floor: 1 
-                                }   
-                            }
-                        ], 
                         images: vec![
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
@@ -304,55 +226,9 @@ fn example_product() -> Product {
                         marginal_price: 550, 
                         variant_code: "02".into(), 
                         order_history: vec![], 
-                        stock_information: StockInformation { 
-                            stock_group: "RANDOM".into(), 
-                            sales_group: "RANDOM".into(), 
-                            value_stream: "RANDOM".into(), 
-                            brand: "Torq Group".into(), 
-                            unit: "".into(), 
-                            tax_code: "GSL".into(), 
-                            weight: "5.6".into(), 
-                            volume: "0.123".into(), 
-                            max_volume: "6.00".into(), 
-                            back_order: false, 
-                            discontinued: false, 
-                            non_diminishing: false 
-                        }
                     },
                     Variant { 
                         name: "Violet".into(), 
-                        stock: vec![
-                            Stock { 
-                                store: Location {
-                                    code: "001".into(),
-                                    contact: ContactInformation {
-                                        name: "Torpedo7".into(),
-                                        mobile: MobileNumber {
-                                            region_code: "+64".into(),
-                                            root: "021212120".into()
-                                        },
-                                        email: Email {
-                                            root: "order".into(),
-                                            domain: "torpedo7.com".into(),
-                                            full: "order@torpedo7.com".into()
-                                        },
-                                        landline: "".into(),
-                                        address: Address {
-                                            street: "9 Carbine Road".into(),
-                                            street2: "".into(),
-                                            city: "Auckland".into(),
-                                            country: "New Zealand".into(),
-                                            po_code: "100".into()
-                                        }
-                                    }
-                                }, 
-                                quantity: Quantity { 
-                                    quantity_on_hand: 2, 
-                                    quantity_on_order: 1, 
-                                    quantity_on_floor: 1 
-                                }   
-                            }
-                        ], 
                         images: vec![
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
@@ -361,20 +237,6 @@ fn example_product() -> Product {
                         marginal_price: 550, 
                         variant_code: "03".into(), 
                         order_history: vec![], 
-                        stock_information: StockInformation { 
-                            stock_group: "RANDOM".into(), 
-                            sales_group: "RANDOM".into(), 
-                            value_stream: "RANDOM".into(), 
-                            brand: "Torq Group".into(), 
-                            unit: "".into(), 
-                            tax_code: "GSL".into(), 
-                            weight: "5.6".into(), 
-                            volume: "0.123".into(), 
-                            max_volume: "6.00".into(), 
-                            back_order: false, 
-                            discontinued: false, 
-                            non_diminishing: false 
-                        }
                     }
                 ] 
             },
@@ -383,38 +245,6 @@ fn example_product() -> Product {
                 variants: vec![
                     Variant { 
                         name: "6'0".into(), 
-                        stock: vec![
-                            Stock { 
-                                store: Location {
-                                    code: "001".into(),
-                                    contact: ContactInformation {
-                                        name: "Torpedo7".into(),
-                                        mobile: MobileNumber {
-                                            region_code: "+64".into(),
-                                            root: "021212120".into()
-                                        },
-                                        email: Email {
-                                            root: "order".into(),
-                                            domain: "torpedo7.com".into(),
-                                            full: "order@torpedo7.com".into()
-                                        },
-                                        landline: "".into(),
-                                        address: Address {
-                                            street: "9 Carbine Road".into(),
-                                            street2: "".into(),
-                                            city: "Auckland".into(),
-                                            country: "New Zealand".into(),
-                                            po_code: "100".into()
-                                        }
-                                    }
-                                }, 
-                                quantity: Quantity { 
-                                    quantity_on_hand: 2, 
-                                    quantity_on_order: 1, 
-                                    quantity_on_floor: 1 
-                                }   
-                            }
-                        ], 
                         images: vec![
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
@@ -423,55 +253,9 @@ fn example_product() -> Product {
                         marginal_price: 550, 
                         variant_code: "21".into(), 
                         order_history: vec![], 
-                        stock_information: StockInformation { 
-                            stock_group: "RANDOM".into(), 
-                            sales_group: "RANDOM".into(), 
-                            value_stream: "RANDOM".into(), 
-                            brand: "Torq Group".into(), 
-                            unit: "".into(), 
-                            tax_code: "GSL".into(), 
-                            weight: "5.6".into(), 
-                            volume: "0.123".into(), 
-                            max_volume: "6.00".into(), 
-                            back_order: false, 
-                            discontinued: false, 
-                            non_diminishing: false 
-                        }
                     },
                     Variant { 
                         name: "10'2".into(), 
-                        stock: vec![
-                            Stock { 
-                                store: Location {
-                                    code: "001".into(),
-                                    contact: ContactInformation {
-                                        name: "Torpedo7".into(),
-                                        mobile: MobileNumber {
-                                            region_code: "+64".into(),
-                                            root: "021212120".into()
-                                        },
-                                        email: Email {
-                                            root: "order".into(),
-                                            domain: "torpedo7.com".into(),
-                                            full: "order@torpedo7.com".into()
-                                        },
-                                        landline: "".into(),
-                                        address: Address {
-                                            street: "9 Carbine Road".into(),
-                                            street2: "".into(),
-                                            city: "Auckland".into(),
-                                            country: "New Zealand".into(),
-                                            po_code: "100".into()
-                                        }
-                                    }
-                                }, 
-                                quantity: Quantity { 
-                                    quantity_on_hand: 2, 
-                                    quantity_on_order: 1, 
-                                    quantity_on_floor: 1 
-                                }   
-                            }
-                        ], 
                         images: vec![
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
@@ -480,55 +264,9 @@ fn example_product() -> Product {
                         marginal_price: 550, 
                         variant_code: "22".into(), 
                         order_history: vec![], 
-                        stock_information: StockInformation { 
-                            stock_group: "RANDOM".into(), 
-                            sales_group: "RANDOM".into(), 
-                            value_stream: "RANDOM".into(), 
-                            brand: "Torq Group".into(), 
-                            unit: "".into(), 
-                            tax_code: "GSL".into(), 
-                            weight: "5.6".into(), 
-                            volume: "0.123".into(), 
-                            max_volume: "6.00".into(), 
-                            back_order: false, 
-                            discontinued: false, 
-                            non_diminishing: false 
-                        }
                     },
                     Variant { 
                         name: "11'2".into(), 
-                        stock: vec![
-                            Stock { 
-                                store: Location {
-                                    code: "001".into(),
-                                    contact: ContactInformation {
-                                        name: "Torpedo7".into(),
-                                        mobile: MobileNumber {
-                                            region_code: "+64".into(),
-                                            root: "021212120".into()
-                                        },
-                                        email: Email {
-                                            root: "order".into(),
-                                            domain: "torpedo7.com".into(),
-                                            full: "order@torpedo7.com".into()
-                                        },
-                                        landline: "".into(),
-                                        address: Address {
-                                            street: "9 Carbine Road".into(),
-                                            street2: "".into(),
-                                            city: "Auckland".into(),
-                                            country: "New Zealand".into(),
-                                            po_code: "100".into()
-                                        }
-                                    }
-                                }, 
-                                quantity: Quantity { 
-                                    quantity_on_hand: 2, 
-                                    quantity_on_order: 1, 
-                                    quantity_on_floor: 1 
-                                }   
-                            }
-                        ], 
                         images: vec![
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
@@ -537,20 +275,6 @@ fn example_product() -> Product {
                         marginal_price: 550, 
                         variant_code: "23".into(), 
                         order_history: vec![], 
-                        stock_information: StockInformation { 
-                            stock_group: "RANDOM".into(), 
-                            sales_group: "RANDOM".into(), 
-                            value_stream: "RANDOM".into(), 
-                            brand: "Torq Group".into(), 
-                            unit: "".into(), 
-                            tax_code: "GSL".into(), 
-                            weight: "5.6".into(), 
-                            volume: "0.123".into(), 
-                            max_volume: "6.00".into(), 
-                            back_order: false, 
-                            discontinued: false, 
-                            non_diminishing: false 
-                        }
                     }
                 ] 
             }
@@ -558,10 +282,147 @@ fn example_product() -> Product {
         variants: vec![
             VariantInformation { 
                 name: "Black 6'0".into(), 
-                stock: vec![], 
+                stock: vec![
+                    Stock { 
+                        store: Location {
+                            code: "001".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "9 Carbine Road".into(),
+                                    street2: "".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "100".into()
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_on_hand: 2, 
+                            quantity_on_order: 1, 
+                            quantity_on_floor: 1 
+                        }   
+                    }
+                ], 
                 images: vec![], 
                 marginal_price: 159.99, 
                 variant_code: vec!["02".into(), "21".into()], 
+                order_history: vec![], 
+                stock_information: StockInformation { 
+                    stock_group: "RANDOM".into(), 
+                    sales_group: "RANDOM".into(), 
+                    value_stream: "RANDOM".into(), 
+                    brand: "Torq Group".into(), 
+                    unit: "".into(), 
+                    tax_code: "GSL".into(), 
+                    weight: "5.6".into(), 
+                    volume: "0.123".into(), 
+                    max_volume: "6.00".into(), 
+                    back_order: false, 
+                    discontinued: false, 
+                    non_diminishing: false 
+                }
+            },
+            VariantInformation { 
+                name: "White 6'0".into(), 
+                stock: vec![
+                    Stock { 
+                        store: Location {
+                            code: "001".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "9 Carbine Road".into(),
+                                    street2: "".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "100".into()
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_on_hand: 2, 
+                            quantity_on_order: 1, 
+                            quantity_on_floor: 1 
+                        }   
+                    }
+                ], 
+                images: vec![], 
+                marginal_price: 159.99, 
+                variant_code: vec!["01".into(), "21".into()], 
+                order_history: vec![], 
+                stock_information: StockInformation { 
+                    stock_group: "RANDOM".into(), 
+                    sales_group: "RANDOM".into(), 
+                    value_stream: "RANDOM".into(), 
+                    brand: "Torq Group".into(), 
+                    unit: "".into(), 
+                    tax_code: "GSL".into(), 
+                    weight: "5.6".into(), 
+                    volume: "0.123".into(), 
+                    max_volume: "6.00".into(), 
+                    back_order: false, 
+                    discontinued: false, 
+                    non_diminishing: false 
+                }
+            },
+            VariantInformation { 
+                name: "Violet 10'2".into(), 
+                stock: vec![
+                    Stock { 
+                        store: Location {
+                            code: "001".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "9 Carbine Road".into(),
+                                    street2: "".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "100".into()
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_on_hand: 2, 
+                            quantity_on_order: 1, 
+                            quantity_on_floor: 1 
+                        }   
+                    }
+                ], 
+                images: vec![], 
+                marginal_price: 159.99, 
+                variant_code: vec!["03".into(), "22".into()], 
                 order_history: vec![], 
                 stock_information: StockInformation { 
                     stock_group: "RANDOM".into(), 
