@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS `Products` (
   `name` varchar(100) NOT NULL,
   `company` text NOT NULL,
   `variants` json NOT NULL,
+  `variant_groups` json NOT NULL,
   `loyalty_discount` text NOT NULL,
   `images` json NOT NULL,
   `tags` json NOT NULL,

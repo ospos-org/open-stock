@@ -4,8 +4,8 @@ use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertR
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
-use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity}, entities::{sea_orm_active_enums::TransactionType, products}};
-use super::{VariantCategoryList, VariantIdTag, VariantCategory, Variant, StockInformation};
+use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity, StockList}, entities::{sea_orm_active_enums::TransactionType, products}};
+use super::{VariantCategoryList, VariantIdTag, VariantCategory, Variant, StockInformation, VariantInformation};
 use crate::entities::prelude::Products;
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -14,7 +14,11 @@ use crate::entities::prelude::Products;
 pub struct Product {
     pub name: String,
     pub company: String,
-    pub variants: VariantCategoryList,
+
+    pub variant_groups: VariantCategoryList,
+    /// Lists all the **possible** combinations of a product in terms of its variants.
+    pub variants: Vec<VariantInformation>, 
+
     pub sku: String,
     
     pub loyalty_discount: DiscountValue,
@@ -27,7 +31,7 @@ pub struct Product {
 
 impl Display for Product {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let variant_categories: String = self.variants
+        let variant_categories: String = self.variant_groups
             .iter()
             .map(|p| {
                 let variants: String = p.variants
@@ -73,7 +77,8 @@ impl Product {
         Ok(Product { 
             name: p.name, 
             company: p.company,
-            variants: serde_json::from_value::<VariantCategoryList>(p.variants).unwrap(), 
+            variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
+            variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(), 
             sku: p.sku, 
             loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
             images: serde_json::from_value::<Vec<Url>>(p.images).unwrap(), 
@@ -92,7 +97,8 @@ impl Product {
             Product { 
                 name: p.name.clone(), 
                 company: p.company.clone(),
-                variants: serde_json::from_value::<VariantCategoryList>(p.variants.clone()).unwrap(), 
+                variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
+                variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(), 
                 sku: p.sku.clone(), 
                 loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
@@ -114,7 +120,8 @@ impl Product {
             Product { 
                 name: p.name.clone(), 
                 company: p.company.clone(),
-                variants: serde_json::from_value::<VariantCategoryList>(p.variants.clone()).unwrap(), 
+                variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
+                variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(),  
                 sku: p.sku.clone(), 
                 loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
@@ -192,7 +199,7 @@ fn example_product() -> Product {
     Product { 
         name: "Wakeboard".into(), 
         company: "Torq".into(), 
-        variants: vec![
+        variant_groups: vec![
             VariantCategory { 
                 category: "Colour".into(), 
                 variants: vec![
@@ -293,7 +300,7 @@ fn example_product() -> Product {
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
                         ], 
                         marginal_price: 550, 
-                        variant_code: "01".into(), 
+                        variant_code: "02".into(), 
                         order_history: vec![], 
                         stock_information: StockInformation { 
                             stock_group: "RANDOM".into(), 
@@ -350,7 +357,183 @@ fn example_product() -> Product {
                             "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
                         ], 
                         marginal_price: 550, 
-                        variant_code: "01".into(), 
+                        variant_code: "03".into(), 
+                        order_history: vec![], 
+                        stock_information: StockInformation { 
+                            stock_group: "RANDOM".into(), 
+                            sales_group: "RANDOM".into(), 
+                            value_stream: "RANDOM".into(), 
+                            brand: "Torq Group".into(), 
+                            unit: "".into(), 
+                            tax_code: "GSL".into(), 
+                            weight: "5.6".into(), 
+                            volume: "0.123".into(), 
+                            max_volume: "6.00".into(), 
+                            back_order: false, 
+                            discontinued: false, 
+                            non_diminishing: false 
+                        }
+                    }
+                ] 
+            },
+            VariantCategory { 
+                category: "Size".into(), 
+                variants: vec![
+                    Variant { 
+                        name: "6'0".into(), 
+                        stock: vec![
+                            Stock { 
+                                store: Location {
+                                    code: "001".into(),
+                                    contact: ContactInformation {
+                                        name: "Torpedo7".into(),
+                                        mobile: MobileNumber {
+                                            region_code: "+64".into(),
+                                            root: "021212120".into()
+                                        },
+                                        email: Email {
+                                            root: "order".into(),
+                                            domain: "torpedo7.com".into(),
+                                            full: "order@torpedo7.com".into()
+                                        },
+                                        landline: "".into(),
+                                        address: Address {
+                                            street: "9 Carbine Road".into(),
+                                            street2: "".into(),
+                                            city: "Auckland".into(),
+                                            country: "New Zealand".into(),
+                                            po_code: "100".into()
+                                        }
+                                    }
+                                }, 
+                                quantity: Quantity { 
+                                    quantity_on_hand: 2, 
+                                    quantity_on_order: 1, 
+                                    quantity_on_floor: 1 
+                                }   
+                            }
+                        ], 
+                        images: vec![
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                        ], 
+                        marginal_price: 550, 
+                        variant_code: "21".into(), 
+                        order_history: vec![], 
+                        stock_information: StockInformation { 
+                            stock_group: "RANDOM".into(), 
+                            sales_group: "RANDOM".into(), 
+                            value_stream: "RANDOM".into(), 
+                            brand: "Torq Group".into(), 
+                            unit: "".into(), 
+                            tax_code: "GSL".into(), 
+                            weight: "5.6".into(), 
+                            volume: "0.123".into(), 
+                            max_volume: "6.00".into(), 
+                            back_order: false, 
+                            discontinued: false, 
+                            non_diminishing: false 
+                        }
+                    },
+                    Variant { 
+                        name: "10'2".into(), 
+                        stock: vec![
+                            Stock { 
+                                store: Location {
+                                    code: "001".into(),
+                                    contact: ContactInformation {
+                                        name: "Torpedo7".into(),
+                                        mobile: MobileNumber {
+                                            region_code: "+64".into(),
+                                            root: "021212120".into()
+                                        },
+                                        email: Email {
+                                            root: "order".into(),
+                                            domain: "torpedo7.com".into(),
+                                            full: "order@torpedo7.com".into()
+                                        },
+                                        landline: "".into(),
+                                        address: Address {
+                                            street: "9 Carbine Road".into(),
+                                            street2: "".into(),
+                                            city: "Auckland".into(),
+                                            country: "New Zealand".into(),
+                                            po_code: "100".into()
+                                        }
+                                    }
+                                }, 
+                                quantity: Quantity { 
+                                    quantity_on_hand: 2, 
+                                    quantity_on_order: 1, 
+                                    quantity_on_floor: 1 
+                                }   
+                            }
+                        ], 
+                        images: vec![
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                        ], 
+                        marginal_price: 550, 
+                        variant_code: "22".into(), 
+                        order_history: vec![], 
+                        stock_information: StockInformation { 
+                            stock_group: "RANDOM".into(), 
+                            sales_group: "RANDOM".into(), 
+                            value_stream: "RANDOM".into(), 
+                            brand: "Torq Group".into(), 
+                            unit: "".into(), 
+                            tax_code: "GSL".into(), 
+                            weight: "5.6".into(), 
+                            volume: "0.123".into(), 
+                            max_volume: "6.00".into(), 
+                            back_order: false, 
+                            discontinued: false, 
+                            non_diminishing: false 
+                        }
+                    },
+                    Variant { 
+                        name: "11'2".into(), 
+                        stock: vec![
+                            Stock { 
+                                store: Location {
+                                    code: "001".into(),
+                                    contact: ContactInformation {
+                                        name: "Torpedo7".into(),
+                                        mobile: MobileNumber {
+                                            region_code: "+64".into(),
+                                            root: "021212120".into()
+                                        },
+                                        email: Email {
+                                            root: "order".into(),
+                                            domain: "torpedo7.com".into(),
+                                            full: "order@torpedo7.com".into()
+                                        },
+                                        landline: "".into(),
+                                        address: Address {
+                                            street: "9 Carbine Road".into(),
+                                            street2: "".into(),
+                                            city: "Auckland".into(),
+                                            country: "New Zealand".into(),
+                                            po_code: "100".into()
+                                        }
+                                    }
+                                }, 
+                                quantity: Quantity { 
+                                    quantity_on_hand: 2, 
+                                    quantity_on_order: 1, 
+                                    quantity_on_floor: 1 
+                                }   
+                            }
+                        ], 
+                        images: vec![
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
+                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                        ], 
+                        marginal_price: 550, 
+                        variant_code: "23".into(), 
                         order_history: vec![], 
                         stock_information: StockInformation { 
                             stock_group: "RANDOM".into(), 
@@ -370,6 +553,30 @@ fn example_product() -> Product {
                 ] 
             }
         ], 
+        variants: vec![
+            VariantInformation { 
+                name: "Black 6'0".into(), 
+                stock: vec![], 
+                images: vec![], 
+                marginal_price: 159.99, 
+                variant_code: vec!["02".into(), "21".into()], 
+                order_history: vec![], 
+                stock_information: StockInformation { 
+                    stock_group: "RANDOM".into(), 
+                    sales_group: "RANDOM".into(), 
+                    value_stream: "RANDOM".into(), 
+                    brand: "Torq Group".into(), 
+                    unit: "".into(), 
+                    tax_code: "GSL".into(), 
+                    weight: "5.6".into(), 
+                    volume: "0.123".into(), 
+                    max_volume: "6.00".into(), 
+                    back_order: false, 
+                    discontinued: false, 
+                    non_diminishing: false 
+                }
+            }
+        ],
         sku: "123858".into(), 
         loyalty_discount: DiscountValue::Absolute(15), 
         images: vec![

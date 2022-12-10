@@ -16,6 +16,20 @@ pub struct VariantCategory {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
+pub struct VariantInformation {
+    pub name: String,
+    pub stock: StockList,
+    pub images: Vec<Url>,
+    pub marginal_price: f32,
+    /// The group codes for all sub-variants; i.e. is White, Short Sleeve and Small.
+    pub variant_code: VariantIdTag,
+    pub order_history: HistoryList,
+    pub stock_information: StockInformation
+}
+
+
+/// Represents all sub-variant types; i.e. All 'White' variants, whether small, long-sleeve, ... it represents the sub-group of all which are 'White'.
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Variant {
     pub name: String,
     pub stock: StockList,
