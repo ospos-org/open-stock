@@ -1,5 +1,6 @@
 use std::{str::FromStr, fmt::Display};
 
+use rand::Rng;
 use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
@@ -198,9 +199,11 @@ pub type ProductCode = String;
 pub type ProductPurchaseList = Vec<ProductPurchase>;
 
 fn example_product() -> Product {
+    let num = rand::thread_rng().gen_range(0..999999);
+
     Product { 
-        name: "Wakeboard".into(), 
-        company: "Torq".into(), 
+        name: "Explore Graphic Tee".into(), 
+        company: "Torpedo7".into(), 
         variant_groups: vec![
             VariantCategory { 
                 category: "Colour".into(), 
@@ -208,9 +211,7 @@ fn example_product() -> Product {
                     Variant { 
                         name: "White".into(), 
                         images: vec![
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YBHT_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-blanc-du-blanc.jpg?v=845eb9a5288642009c05".into(),
                         ], 
                         marginal_price: 550, 
                         variant_code: "01".into(), 
@@ -219,23 +220,37 @@ fn example_product() -> Product {
                     Variant { 
                         name: "Black".into(), 
                         images: vec![
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into(),
                         ], 
                         marginal_price: 550, 
                         variant_code: "02".into(), 
                         order_history: vec![], 
                     },
                     Variant { 
-                        name: "Violet".into(), 
+                        name: "Hot Sauce".into(), 
                         images: vec![
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YDHS_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirts-hot-sauce.jpg?v=845eb9a5288642009c05".into(),
                         ], 
                         marginal_price: 550, 
                         variant_code: "03".into(), 
+                        order_history: vec![], 
+                    },
+                    Variant { 
+                        name: "Tourmaline".into(), 
+                        images: vec![
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YCJZ_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-tourmaline.jpg?v=845eb9a5288642009c05".into(),
+                        ], 
+                        marginal_price: 550, 
+                        variant_code: "04".into(), 
+                        order_history: vec![], 
+                    },
+                    Variant { 
+                        name: "Navy Blazer".into(), 
+                        images: vec![
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YIWJ_zoom---men-s-ecopulse-short-sleeve-organic-chest-print-t-shirt-navy-blazer.jpg?v=845eb9a5288642009c05".into(),
+                        ], 
+                        marginal_price: 550, 
+                        variant_code: "05".into(), 
                         order_history: vec![], 
                     }
                 ] 
@@ -244,36 +259,39 @@ fn example_product() -> Product {
                 category: "Size".into(), 
                 variants: vec![
                     Variant { 
-                        name: "6'0".into(), 
+                        name: "Small".into(), 
                         images: vec![
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YIWJ_zoom---men-s-ecopulse-short-sleeve-organic-chest-print-t-shirt-navy-blazer.jpg?v=845eb9a5288642009c05".into()
                         ], 
                         marginal_price: 550, 
                         variant_code: "21".into(), 
                         order_history: vec![], 
                     },
                     Variant { 
-                        name: "10'2".into(), 
+                        name: "Medium".into(), 
                         images: vec![
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YIWJ_zoom---men-s-ecopulse-short-sleeve-organic-chest-print-t-shirt-navy-blazer.jpg?v=845eb9a5288642009c05".into(),
                         ], 
                         marginal_price: 550, 
                         variant_code: "22".into(), 
                         order_history: vec![], 
                     },
                     Variant { 
-                        name: "11'2".into(), 
+                        name: "Large".into(), 
                         images: vec![
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-                            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YIWJ_zoom---men-s-ecopulse-short-sleeve-organic-chest-print-t-shirt-navy-blazer.jpg?v=845eb9a5288642009c05".into(),
                         ], 
                         marginal_price: 550, 
                         variant_code: "23".into(), 
+                        order_history: vec![], 
+                    },
+                    Variant { 
+                        name: "Extra Large".into(), 
+                        images: vec![
+                            "https://www.torpedo7.co.nz/images/products/T7TEO23YIWJ_zoom---men-s-ecopulse-short-sleeve-organic-chest-print-t-shirt-navy-blazer.jpg?v=845eb9a5288642009c05".into()
+                        ], 
+                        marginal_price: 550, 
+                        variant_code: "24".into(), 
                         order_history: vec![], 
                     }
                 ] 
@@ -281,7 +299,7 @@ fn example_product() -> Product {
         ], 
         variants: vec![
             VariantInformation { 
-                name: "Black 6'0".into(), 
+                name: "Small Black".into(), 
                 stock: vec![
                     Stock { 
                         store: Location {
@@ -308,14 +326,16 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 2, 
-                            quantity_on_order: 1, 
-                            quantity_on_floor: 1 
+                            quantity_on_hand: 7, 
+                            quantity_on_order: 4, 
+                            quantity_on_floor: 2 
                         }   
                     }
                 ], 
-                images: vec![], 
-                marginal_price: 159.99, 
+                images: vec![
+                    "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
+                ], 
+                marginal_price: 44.99, 
                 variant_code: vec!["02".into(), "21".into()], 
                 order_history: vec![], 
                 stock_information: StockInformation { 
@@ -334,7 +354,7 @@ fn example_product() -> Product {
                 }
             },
             VariantInformation { 
-                name: "White 6'0".into(), 
+                name: "Medium Black".into(), 
                 stock: vec![
                     Stock { 
                         store: Location {
@@ -361,15 +381,17 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 2, 
-                            quantity_on_order: 1, 
-                            quantity_on_floor: 1 
+                            quantity_on_hand: 7, 
+                            quantity_on_order: 4, 
+                            quantity_on_floor: 2 
                         }   
                     }
                 ], 
-                images: vec![], 
-                marginal_price: 159.99, 
-                variant_code: vec!["01".into(), "21".into()], 
+                images: vec![
+                    "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
+                ], 
+                marginal_price: 44.99, 
+                variant_code: vec!["02".into(), "22".into()], 
                 order_history: vec![], 
                 stock_information: StockInformation { 
                     stock_group: "RANDOM".into(), 
@@ -387,7 +409,7 @@ fn example_product() -> Product {
                 }
             },
             VariantInformation { 
-                name: "Violet 10'2".into(), 
+                name: "Large White".into(), 
                 stock: vec![
                     Stock { 
                         store: Location {
@@ -414,15 +436,17 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 2, 
-                            quantity_on_order: 1, 
-                            quantity_on_floor: 1 
+                            quantity_on_hand: 7, 
+                            quantity_on_order: 4, 
+                            quantity_on_floor: 2 
                         }   
                     }
                 ], 
-                images: vec![], 
-                marginal_price: 159.99, 
-                variant_code: vec!["03".into(), "22".into()], 
+                images: vec![
+                    "https://www.torpedo7.co.nz/images/products/T7TEO23YBHT_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-blanc-du-blanc.jpg?v=845eb9a5288642009c05".into()
+                ], 
+                marginal_price: 44.99, 
+                variant_code: vec!["01".into(), "23".into()], 
                 order_history: vec![], 
                 stock_information: StockInformation { 
                     stock_group: "RANDOM".into(), 
@@ -438,24 +462,23 @@ fn example_product() -> Product {
                     discontinued: false, 
                     non_diminishing: false 
                 }
-            }
+            },
         ],
-        sku: "123858".into(), 
+        sku: num.to_string(), 
         loyalty_discount: DiscountValue::Absolute(15), 
         images: vec![
-            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_1---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into(),
-            "https://www.torpedo7.co.nz/images/products/F1S8CN8VAXX_zoom_2---surfboard-7ft-6in-fun-white.jpg?v=075e26aa5b6847e8bbd2".into()
+            "https://www.torpedo7.co.nz/images/products/T7TEOQR5NDD_zoom---men-s-short-sleeve-explore-graphic-tee-ochre-rose.jpg?v=845eb9a5288642009c05".into()
         ], 
         tags: vec![
-            "Surfboard".into(),
-            "Water".into()
+            "Tee".into(),
+            "Cotton".into(),
+            "Organic".into()
         ], 
-        description: "This crossover range caters to all levels of surfers in virtually every condition. From waist high mush to overhead and hollow. The versatility of the Mod Fun makes them an excellent choice if you need one board to handle all the conditions where you live and travel.\n        Featuring a medium full nose and shallow mid-entry there is enough volume for smaller days and weaker surf. As the surf jumps up, step back and the board transforms. You'll find a board that feels shorter than it's length, delivering predictable handling and performance.  Tri-fin set-up.\n        Our fin system is designed by Futures Fins of California - one of the most respected fin systems on the planet.\n        Torq TET surfboards all come with fins. The ModFun shapes come with 3 fin boxes and a Thruster fin \n        set offering an even balance of drive and release for all round surfing.".into(), 
+        description: "Made with organically grown cotton to reflect our love of the planet and the people on it.".into(), 
         specifications: vec![
-            ("Difficulty".into(), "Expert".into()),
-            ("Wave Height".into(), "2-6ft".into()),
-            ("Dimensions".into(), "7'6\" x 21 1/2\" x 2 7/8\"".into())
+            ("".into(), "Soft cotton tee".into()),
+            ("".into(), "100% Organically Grown Cotton. Uses Less Water. No pesticides used on crops. Supports Regenerative Agriculture".into()),
+            ("".into(), "Composition: 100% Organic cotton".into())
         ] 
     }
 }

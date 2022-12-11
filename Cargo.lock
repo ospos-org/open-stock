@@ -2968,6 +2968,7 @@ dependencies = [
  "futures 0.3.25",
  "futures-cpupool",
  "futures-util",
+ "rand 0.8.5",
  "reqwest",
  "rocket",
  "sea-orm",

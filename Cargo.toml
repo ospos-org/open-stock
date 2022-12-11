@@ -27,6 +27,7 @@ rocket = { version = "0.5.0-rc.2", features = [
 ] }
 argonautica = { version = "0.2", features = ["simd"] }
 futures-cpupool = "0.1.8"
+rand = "0.8.5"
 
 [dev-dependencies]
 tokio = { version = "1.22.0", features = ["rt"] }
