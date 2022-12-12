@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{methods::{Name, ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment}, entities::customer};
+use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment}, entities::customer};
 use chrono::Utc;
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}};
 use serde::{Serialize, Deserialize};
@@ -11,7 +11,7 @@ use crate::entities::prelude::Customer as Cust;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Customer {
     pub id: Id,
-    pub name: Name,
+    pub name: String,
     pub contact: ContactInformation,
     pub order_history: OrderList,
     pub customer_notes: NoteList,
@@ -20,7 +20,7 @@ pub struct Customer {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CustomerInput {
-    pub name: Name,
+    pub name: String,
     pub contact: ContactInformation,
     pub order_history: OrderList,
     pub customer_notes: NoteList,
@@ -34,7 +34,7 @@ impl Customer {
 
         let insert_crud = customer::ActiveModel {
             id: Set(id),
-            name: Set(json!(cust.name)),
+            name: Set(cust.name),
             contact: Set(json!(cust.contact)),
             order_history: Set(json!(cust.order_history)),
             customer_notes: Set(json!(cust.customer_notes)),
@@ -54,7 +54,7 @@ impl Customer {
 
         Ok(Customer { 
             id: c.id, 
-            name: serde_json::from_value::<Name>(c.name).unwrap(), 
+            name: c.name, 
             contact: serde_json::from_value::<ContactInformation>(c.contact).unwrap(),
             order_history: serde_json::from_value::<OrderList>(c.order_history).unwrap(),
             customer_notes: serde_json::from_value::<NoteList>(c.customer_notes).unwrap(),
@@ -70,7 +70,7 @@ impl Customer {
         let mapped = res.iter().map(|c| 
             Customer { 
                 id: c.id.clone(), 
-                name: serde_json::from_value::<Name>(c.name.clone()).unwrap(), 
+                name: c.name.clone(), 
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
@@ -89,7 +89,7 @@ impl Customer {
         let mapped = res.iter().map(|c| 
             Customer { 
                 id: c.id.clone(), 
-                name: serde_json::from_value::<Name>(c.name.clone()).unwrap(), 
+                name: c.name.clone(), 
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
@@ -108,7 +108,7 @@ impl Customer {
         let mapped = res.iter().map(|c| 
             Customer { 
                 id: c.id.clone(), 
-                name: serde_json::from_value::<Name>(c.name.clone()).unwrap(), 
+                name: c.name.clone(), 
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
@@ -138,7 +138,7 @@ impl Customer {
     pub async fn update(cust: CustomerInput, id: &str, db: &DbConn) -> Result<Customer, DbErr> {
         customer::ActiveModel {
             id: Set(id.to_string()),
-            name: Set(json!(cust.name)),
+            name: Set(cust.name),
             contact: Set(json!(cust.contact)),
             order_history: Set(json!(cust.order_history)),
             customer_notes: Set(json!(cust.customer_notes)),
@@ -172,9 +172,9 @@ impl Display for Customer {
 
         write!(
             f, 
-            "{} {} (${})\n{}\n({}) {} {}\n\n[Clock History]\n{}\n[Notes]\n{}
+            "{} (${})\n{}\n({}) {} {}\n\n[Clock History]\n{}\n[Notes]\n{}
             ", 
-            self.name.first, self.name.last, self.balance, 
+            self.name, self.balance, 
             self.id, 
             self.contact.mobile.region_code, self.contact.mobile.root, self.contact.email.full,
             order_history,
@@ -199,7 +199,7 @@ pub fn example_customer() -> CustomerInput {
     };
 
     CustomerInput {
-        name: Name { first: "".into(), middle: "".into(), last: "".into() },
+        name: "Carl Kennith".into(),
         contact: customer.clone(),
         order_history: vec![
             Order {

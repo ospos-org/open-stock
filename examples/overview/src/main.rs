@@ -87,7 +87,7 @@ fn example_customer() -> (Customer, String) {
 
     (Customer {
         id: id.clone(),
-        name: Name { first: "".into(), middle: "".into(), last: "".into() },
+        name: "".into(),
         contact: customer.clone(),
         order_history: vec![
             Order {
