@@ -24,7 +24,8 @@ pub struct VariantInformation {
     /// The group codes for all sub-variants; i.e. is White, Short Sleeve and Small.
     pub variant_code: VariantIdTag,
     pub order_history: HistoryList,
-    pub stock_information: StockInformation
+    pub stock_information: StockInformation,
+    pub barcode: String
 }
 
 /// Represents all sub-variant types; i.e. All 'White' variants, whether small, long-sleeve, ... it represents the sub-group of all which are 'White'.

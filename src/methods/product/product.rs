@@ -1,7 +1,7 @@
 use std::{str::FromStr, fmt::Display};
 
 use rand::Rng;
-use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait};
+use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, Condition, QueryFilter, sea_query::{Expr, Func}};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
@@ -88,6 +88,34 @@ impl Product {
             description: p.description, 
             specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap() 
         })
+    }
+
+    pub async fn search(query: &str, db: &DbConn) -> Result<Vec<Product>, DbErr> {
+        let res = products::Entity::find()
+            .filter(
+                Condition::any()
+                    .add(Expr::expr(Func::lower(Expr::col(products::Column::Name))).like(format!("%{}%", query)))
+                    .add(products::Column::Sku.contains(query))
+                    .add(products::Column::Variants.contains(query))
+            )
+            .all(db).await?;
+
+        let mapped = res.iter().map(|p| 
+            Product { 
+                name: p.name.clone(), 
+                company: p.company.clone(),
+                variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups.clone()).unwrap(), 
+                variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants.clone()).unwrap(), 
+                sku: p.sku.clone(), 
+                loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
+                images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
+                tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
+                description: p.description.clone(), 
+                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+            }
+        ).collect();
+
+        Ok(mapped)
     }
 
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Product>, DbErr> {
@@ -338,6 +366,7 @@ fn example_product() -> Product {
                 marginal_price: 44.99, 
                 variant_code: vec!["02".into(), "21".into()], 
                 order_history: vec![], 
+                barcode: "51890723908812".into(),
                 stock_information: StockInformation { 
                     stock_group: "RANDOM".into(), 
                     sales_group: "RANDOM".into(), 
@@ -393,6 +422,7 @@ fn example_product() -> Product {
                 marginal_price: 44.99, 
                 variant_code: vec!["02".into(), "22".into()], 
                 order_history: vec![], 
+                barcode: "51150723152813".into(),
                 stock_information: StockInformation { 
                     stock_group: "RANDOM".into(), 
                     sales_group: "RANDOM".into(), 
@@ -448,6 +478,7 @@ fn example_product() -> Product {
                 marginal_price: 44.99, 
                 variant_code: vec!["01".into(), "23".into()], 
                 order_history: vec![], 
+                barcode: "51150723159173".into(),
                 stock_information: StockInformation { 
                     stock_group: "RANDOM".into(), 
                     sales_group: "RANDOM".into(), 

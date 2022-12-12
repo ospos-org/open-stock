@@ -9,7 +9,7 @@ use crate::pool::Db;
 use super::Product;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_name_exact, create, update, generate]
+    routes![get, get_by_name, get_by_name_exact, create, update, generate, search_query]
 }
 
 #[get("/<id>")]
@@ -38,6 +38,15 @@ pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: &str, cookies: &C
 
     let product = Product::fetch_by_name_exact(name, db).await.unwrap();
     Ok(Json(product))
+}
+
+/// Will search by both name, phone and email.
+#[get("/search/<query>")]
+pub async fn search_query(conn: Connection<'_, Db>, query: &str) -> Result<Json<Vec<Product>>, Status> {
+    let db = conn.into_inner();
+
+    let employee = Product::search(query, db).await.unwrap();
+    Ok(Json(employee))
 }
 
 #[put("/<id>", data = "<input_data>")]

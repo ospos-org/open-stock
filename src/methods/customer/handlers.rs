@@ -8,7 +8,7 @@ use crate::pool::Db;
 use super::{Customer, CustomerInput};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_phone, get_by_addr, create, update, generate]
+    routes![get, get_by_name, get_by_phone, get_by_addr, create, update, generate, search_query]
 }
 
 #[get("/<id>")]
@@ -24,6 +24,15 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str) -> Result<Json<Ve
     let db = conn.into_inner();
 
     let employee = Customer::fetch_by_name(name, db).await.unwrap();
+    Ok(Json(employee))
+}
+
+/// Will search by both name, phone and email.
+#[get("/search/<query>")]
+pub async fn search_query(conn: Connection<'_, Db>, query: &str) -> Result<Json<Vec<Customer>>, Status> {
+    let db = conn.into_inner();
+
+    let employee = Customer::search(query, db).await.unwrap();
     Ok(Json(employee))
 }
 

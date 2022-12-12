@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment}, entities::customer};
 use chrono::Utc;
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}, QueryFilter, Condition};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -60,6 +60,30 @@ impl Customer {
             customer_notes: serde_json::from_value::<NoteList>(c.customer_notes).unwrap(),
             balance: c.balance, 
         })
+    }
+
+    pub async fn search(query: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
+        let res = customer::Entity::find()
+            .filter(
+                Condition::any()
+                    .add(Expr::expr(Func::lower(Expr::col(customer::Column::Name))).like(format!("%{}%", query)))
+                    // Phone no. and email.
+                    .add(customer::Column::Contact.contains(query))
+            )
+            .all(db).await?;
+
+        let mapped = res.iter().map(|c| 
+            Customer { 
+                id: c.id.clone(), 
+                name: c.name.clone(), 
+                contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
+                order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
+                customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
+                balance: c.balance
+            }
+        ).collect();
+
+        Ok(mapped)
     }
 
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
@@ -186,7 +210,7 @@ impl Display for Customer {
 pub fn example_customer() -> CustomerInput {
     let customer = ContactInformation {
         name: "Carl Kennith".into(),
-        mobile: MobileNumber::from("021212120".to_string()),
+        mobile: MobileNumber::from("0212121204".to_string()),
         email: Email::from("carl@kennith.com".to_string()),
         landline: "".into(),
         address: Address {
