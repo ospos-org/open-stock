@@ -2,7 +2,7 @@
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "Customer")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
@@ -11,7 +11,7 @@ pub struct Model {
     pub contact: Json,
     pub order_history: Json,
     pub customer_notes: Json,
-    pub balance: i32,
+    pub balance: f32,
     pub special_pricing: Json,
 }
 

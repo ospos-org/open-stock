@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{methods::{Name, ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment}, entities::customer};
 use chrono::Utc;
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -15,7 +15,7 @@ pub struct Customer {
     pub contact: ContactInformation,
     pub order_history: OrderList,
     pub customer_notes: NoteList,
-    pub balance: i32,
+    pub balance: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -25,7 +25,7 @@ pub struct CustomerInput {
     pub order_history: OrderList,
     pub customer_notes: NoteList,
     pub special_pricing: String,
-    pub balance: i32,
+    pub balance: f32,
 }
 
 impl Customer {
@@ -64,7 +64,7 @@ impl Customer {
 
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
         let res = customer::Entity::find()
-            .having(customer::Column::Name.contains(name))
+            .having(Expr::expr(Func::lower(Expr::col(customer::Column::Name))).like(format!("%{}%", name)))
             .all(db).await?;
             
         let mapped = res.iter().map(|c| 
@@ -237,6 +237,6 @@ pub fn example_customer() -> CustomerInput {
         ],
         special_pricing: "".into(),
         customer_notes: vec![],
-        balance: 0,
+        balance: 0.0,
     }
 }

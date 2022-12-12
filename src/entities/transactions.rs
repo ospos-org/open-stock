@@ -3,7 +3,7 @@
 use super::sea_orm_active_enums::TransactionType;
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "Transactions")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
@@ -12,7 +12,7 @@ pub struct Model {
     pub customer: String,
     pub transaction_type: TransactionType,
     pub products: Json,
-    pub order_total: i32,
+    pub order_total: f32,
     pub payment: Json,
     pub order_date: DateTime,
     pub order_notes: Json,

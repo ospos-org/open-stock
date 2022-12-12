@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `Customer` (
   `contact` json NOT NULL,
   `order_history` json NOT NULL,
   `customer_notes` json NOT NULL,
-  `balance` int(11) NOT NULL,
+  `balance` FLOAT NOT NULL,
   `special_pricing` json NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS `Transactions` (
   `customer` text NOT NULL,
   `transaction_type` enum('in', 'out', 'pending-in', 'pending-out') NOT NULL,
   `products` json NOT NULL,
-  `order_total` int(11) NOT NULL,
+  `order_total` FLOAT NOT NULL,
   `payment` json NOT NULL,
   `order_date` datetime NOT NULL,
   `order_notes` json NOT NULL,

@@ -37,7 +37,7 @@ pub struct Transaction {
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
-    pub order_total: i32,
+    pub order_total: f32,
     pub payment: Payment,
 
     pub order_date: DateTime<Utc>,
@@ -53,7 +53,7 @@ pub struct TransactionInput {
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
-    pub order_total: i32,
+    pub order_total: f32,
     pub payment: Payment,
 
     pub order_date: DateTime<Utc>,
@@ -70,7 +70,7 @@ pub struct TransactionInit {
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
-    pub order_total: i32,
+    pub order_total: f32,
     pub payment: Payment,
 
     pub order_date: DateTime<Utc>,
@@ -313,7 +313,7 @@ pub fn example_transaction() -> TransactionInit {
         customer: "...".into(),
         transaction_type: TransactionType::In,
         products: vec![order],
-        order_total: 115,
+        order_total: 115.00,
         payment: Payment {
             payment_method: crate::methods::PaymentMethod::Card,
             fulfillment_date: Utc::now(),
