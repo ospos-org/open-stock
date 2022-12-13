@@ -20,6 +20,7 @@ pub struct VariantInformation {
     pub name: String,
     pub stock: StockList,
     pub images: Vec<Url>,
+    pub retail_price: f32,
     pub marginal_price: f32,
     /// The group codes for all sub-variants; i.e. is White, Short Sleeve and Small.
     pub variant_code: VariantIdTag,

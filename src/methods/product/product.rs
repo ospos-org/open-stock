@@ -363,7 +363,8 @@ fn example_product() -> Product {
                 images: vec![
                     "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
                 ], 
-                marginal_price: 44.99, 
+                marginal_price: 10.99, 
+                retail_price: 44.99,
                 variant_code: vec!["02".into(), "21".into()], 
                 order_history: vec![], 
                 barcode: "51890723908812".into(),
@@ -419,7 +420,8 @@ fn example_product() -> Product {
                 images: vec![
                     "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
                 ], 
-                marginal_price: 44.99, 
+                marginal_price: 12.49, 
+                retail_price: 46.99, 
                 variant_code: vec!["02".into(), "22".into()], 
                 order_history: vec![], 
                 barcode: "51150723152813".into(),
@@ -475,9 +477,10 @@ fn example_product() -> Product {
                 images: vec![
                     "https://www.torpedo7.co.nz/images/products/T7TEO23YBHT_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-blanc-du-blanc.jpg?v=845eb9a5288642009c05".into()
                 ], 
-                marginal_price: 44.99, 
                 variant_code: vec!["01".into(), "23".into()], 
                 order_history: vec![], 
+                marginal_price: 16.09, 
+                retail_price: 49.99, 
                 barcode: "51150723159173".into(),
                 stock_information: StockInformation { 
                     stock_group: "RANDOM".into(), 
