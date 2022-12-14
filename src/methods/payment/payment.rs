@@ -6,7 +6,8 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Payment {
     pub payment_method: PaymentMethod,
-    pub fulfillment_date: DateTime<Utc>
+    pub fulfillment_date: DateTime<Utc>,
+    pub amount: f32
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

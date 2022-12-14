@@ -38,7 +38,7 @@ pub struct Transaction {
 
     pub products: OrderList,
     pub order_total: f32,
-    pub payment: Payment,
+    pub payment: Vec<Payment>,
 
     pub order_date: DateTime<Utc>,
     pub order_notes: NoteList,
@@ -54,7 +54,7 @@ pub struct TransactionInput {
 
     pub products: OrderList,
     pub order_total: f32,
-    pub payment: Payment,
+    pub payment: Vec<Payment>,
 
     pub order_date: DateTime<Utc>,
     pub order_notes: NoteList,
@@ -71,7 +71,7 @@ pub struct TransactionInit {
 
     pub products: OrderList,
     pub order_total: f32,
-    pub payment: Payment,
+    pub payment: Vec<Payment>,
 
     pub order_date: DateTime<Utc>,
     pub order_notes: NoteList,
@@ -115,7 +115,7 @@ impl Transaction {
             transaction_type: t.transaction_type,
             products: serde_json::from_value::<OrderList>(t.products).unwrap(),
             order_total: t.order_total,
-            payment: serde_json::from_value::<Payment>(t.payment).unwrap(),
+            payment: serde_json::from_value::<Vec<Payment>>(t.payment).unwrap(),
             order_date: DateTime::from_utc(t.order_date, Utc),
             order_notes: serde_json::from_value::<NoteList>(t.order_notes).unwrap(),
             salesperson: t.salesperson,
@@ -140,7 +140,7 @@ impl Transaction {
                 transaction_type: t.transaction_type.clone(),
                 products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
                 order_total: t.order_total,
-                payment: serde_json::from_value::<Payment>(t.payment.clone()).unwrap(),
+                payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
                 order_date: DateTime::from_utc(t.order_date, Utc),
                 order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
                 salesperson: t.salesperson.clone(),
@@ -244,7 +244,7 @@ impl Display for Transaction {
         //         )
         //     }).collect();
 
-    write!(f, "Transaction ({}) {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {}\nNotes:\n{}\n{} on {}", self.id, self.order_date.format("%d/%m/%Y %H:%M"), products, self.order_total, self.payment, notes, self.salesperson, self.till)
+    write!(f, "Transaction ({}) {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {:?}\nNotes:\n{}\n{} on {}", self.id, self.order_date.format("%d/%m/%Y %H:%M"), products, self.order_total, self.payment, notes, self.salesperson, self.till)
     }
 }
 
@@ -314,10 +314,11 @@ pub fn example_transaction() -> TransactionInit {
         transaction_type: TransactionType::In,
         products: vec![order],
         order_total: 115.00,
-        payment: Payment {
+        payment: vec![Payment {
             payment_method: crate::methods::PaymentMethod::Card,
             fulfillment_date: Utc::now(),
-        },
+            amount: 115.00
+        }],
         order_date: Utc::now(),
         order_notes: vec![Note { message: "Order packaged from warehouse.".into(), timestamp: Utc::now() }],
         order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
