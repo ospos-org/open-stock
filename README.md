@@ -19,7 +19,7 @@ With `OpenStock`, you can manage:
 - Employees (with Authentication)
 
 In an API format. 
-> For a visual interface, see `open-stock-pos`. 
+> For a visual interface, see [`open-pos`](https://github.com/bennjii/open-pos). 
 
 OpenStock is a rust project utilizing [`rocket`](https://rocket.rs/) and [`sea-orm`](https://github.com/SeaQL/sea-orm) to batch and execute queries to a stored DB. 
 
