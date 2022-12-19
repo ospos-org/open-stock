@@ -27,6 +27,11 @@ OpenStock is a rust project utilizing [`rocket`](https://rocket.rs/) and [`sea-o
 Rust was the perfect choice for this project as it aims to produce a reliable and consistent output whilst taking various forms of input. Rust offers this in combination with high performance, albeit slower development times. However, for this project the trade-off is more than worth it. As rust has recently become a far more matured language, database ORM's like sea-orm (based on SQLx) and Diesel are well build and provide a high degree of type-safety in formatting, reading, writing and relaying information from the database - preventing poorly formatted entries and invalid column values. 
 
 ## Getting Started
+
+<div style="text-align:center">
+   <img src="https://raw.githubusercontent.com/bennjii/open-stock/d728221a5f2cbad70260be744db5a4f378f425ab/docs/setup-method-banner.svg">
+</div>
+
 OpenStock is available as a crate to be integrated in your project or project-space if you wish to utilize the type-system created by it. However, for a default setup the API can be hosted yourself by performing the following:
 
 First pull the docker image from docker
