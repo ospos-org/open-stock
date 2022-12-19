@@ -29,7 +29,7 @@ Rust was the perfect choice for this project as it aims to produce a reliable an
 ## Getting Started
 
 <div style="text-align:center">
-   <img src="https://raw.githubusercontent.com/bennjii/open-stock/d728221a5f2cbad70260be744db5a4f378f425ab/docs/setup-method-banner.svg">
+   <img src="https://raw.githubusercontent.com/bennjii/open-stock/0c435b27ba3c17b46f3c142b60ccc036bc92d04d/docs/setup-method-banner.svg">
 </div>
 
 OpenStock is available as a crate to be integrated in your project or project-space if you wish to utilize the type-system created by it. However, for a default setup the API can be hosted yourself by performing the following:
