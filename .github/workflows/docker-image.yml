@@ -12,14 +12,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag open-stock:$(date +%s)
-      
-    - uses: mr-smithers-excellent/docker-build-push@v5
-      name: Build & push Docker image
+    - name: Build and publish a Docker image for ${{ github.repository }}
+      uses: macbre/push-to-ghcr@master
       with:
-        image: ghcr.io/bennjii/open-stock
-        registry: ghcr.io
-        githubOrg: override-org
-        username: ${{ secrets.GHCR_USERNAME }}
-        password: ${{ secrets.GHCR_TOKEN }}
+        image_name: ${{ github.repository }}  # it will be lowercased internally
+        github_token: ${{ secrets.GITHUB_TOKEN }}
