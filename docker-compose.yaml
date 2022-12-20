@@ -21,3 +21,18 @@ services:
     restart: always
     ports:
       - 8080:8080
+
+  open-stock:
+    image: bennjii/open-stock:latest
+    restart: always
+    ports: 
+      - "8000:8000"
+    links:
+      - "db:database"
+    environment:
+      - DATABASE_URL=mysql://root:root@database/stock
+      - ROCKET_SECRET_KEY=e5c63abf90fb076d7037a32d8dc2951c4b402e7357ca84b0da8e03595f84b30f
+      - RUST_BACKTRACE=1
+      - RUST_LOG=debug
+      - ROCKET_ADDRESS=0.0.0.0
+      - ROCKET_PORT=8000

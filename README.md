@@ -38,10 +38,4 @@ Rust was the perfect choice for this project as it aims to produce a reliable an
 
 OpenStock is available as a crate to be integrated in your project or project-space if you wish to utilize the type-system created by it. However, for a default setup the API can be hosted yourself by performing the following:
 
-First pull the docker image from docker
-
-```sh
-docker pull ...
-```
-
-Next, Initialize your `docker-compose.yaml` file (template file [here](./docker-compose.yaml)). This should include a MySQL database and OpenStock. Notably, it is recommended to add a database viewer such as adminer for development to monitor changes and trace any issues of object structure you may encounter.
+Initialize your `docker-compose.yaml` file (template file [here](./docker-compose.yaml)). This should include a MySQL database and OpenStock. Notably, it is recommended to add a database viewer such as adminer for development to monitor changes and trace any issues of object structure you may encounter.

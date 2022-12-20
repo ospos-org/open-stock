@@ -33,6 +33,8 @@ impl sea_orm_rocket::Pool for RocketDbPool {
             },
         };
 
+        println!("Database URL: {}", database_url);
+
         let conn = sea_orm::Database::connect(database_url).await?;
 
         let c2 = conn.clone();

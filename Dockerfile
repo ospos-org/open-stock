@@ -1,5 +1,5 @@
 # Rust as the base image
-FROM rust:1.66.0
+FROM rust:1.66.0 as build
 
 # 1. Create a new empty shell project
 RUN USER=root cargo new --bin stock
@@ -9,19 +9,26 @@ WORKDIR /stock
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
 
-# 2.1). Install Lib-C-Lang for bindgen 
-RUN apt-get update
-RUN apt-get -y install libclang-dev
-
-# 3. Build only the dependencies to cache them
-RUN cargo build --release
+# this build step will cache your dependencies
+RUN apt-get -y update
+RUN apt-get install -y libclang-dev libopencv-dev
+RUN cargo build --release --locked
 RUN rm src/*.rs
 
 # 4. Now that the dependency is built, copy your source code
 COPY ./src ./src
 
-# 5. Build for release.
+# build for release
 RUN rm ./target/release/deps/stock*
-RUN cargo install --path .
+RUN cargo build --release --locked
 
-CMD ["stock"]
+# our final base
+FROM rust:1.66.0
+
+# copy the build artifact from the build stage
+COPY --from=build /stock/target/release/stock .
+
+EXPOSE 8000
+
+# set the startup command to run your binary
+ENTRYPOINT ["./stock"]
