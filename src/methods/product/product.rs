@@ -5,7 +5,7 @@ use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertR
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
-use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity}, entities::{sea_orm_active_enums::TransactionType, products}};
+use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity, DiscountMap}, entities::{sea_orm_active_enums::TransactionType, products}};
 use super::{VariantCategoryList, VariantIdTag, VariantCategory, Variant, StockInformation, VariantInformation};
 use crate::entities::prelude::Products;
 
@@ -196,9 +196,10 @@ pub struct ProductPurchase {
     // Includes variant
     pub product_code: ProductCode,
     pub variant: VariantIdTag,
-    pub discount: DiscountValue,
+    pub discount: DiscountMap,
 
-    pub product_cost: i32,
+    // Cost before discount, discount will be applied on the product cost.
+    pub product_cost: f32,
     pub quantity: i32,
 }
 

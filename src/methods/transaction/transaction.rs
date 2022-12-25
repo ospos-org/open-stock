@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange, Session}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange, Session, greatest_discount}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -201,7 +201,7 @@ impl Display for Transaction {
                             p.product_cost, 
                             p.product_code, 
                             p.variant.concat(), 
-                            p.discount.to_string()
+                            greatest_discount(p.discount.clone(), p.product_cost).to_string()
                         )
                     ).collect();
 
@@ -284,8 +284,8 @@ pub fn example_transaction() -> TransactionInit {
             contact: torpedo7.clone()
         },
         products: vec![
-            ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["22".into()], quantity: 5 },
-            ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["23".into()], quantity: 5 }
+            ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
+            ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
         ],
         status: vec![
             OrderStatusAssignment { 

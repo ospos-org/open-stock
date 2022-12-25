@@ -26,6 +26,35 @@ impl ToString for DiscountValue {
     }
 }
 
+pub type DiscountMap = Vec<DiscountValue>;
+
+pub fn greatest_discount(map: DiscountMap, price: f32) -> DiscountValue {
+    let mut greatest_discount = DiscountValue::Absolute(0);
+
+    for item in map {
+        if is_greater_discount(greatest_discount.clone(), item.clone(), price) {
+            greatest_discount = item.clone()
+        }
+    }
+
+    greatest_discount
+}
+
+pub fn is_greater_discount(predicate: DiscountValue, discount: DiscountValue, price: f32) -> bool {
+    apply_discount(discount, price) < apply_discount(predicate, price)
+}
+
+pub fn apply_discount(discount: DiscountValue, price: f32) -> f32 {
+    match discount {
+        DiscountValue::Percentage(val) => {
+            price - (price * ((val as f32) / 100.00))
+        },
+        DiscountValue::Absolute(val) => {
+            price - (val as f32)
+        },
+    }
+}
+
 impl FromStr for DiscountValue {
     type Err = String;
 

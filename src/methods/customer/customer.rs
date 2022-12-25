@@ -236,8 +236,8 @@ pub fn example_customer() -> CustomerInput {
                     contact: customer.clone()
                 },
                 products: vec![
-                    ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["22".into()], quantity: 5 },
-                    ProductPurchase { product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15, variant: vec!["23".into()], quantity: 5 }
+                    ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
+                    ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
                 ],
                 status: vec![OrderStatusAssignment {
                     status: OrderStatus::Transit(
