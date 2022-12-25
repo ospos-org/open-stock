@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS `Products` (
   `company` text NOT NULL,
   `variants` json NOT NULL,
   `variant_groups` json NOT NULL,
-  `loyalty_discount` text NOT NULL,
   `images` json NOT NULL,
   `tags` json NOT NULL,
   `description` text NOT NULL,

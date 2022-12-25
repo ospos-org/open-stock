@@ -1,4 +1,4 @@
-use std::{str::FromStr, fmt::Display};
+use std::{fmt::Display};
 
 use rand::Rng;
 use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, Condition, QueryFilter, sea_query::{Expr, Func}};
@@ -21,9 +21,6 @@ pub struct Product {
     pub variants: Vec<VariantInformation>, 
 
     pub sku: String,
-    
-    pub loyalty_discount: DiscountValue,
-
     pub images: Vec<Url>,
     pub tags: TagList,
     pub description: String,
@@ -59,7 +56,6 @@ impl Product {
             company: Set(pdt.company),
             variants: Set(json!(pdt.variants)),
             variant_groups: Set(json!(pdt.variant_groups)),
-            loyalty_discount: Set(DiscountValue::to_string(&pdt.loyalty_discount)),
             images: Set(json!(pdt.images)),
             tags: Set(json!(pdt.tags)),
             description: Set(pdt.description),
@@ -82,7 +78,6 @@ impl Product {
             variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
             variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(), 
             sku: p.sku, 
-            loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
             images: serde_json::from_value::<Vec<Url>>(p.images).unwrap(), 
             tags: serde_json::from_value::<TagList>(p.tags).unwrap(), 
             description: p.description, 
@@ -107,7 +102,6 @@ impl Product {
                 variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups.clone()).unwrap(), 
                 variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants.clone()).unwrap(), 
                 sku: p.sku.clone(), 
-                loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
                 tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
                 description: p.description.clone(), 
@@ -130,7 +124,6 @@ impl Product {
                 variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups.clone()).unwrap(), 
                 variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants.clone()).unwrap(), 
                 sku: p.sku.clone(), 
-                loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
                 tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
                 description: p.description.clone(), 
@@ -153,7 +146,6 @@ impl Product {
                 variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups.clone()).unwrap(), 
                 variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants.clone()).unwrap(),  
                 sku: p.sku.clone(), 
-                loyalty_discount: DiscountValue::from_str(&p.loyalty_discount).unwrap(), 
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
                 tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
                 description: p.description.clone(), 
@@ -171,7 +163,6 @@ impl Product {
             company: Set(pdt.company),
             variants: Set(json!(pdt.variants)),
             variant_groups: Set(json!(pdt.variant_groups)),
-            loyalty_discount: Set(DiscountValue::to_string(&pdt.loyalty_discount)),
             images: Set(json!(pdt.images)),
             tags: Set(json!(pdt.tags)),
             description: Set(pdt.description),
@@ -382,7 +373,8 @@ fn example_product() -> Product {
                     back_order: false, 
                     discontinued: false, 
                     non_diminishing: false 
-                }
+                },
+                loyalty_discount: DiscountValue::Absolute(15)
             },
             VariantInformation { 
                 name: "Medium Black".into(), 
@@ -416,7 +408,7 @@ fn example_product() -> Product {
                             quantity_on_order: 4, 
                             quantity_on_floor: 2 
                         }   
-                    }
+                    },
                 ], 
                 images: vec![
                     "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
@@ -439,7 +431,8 @@ fn example_product() -> Product {
                     back_order: false, 
                     discontinued: false, 
                     non_diminishing: false 
-                }
+                },
+                loyalty_discount: DiscountValue::Absolute(25)
             },
             VariantInformation { 
                 name: "Large White".into(), 
@@ -496,11 +489,11 @@ fn example_product() -> Product {
                     back_order: false, 
                     discontinued: false, 
                     non_diminishing: false 
-                }
+                },
+                loyalty_discount: DiscountValue::Absolute(5)
             },
         ],
         sku: num.to_string(), 
-        loyalty_discount: DiscountValue::Absolute(15), 
         images: vec![
             "https://www.torpedo7.co.nz/images/products/T7TEOQR5NDD_zoom---men-s-short-sleeve-explore-graphic-tee-ochre-rose.jpg?v=845eb9a5288642009c05".into()
         ], 

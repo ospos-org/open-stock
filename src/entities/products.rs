@@ -13,7 +13,6 @@ pub struct Model {
     pub variants: Json,
     pub variant_groups: Json,
     #[sea_orm(column_type = "Text")]
-    pub loyalty_discount: String,
     pub images: Json,
     pub tags: Json,
     #[sea_orm(column_type = "Text")]

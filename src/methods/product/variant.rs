@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::methods::{StockList, HistoryList, Url};
+use crate::methods::{StockList, HistoryList, Url, DiscountValue};
 
 pub type VariantIdTag = Vec<VariantId>;
 type VariantId = String;
@@ -22,6 +22,7 @@ pub struct VariantInformation {
     pub images: Vec<Url>,
     pub retail_price: f32,
     pub marginal_price: f32,
+    pub loyalty_discount: DiscountValue,
     /// The group codes for all sub-variants; i.e. is White, Short Sleeve and Small.
     pub variant_code: VariantIdTag,
     pub order_history: HistoryList,
