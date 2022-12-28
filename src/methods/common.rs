@@ -86,6 +86,7 @@ impl Email {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Note {
     pub message: String,
+    pub author: EmployeeObj,
     pub timestamp: DateTime<Utc>
 }
 

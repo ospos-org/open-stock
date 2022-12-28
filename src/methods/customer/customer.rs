@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment}, entities::customer};
+use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment, Employee, Name, EmployeeAuth}, entities::customer};
 use chrono::Utc;
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}, QueryFilter, Condition};
 use serde::{Serialize, Deserialize};
@@ -251,7 +251,24 @@ pub fn example_customer() -> CustomerInput {
                     assigned_products: vec![]
                 }],
                 order_history: vec![],
-                order_notes: vec![Note { message: "Order Shipped from Depot".into(), timestamp: Utc::now() }],
+                order_notes: vec![
+                    Note {
+                        message: "Order shipped from warehouse.".into(), 
+                        timestamp: Utc::now(), 
+                        author: Employee { 
+                            id: Uuid::new_v4().to_string(), 
+                            name: Name {
+                                first: "".into(),
+                                middle: "".into(),
+                                last: "".into()
+                            }, 
+                            auth: EmployeeAuth { hash: "".into() }, 
+                            contact: customer, 
+                            clock_history: vec![], 
+                            level: 2 
+                        }
+                    }
+                ],
                 reference: "TOR-19592".into(),
                 creation_date: Utc::now(),
                 id: Uuid::new_v4().to_string(),
