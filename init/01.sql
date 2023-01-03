@@ -65,6 +65,4 @@ CREATE TABLE IF NOT EXISTS `Session` (
   `expiry` datetime NOT NULL,
 
   FOREIGN KEY (employeeId) REFERENCES Employee(id)
-
-  -- impl! Add a timeout such that the API key NEEDS to be refreshed etc... + integrate handing API keys on requests.
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;

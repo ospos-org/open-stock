@@ -346,8 +346,38 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 7, 
-                            quantity_on_order: 4, 
+                            quantity_on_hand: 0, 
+                            quantity_on_order: 0, 
+                            quantity_on_floor: 0 
+                        }   
+                    },
+                    Stock { 
+                        store: Location {
+                            code: "002".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "9 Carbine Road".into(),
+                                    street2: "".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "100".into()
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_on_hand: 4, 
+                            quantity_on_order: 2, 
                             quantity_on_floor: 2 
                         }   
                     }
@@ -409,6 +439,36 @@ fn example_product() -> Product {
                             quantity_on_floor: 2 
                         }   
                     },
+                    Stock { 
+                        store: Location {
+                            code: "002".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "9 Carbine Road".into(),
+                                    street2: "".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "100".into()
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_on_hand: 0, 
+                            quantity_on_order: 1, 
+                            quantity_on_floor: 0 
+                        }   
+                    },
                 ], 
                 images: vec![
                     "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
@@ -462,9 +522,39 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 7, 
-                            quantity_on_order: 4, 
+                            quantity_on_hand: 0, 
+                            quantity_on_order: 0, 
                             quantity_on_floor: 2 
+                        }   
+                    },
+                    Stock { 
+                        store: Location {
+                            code: "002".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "9 Carbine Road".into(),
+                                    street2: "".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "100".into()
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_on_hand: 3, 
+                            quantity_on_order: 0, 
+                            quantity_on_floor: 1 
                         }   
                     }
                 ], 
