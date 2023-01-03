@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange, Session, greatest_discount, Employee, EmployeeAuth, Name}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange, Session, greatest_discount, Employee, EmployeeAuth, Name, Price, PaymentStatus, PaymentProcessor, PaymentAction}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -332,9 +332,27 @@ pub fn example_transaction() -> TransactionInit {
         products: vec![order],
         order_total: 115.00,
         payment: vec![Payment {
+            id: Uuid::new_v4().to_string(),
             payment_method: crate::methods::PaymentMethod::Card,
-            fulfillment_date: Utc::now(),
-            amount: 115.00
+            fulfillment_date:Utc::now(),
+            amount: Price {
+                quantity: 115.00,
+                currency: "NZD".to_string()
+            }, 
+            processing_fee: Price {
+                quantity: 0.10,
+                currency: "NZD".to_string()
+            }, 
+            status: PaymentStatus::Unfulfilled, 
+            processor: PaymentProcessor { 
+                location: "001".to_string(), 
+                employee: "EMPLOYEE_ID".to_string(), 
+                software_version: "k0.5.2".to_string(), 
+                token: Uuid::new_v4().to_string() 
+            }, 
+            order_id: Uuid::new_v4().to_string(), 
+            delay_action: PaymentAction::Cancel, 
+            delay_duration: "PT12H".to_string()
         }],
         order_date: Utc::now(),
         order_notes: vec![Note { 
