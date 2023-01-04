@@ -346,9 +346,9 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 0, 
-                            quantity_on_order: 0, 
-                            quantity_on_floor: 0 
+                            quantity_sellable: 0.0, 
+                            quantity_on_order: 0.0, 
+                            quantity_unsellable: 0.0 
                         }   
                     },
                     Stock { 
@@ -376,9 +376,9 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 4, 
-                            quantity_on_order: 2, 
-                            quantity_on_floor: 2 
+                            quantity_sellable: 4.0, 
+                            quantity_on_order: 2.0, 
+                            quantity_unsellable: 2.0 
                         }   
                     }
                 ], 
@@ -434,9 +434,9 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 7, 
-                            quantity_on_order: 4, 
-                            quantity_on_floor: 2 
+                            quantity_sellable: 7.0,
+                            quantity_unsellable: 2.0,
+                            quantity_on_order: 4.0, 
                         }   
                     },
                     Stock { 
@@ -464,9 +464,9 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 0, 
-                            quantity_on_order: 1, 
-                            quantity_on_floor: 0 
+                            quantity_sellable: 0.0, 
+                            quantity_on_order: 1.0, 
+                            quantity_unsellable: 0.0 
                         }   
                     },
                 ], 
@@ -522,9 +522,9 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 0, 
-                            quantity_on_order: 0, 
-                            quantity_on_floor: 2 
+                            quantity_sellable: 0.0, 
+                            quantity_on_order: 0.0, 
+                            quantity_unsellable: 2.0 
                         }   
                     },
                     Stock { 
@@ -552,9 +552,9 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_on_hand: 3, 
-                            quantity_on_order: 0, 
-                            quantity_on_floor: 1 
+                            quantity_sellable: 3.0, 
+                            quantity_on_order: 0.0, 
+                            quantity_unsellable: 1.0 
                         }   
                     }
                 ], 

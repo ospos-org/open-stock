@@ -12,7 +12,7 @@ pub struct Stock {
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Quantity {
-    pub quantity_on_hand: i32,
-    pub quantity_on_order: i32,
-    pub quantity_on_floor: i32
+    pub quantity_sellable: f32,
+    pub quantity_unsellable: f32,
+    pub quantity_on_order: f32,
 }
