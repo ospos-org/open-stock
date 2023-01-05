@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{methods::{stml::Order, EmployeeAuth, Attendance}, entities};
+use crate::{methods::{stml::Order, EmployeeAuth, Attendance, Access, Action}, entities};
 use chrono::{Utc, DateTime};
 use rocket::{http::{CookieJar, Status}};
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait, QuerySelect, ColumnTrait};
@@ -86,7 +86,7 @@ impl Email {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Note {
     pub message: String,
-    pub author: EmployeeObj,
+    pub author: String,
     pub timestamp: DateTime<Utc>
 }
 
@@ -177,7 +177,7 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
                             auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                             contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
                             clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
-                            level: e.level
+                            level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap() 
                         },
                         expiry: DateTime::from_utc(val.expiry, Utc)
                     })

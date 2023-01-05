@@ -15,7 +15,7 @@ use crate::entities::session;
 use crate::methods::{Name, History, cookie_status_wrapper};
 use crate::pool::Db;
 
-use super::{Employee, EmployeeInput, Attendance, TrackType};
+use super::{Employee, EmployeeInput, Attendance, TrackType, Action};
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![get, get_by_name, get_by_name_exact, get_by_level, create, update, log, generate, auth]
@@ -96,7 +96,7 @@ async fn update(
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
 
-    if session.employee.level > 1 {
+    if session.employee.level.into_iter().find(| x | x.action == Action::ModifyEmployee).unwrap().authority >= 1 {
         match Employee::update(input_data, id, db).await {
             Ok(res) => {
                 Ok(Json(res))

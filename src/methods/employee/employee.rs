@@ -1,10 +1,10 @@
-use std::fmt::{Display, self};
+use std::{fmt::{Display, self}};
 
 use argonautica::{Verifier, Hasher};
 use chrono::Utc;
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait};
 use serde::{Serialize, Deserialize};
-use serde_json::json;
+use serde_json::{json};
 use uuid::Uuid;
 
 use argonautica::config::{Backend, Variant, Version};
@@ -20,7 +20,23 @@ pub struct Employee {
     pub auth: EmployeeAuth,
     pub contact: ContactInformation,
     pub clock_history: Vec<History<Attendance>>,
-    pub level: i32
+    pub level: Vec<Access<Action>>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Access<T> {
+    pub action: T,
+    pub authority: i32
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum Action {
+    CreateUser, DeleteUser, ModifyUser,
+    CreateEmployee, DeleteEmployee, ModifyEmployee,
+    CreateTransaction, DeleteTransaction, ModifyTransaction,
+    CreateProduct, DeleteProduct, ModifyProduct, CreateStockAdjustmentIntent, ClearStockAdjustmentIntent,
+
+    AccessAdminPanel, SuperUserDo
 }
 
 /// Stores a password hash, signed as a key using the users login ID.
@@ -36,7 +52,7 @@ pub struct EmployeeInput {
     pub contact: ContactInformation,
     pub password: String,
     pub clock_history: Vec<History<Attendance>>,
-    pub level: i32
+    pub level: Vec<Access<Action>>
 }
 
 impl Display for Employee {
@@ -53,7 +69,7 @@ impl Display for Employee {
 
         write!(
             f, 
-            "{} {} ({})\n{}\n({}) {} {}\n\n[Clock History]\n{}
+            "{} {} ({:?})\n{}\n({}) {} {}\n\n[Clock History]\n{}
             ", 
             self.name.first, self.name.last, self.level, 
             self.id, 
@@ -99,7 +115,7 @@ impl Employee {
             })),
             contact: Set(json!(empl.contact)),
             clock_history: Set(json!(empl.clock_history)),
-            level: Set(empl.level),
+            level: Set(json!(empl.level)),
         };
 
         match Epl::insert(insert_crud).exec(db).await {
@@ -136,7 +152,7 @@ impl Employee {
                     auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
                     contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(), 
                     clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history).unwrap(), 
-                    level: e.level
+                    level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
                 })
             },
             None => {
@@ -157,7 +173,7 @@ impl Employee {
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
-                level: e.level
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
             }
         ).collect();
 
@@ -176,7 +192,7 @@ impl Employee {
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
-                level: e.level
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
             }
         ).collect();
 
@@ -195,7 +211,7 @@ impl Employee {
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
-                level: e.level
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
             }
         ).collect();
 
@@ -209,7 +225,7 @@ impl Employee {
             auth: Set(json!(empl.auth)),
             contact: Set(json!(empl.contact)),
             clock_history: Set(json!(empl.clock_history)),
-            level: Set(empl.level),
+            level: Set(json!(empl.level)),
         }.update(db).await?;
 
         Ok(empl)
@@ -286,6 +302,11 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
             History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
         ],
-        level: 2,
+        level: vec![
+            Access {
+                action: Action::ModifyEmployee,
+                authority: 4
+            }
+        ]
     }
 }

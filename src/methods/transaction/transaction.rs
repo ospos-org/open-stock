@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange, Session, greatest_discount, Employee, EmployeeAuth, Name, Price, PaymentStatus, PaymentProcessor, PaymentAction}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange, Session, greatest_discount, Price, PaymentStatus, PaymentProcessor, PaymentAction}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -305,18 +305,7 @@ pub fn example_transaction() -> TransactionInit {
             Note {
                 message: "Order shipped from warehouse.".into(), 
                 timestamp: Utc::now(), 
-                author: Employee { 
-                    id: Uuid::new_v4().to_string(), 
-                    name: Name {
-                        first: "".into(),
-                        middle: "".into(),
-                        last: "".into()
-                    }, 
-                    auth: EmployeeAuth { hash: "".into() }, 
-                    contact: torpedo7.clone(), 
-                    clock_history: vec![], 
-                    level: 2 
-                }
+                author: Uuid::new_v4().to_string()
             }
         ],
         reference: "TOR-19592".into(),
@@ -358,18 +347,7 @@ pub fn example_transaction() -> TransactionInit {
         order_notes: vec![Note { 
             message: "Order packaged from warehouse.".into(), 
             timestamp: Utc::now(), 
-            author: Employee { 
-                id: Uuid::new_v4().to_string(), 
-                name: Name {
-                    first: "".into(),
-                    middle: "".into(),
-                    last: "".into()
-                }, 
-                auth: EmployeeAuth { hash: "".into() }, 
-                contact: torpedo7.clone(),
-                clock_history: vec![], 
-                level: 2 
-            }
+            author: Uuid::new_v4().to_string()
         }],
         order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
         till: "...".into(),
@@ -377,3 +355,4 @@ pub fn example_transaction() -> TransactionInit {
 
     transaction
 }
+

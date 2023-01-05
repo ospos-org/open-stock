@@ -11,7 +11,7 @@ pub struct Model {
     pub contact: Json,
     pub auth: Json,
     pub clock_history: Json,
-    pub level: i32,
+    pub level: Json,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
