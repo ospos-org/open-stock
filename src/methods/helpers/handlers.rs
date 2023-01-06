@@ -1,8 +1,8 @@
-use rocket::{routes, patch, get, http::{CookieJar, Status}, serde::json::Json, put, post};
+use rocket::{routes, patch, http::{CookieJar, Status}, serde::json::Json};
 use sea_orm_rocket::{Connection};
 use serde::{Deserialize, Serialize};
 
-use crate::{pool::Db, methods::{cookie_status_wrapper, Action, Employee, Store, Product, Customer}};
+use crate::{pool::Db, methods::{cookie_status_wrapper, Employee, Store, Product, Customer}};
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![generate_template]
