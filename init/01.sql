@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `Employee` (
   `contact` json NOT NULL,
   `auth` json NOT NULL,
   `clock_history` json NOT NULL,
-  `level` int(11) NOT NULL,
+  `level` json NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
@@ -65,4 +65,12 @@ CREATE TABLE IF NOT EXISTS `Session` (
   `expiry` datetime NOT NULL,
 
   FOREIGN KEY (employeeId) REFERENCES Employee(id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS `Store` (
+  `id` varchar(100) NOT NULL,
+  `name` text NOT NULL,
+  `location` json NOT NULL,
+  `code` text NOT NULL,
+  PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
