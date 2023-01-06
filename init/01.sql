@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS `Session` (
 CREATE TABLE IF NOT EXISTS `Store` (
   `id` varchar(100) NOT NULL,
   `name` text NOT NULL,
-  `location` json NOT NULL,
+  `contact` json NOT NULL,
   `code` text NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;

@@ -7,6 +7,7 @@ pub(crate) mod product;
 pub(crate) mod customer;
 pub(crate) mod employee;
 pub(crate) mod supplier;
+pub(crate) mod store;
 
 pub use self::supplier::*;
 pub use self::employee::*;
@@ -16,3 +17,4 @@ pub use self::product::*;
 pub use self::stml::*;
 pub use self::transaction::*;
 pub use self::common::*;
+pub use self::store::*;

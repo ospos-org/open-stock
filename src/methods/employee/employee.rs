@@ -35,6 +35,7 @@ pub enum Action {
     CreateEmployee, DeleteEmployee, ModifyEmployee,
     CreateTransaction, DeleteTransaction, ModifyTransaction,
     CreateProduct, DeleteProduct, ModifyProduct, CreateStockAdjustmentIntent, ClearStockAdjustmentIntent,
+    CreateStore, DeleteStore, ModifyStore,
 
     AccessAdminPanel, SuperUserDo
 }
