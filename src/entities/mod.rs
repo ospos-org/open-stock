@@ -7,5 +7,6 @@ pub mod employee;
 pub mod products;
 pub mod sea_orm_active_enums;
 pub mod session;
+pub mod store;
 pub mod supplier;
 pub mod transactions;

@@ -4,5 +4,6 @@ pub use super::customer::Entity as Customer;
 pub use super::employee::Entity as Employee;
 pub use super::products::Entity as Products;
 pub use super::session::Entity as Session;
+pub use super::store::Entity as Store;
 pub use super::supplier::Entity as Supplier;
 pub use super::transactions::Entity as Transactions;

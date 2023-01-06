@@ -2,18 +2,16 @@
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "Customer")]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[sea_orm(table_name = "Store")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
     #[sea_orm(column_type = "Text")]
     pub name: String,
-    pub contact: Json,
-    pub order_history: Json,
-    pub customer_notes: Json,
-    pub balance: f32,
-    pub special_pricing: Json,
+    pub location: Json,
+    #[sea_orm(column_type = "Text")]
+    pub code: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
