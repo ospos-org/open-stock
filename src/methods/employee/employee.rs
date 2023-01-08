@@ -31,13 +31,14 @@ pub struct Access<T> {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Action {
-    CreateUser, DeleteUser, ModifyUser,
-    CreateEmployee, DeleteEmployee, ModifyEmployee,
-    CreateTransaction, DeleteTransaction, ModifyTransaction,
-    CreateProduct, DeleteProduct, ModifyProduct, CreateStockAdjustmentIntent, ClearStockAdjustmentIntent,
-    CreateStore, DeleteStore, ModifyStore,
-
-    AccessAdminPanel, SuperUserDo
+    CreateCustomer, DeleteCustomer, ModifyCustomer, FetchCustomer,
+    CreateEmployee, DeleteEmployee, ModifyEmployee, FetchEmployee,
+    CreateTransaction, DeleteTransaction, ModifyTransaction, FetchTransaction,
+    CreateProduct, DeleteProduct, ModifyProduct, CreateStockAdjustmentIntent, ClearStockAdjustmentIntent, FetchProduct,
+    CreateStore, DeleteStore, ModifyStore, FetchStore,
+    CreateSupplier, DeleteSupplier, ModifySupplier, FetchSupplier,
+    
+    AccessAdminPanel, SuperUserDo, GenerateTemplateContent
 }
 
 /// Stores a password hash, signed as a key using the users login ID.

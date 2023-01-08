@@ -3,7 +3,8 @@ use rocket::{http::Status, get, put};
 use rocket::{routes, post, patch};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
-use crate::methods::cookie_status_wrapper;
+use crate::check_permissions;
+use crate::methods::{cookie_status_wrapper, Action};
 use crate::pool::Db;
 
 use super::Product;
@@ -15,7 +16,9 @@ pub fn routes() -> Vec<rocket::Route> {
 #[get("/<id>")]
 pub async fn get(conn: Connection<'_, Db>, id: i32, cookies: &CookieJar<'_>) -> Result<Json<Product>, Status> {
     let db = conn.into_inner();
-    let _session = cookie_status_wrapper(db, cookies).await?;
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchProduct);
 
     let product = Product::fetch_by_id(&id.to_string(), db).await.unwrap();
     Ok(Json(product))
@@ -24,7 +27,9 @@ pub async fn get(conn: Connection<'_, Db>, id: i32, cookies: &CookieJar<'_>) -> 
 #[get("/name/<name>")]
 pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Product>>, Status> {
     let db = conn.into_inner();
-    let _session = cookie_status_wrapper(db, cookies).await?;
+    
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchProduct);
 
     let product = Product::fetch_by_name(name, db).await.unwrap();
     Ok(Json(product))
@@ -34,7 +39,9 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
 #[get("/!name/<name>")]
 pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Product>>, Status> {
     let db = conn.into_inner();
-    let _session = cookie_status_wrapper(db, cookies).await?;
+    
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchProduct);
 
     let product = Product::fetch_by_name_exact(name, db).await.unwrap();
     Ok(Json(product))
@@ -42,8 +49,11 @@ pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: &str, cookies: &C
 
 /// Will search by both name, phone and email.
 #[get("/search/<query>")]
-pub async fn search_query(conn: Connection<'_, Db>, query: &str) -> Result<Json<Vec<Product>>, Status> {
+pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Product>>, Status> {
     let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchProduct);
 
     let employee = Product::search(query, db).await.unwrap();
     Ok(Json(employee))
@@ -58,7 +68,9 @@ async fn update(
 ) -> Result<Json<Product>, Status> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
-    let _session = cookie_status_wrapper(db, cookies).await?;
+    
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::ModifyProduct);
 
     match Product::update(input_data, id, db).await {
         Ok(res) => {
@@ -72,7 +84,9 @@ async fn update(
 pub async fn create(conn: Connection<'_, Db>, input_data: Json<Product>, cookies: &CookieJar<'_>) -> Result<Json<Product>, Status> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
-    let _session = cookie_status_wrapper(db, cookies).await?;
+    
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::CreateProduct);
     
     match Product::insert(new_transaction, db).await {
         Ok(data) => {
@@ -96,9 +110,12 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<Product>, cookies
 #[patch("/generate")]
 async fn generate(
     conn: Connection<'_, Db>,
-    _cookies: &CookieJar<'_>
+    cookies: &CookieJar<'_>
 ) -> Result<Json<Product>, Status> {
     let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
     match Product::generate(db).await {
         Ok(res) => Ok(Json(res)),

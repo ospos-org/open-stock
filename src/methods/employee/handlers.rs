@@ -11,6 +11,7 @@ use sea_orm_rocket::{Connection};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
+use crate::check_permissions;
 use crate::entities::session;
 use crate::methods::{Name, History, cookie_status_wrapper};
 use crate::pool::Db;
@@ -24,7 +25,9 @@ pub fn routes() -> Vec<rocket::Route> {
 #[get("/<id>")]
 pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Status> {
     let db = conn.into_inner();
+
     let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchEmployee);
 
     if session.employee.id == id {
         Ok(Json(session.employee))
@@ -37,7 +40,9 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
 #[get("/name/<name>")]
 pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Status> {
     let db = conn.into_inner();
-    let _session = cookie_status_wrapper(db, cookies).await?;
+    
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session, Action::FetchEmployee);
 
     let employee = Employee::fetch_by_name(name, db).await.unwrap();
     Ok(Json(employee))
@@ -47,7 +52,9 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
 pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: Json<Name>, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Status> {
     let db = conn.into_inner();
     let new_transaction = name.clone().into_inner();
+    
     let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchEmployee);
 
     println!("{}", json!(new_transaction));
 
@@ -64,7 +71,8 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &Cookie
     let db = conn.into_inner();
     let new_transaction = level.clone();
 
-    let _session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session, Action::FetchEmployee);
 
     println!("{}", json!(new_transaction));
 
@@ -75,9 +83,12 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &Cookie
 #[patch("/generate")]
 async fn generate(
     conn: Connection<'_, Db>,
-    _cookies: &CookieJar<'_>
+    cookies: &CookieJar<'_>
 ) -> Result<Json<Employee>, Status> {
     let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session, Action::GenerateTemplateContent);
 
     match Employee::generate(db).await {
         Ok(res) => Ok(Json(res)),
@@ -94,7 +105,9 @@ async fn update(
 ) -> Result<Json<Employee>, Status> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
+    
     let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::ModifyEmployee);
 
     if session.employee.level.into_iter().find(| x | x.action == Action::ModifyEmployee).unwrap().authority >= 1 {
         match Employee::update(input_data, id, db).await {
@@ -167,7 +180,9 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
 pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Status> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
-    let _session = cookie_status_wrapper(db, cookies).await?;
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::CreateEmployee);
 
     let start = Instant::now();
 

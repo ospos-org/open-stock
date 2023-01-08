@@ -10,6 +10,14 @@ use crate::entities::employee::Entity as Employee;
 
 use super::{ProductExchange, Employee as EmployeeObj};
 
+#[macro_export]
+macro_rules! check_permissions {
+    ($session:expr, $permission:expr) => {
+        if !$session.has_permission($permission) {
+            return Err(Status::Unauthorized);
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Name {
     pub first: String,
@@ -130,12 +138,24 @@ pub struct SessionRaw {
     pub expiry: DateTime<Utc>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Session {
     pub id: String,
     pub key: String,
     pub employee: EmployeeObj,
     pub expiry: DateTime<Utc>,
+}
+
+impl Session {
+    pub fn has_permission(self, permission: Action) -> bool {
+        let action = self.employee.level.into_iter().find(| x | x.action == permission).unwrap();
+        
+        if action.action == Action::GenerateTemplateContent {
+            true
+        }else {
+            action.authority >= 1
+        } 
+    }
 }
 
 pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
