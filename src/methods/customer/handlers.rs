@@ -87,7 +87,7 @@ async fn generate(
     }
 }
 
-#[put("/<id>", data = "<input_data>")]
+#[post("/<id>", data = "<input_data>")]
 async fn update(
     conn: Connection<'_, Db>,
     id: &str,
@@ -108,7 +108,7 @@ async fn update(
     }
 }
 
-#[put("/<id>/contact", data = "<input_data>")]
+#[post("/<id>/contact", data = "<input_data>")]
 async fn update_contact_info(
     conn: Connection<'_, Db>,
     id: &str,

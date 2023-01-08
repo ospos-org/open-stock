@@ -59,7 +59,7 @@ pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &Cooki
     Ok(Json(employee))
 }
 
-#[put("/<id>", data = "<input_data>")]
+#[post("/<id>", data = "<input_data>")]
 async fn update(
     conn: Connection<'_, Db>,
     id: &str,
