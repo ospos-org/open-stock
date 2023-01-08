@@ -148,7 +148,10 @@ pub struct Session {
 
 impl Session {
     pub fn has_permission(self, permission: Action) -> bool {
-        let action = self.employee.level.into_iter().find(| x | x.action == permission).unwrap();
+        let action = match self.employee.level.into_iter().find(| x | x.action == permission) {
+            Some(e) => e,
+            None => Access { action: permission, authority: 0 }
+        };
         
         if action.action == Action::GenerateTemplateContent {
             true
