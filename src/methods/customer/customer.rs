@@ -16,6 +16,7 @@ pub struct Customer {
     pub order_history: OrderList,
     pub customer_notes: NoteList,
     pub balance: f32,
+    pub special_pricing: String
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -58,6 +59,7 @@ impl Customer {
             contact: serde_json::from_value::<ContactInformation>(c.contact).unwrap(),
             order_history: serde_json::from_value::<OrderList>(c.order_history).unwrap(),
             customer_notes: serde_json::from_value::<NoteList>(c.customer_notes).unwrap(),
+            special_pricing: serde_json::from_value::<String>(c.special_pricing).unwrap(),
             balance: c.balance, 
         })
     }
@@ -79,6 +81,7 @@ impl Customer {
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
+                special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
                 balance: c.balance
             }
         ).collect();
@@ -98,6 +101,7 @@ impl Customer {
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
+                special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
                 balance: c.balance
             }
         ).collect();
@@ -117,6 +121,7 @@ impl Customer {
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
+                special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
                 balance: c.balance
             }
         ).collect();
@@ -136,6 +141,7 @@ impl Customer {
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
+                special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
                 balance: c.balance
             }
         ).collect();
@@ -171,6 +177,22 @@ impl Customer {
         }.update(db).await?;
 
         Self::fetch_by_id(id, db).await
+    }
+
+    pub async fn update_contact_information(contact: ContactInformation, id: &str, db: &DbConn) -> Result<Customer, DbErr> {
+        let customer = Self::fetch_by_id(id, db).await?;
+
+        customer::ActiveModel {
+            id: Set(customer.id),
+            name: Set(customer.name),
+            contact: Set(json!(contact)),
+            order_history: Set(json!(customer.order_history)),
+            customer_notes: Set(json!(customer.customer_notes)),
+            special_pricing: Set(json!(customer.special_pricing)),
+            balance: Set(customer.balance),
+        }.update(db).await?;
+
+        Self::fetch_by_id(id, db).await 
     }
 }
 

@@ -3,12 +3,13 @@ use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 use serde_json::json;
+use crate::methods::ContactInformation;
 use crate::pool::Db;
 
 use super::{Customer, CustomerInput};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_phone, get_by_addr, create, update, generate, search_query]
+    routes![get, get_by_name, get_by_phone, get_by_addr, create, update, generate, search_query, update_contact_info]
 }
 
 #[get("/<id>")]
@@ -80,6 +81,23 @@ async fn update(
     let db = conn.into_inner();
 
     match Customer::update(input_data, id, db).await {
+        Ok(res) => {
+            Ok(Json(res))
+        },
+        Err(_) => Err(Status::BadRequest),
+    }
+}
+
+#[put("/<id>/contact", data = "<input_data>")]
+async fn update_contact_info(
+    conn: Connection<'_, Db>,
+    id: &str,
+    input_data: Json<ContactInformation>,
+) -> Result<Json<Customer>, Status> {
+    let input_data = input_data.clone().into_inner();
+    let db = conn.into_inner();
+
+    match Customer::update_contact_information(input_data, id, db).await {
         Ok(res) => {
             Ok(Json(res))
         },
