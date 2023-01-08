@@ -306,8 +306,64 @@ pub fn example_employee() -> EmployeeInput {
         ],
         level: vec![
             Access {
+                action: Action::FetchProduct,
+                authority: 1
+            },
+            Access {
+                action: Action::FetchCustomer,
+                authority: 1
+            },
+            Access {
+                action: Action::FetchEmployee,
+                authority: 1
+            },
+            Access {
+                action: Action::FetchTransaction,
+                authority: 1
+            },
+            Access {
+                action: Action::FetchStore,
+                authority: 1
+            },
+            Access {
+                action: Action::ModifyProduct,
+                authority: 1
+            },
+            Access {
+                action: Action::ModifyCustomer,
+                authority: 1
+            },
+            Access {
                 action: Action::ModifyEmployee,
-                authority: 4
+                authority: 0
+            },
+            Access {
+                action: Action::ModifyTransaction,
+                authority: 1
+            },
+            Access {
+                action: Action::ModifyStore,
+                authority: 1
+            },
+            Access {
+                action: Action::CreateProduct,
+                authority: 1
+            },
+            Access {
+                action: Action::CreateCustomer,
+                authority: 1
+            },
+            Access {
+                action: Action::CreateEmployee,
+                authority: 0
+            },
+            Access {
+                action: Action::CreateTransaction,
+                authority: 1
+            },
+            Access {
+                action: Action::CreateStore,
+                authority: 0
             }
         ]
     }
