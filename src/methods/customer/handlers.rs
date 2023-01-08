@@ -1,5 +1,5 @@
 use rocket::http::CookieJar;
-use rocket::{http::Status, get, put, patch};
+use rocket::{http::Status, get, patch};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
@@ -108,7 +108,7 @@ async fn update(
     }
 }
 
-#[post("/<id>/contact", data = "<input_data>")]
+#[post("/contact/<id>", data = "<input_data>")]
 async fn update_contact_info(
     conn: Connection<'_, Db>,
     id: &str,

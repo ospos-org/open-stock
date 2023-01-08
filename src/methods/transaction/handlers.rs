@@ -1,5 +1,5 @@
 use rocket::http::CookieJar;
-use rocket::{http::Status, get, put, patch};
+use rocket::{http::Status, get, patch};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};

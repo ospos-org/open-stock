@@ -1,4 +1,4 @@
-use rocket::{routes, patch, get, http::{CookieJar, Status}, serde::json::Json, put};
+use rocket::{routes, patch, get, http::{CookieJar, Status}, serde::json::Json, post};
 use sea_orm_rocket::{Connection};
 
 use crate::{pool::Db, methods::{cookie_status_wrapper, Action}, check_permissions};

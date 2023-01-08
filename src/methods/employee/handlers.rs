@@ -3,7 +3,7 @@ use std::time::Duration;
 use chrono::{Utc, Duration as ChronoDuration};
 use rocket::http::{CookieJar, Cookie, SameSite};
 use rocket::time::{Instant, OffsetDateTime};
-use rocket::{http::Status, get, put};
+use rocket::{http::Status, get};
 use rocket::{routes, post, patch};
 use rocket::serde::json::Json;
 use sea_orm::{EntityTrait, Set};
