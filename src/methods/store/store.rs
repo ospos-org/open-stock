@@ -1,10 +1,10 @@
-use sea_orm::{DbConn, DbErr, EntityTrait, ColumnTrait, QuerySelect, Set, ActiveModelTrait, InsertResult};
+use sea_orm::{DbConn, DbErr, EntityTrait, ColumnTrait, QuerySelect, Set, ActiveModelTrait, InsertResult, RuntimeErr};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
 use crate::entities::prelude::Store as StoreEntity;
 use crate::entities::store;
-use crate::methods::{MobileNumber, Email, Address};
+use crate::methods::{MobileNumber, Email, Address, convert_addr_to_geo};
 use crate::{methods::{Id, ContactInformation}};
 use serde_json::{json};
 
@@ -26,6 +26,22 @@ impl Store {
         };
 
         match StoreEntity::insert(insert_crud).exec(db).await {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err)
+        }
+    }
+
+    pub async fn insert_many(stores: Vec<Store>, db: &DbConn) -> Result<InsertResult<store::ActiveModel>, DbErr> {
+        let entities = stores.into_iter().map(|s| {
+            store::ActiveModel {
+                name: Set(s.name),
+                id: Set(s.id),
+                contact: Set(json!(s.contact)),
+                code: Set(s.code),
+            }
+        });
+
+        match StoreEntity::insert_many(entities).exec(db).await {
             Ok(res) => Ok(res),
             Err(err) => Err(err)
         }
@@ -67,40 +83,68 @@ impl Store {
         }
     }
 
-    pub async fn update(store: Store, id: &str, db: &DbConn) -> Result<Store, DbErr> {
-        store::ActiveModel {
-            id: Set(id.to_string()),
-            name: Set(store.name.clone()),
-            code: Set(store.code.clone()),
-            contact: Set(json!(store.contact)),
-        }.update(db).await?;
+    pub async fn fetch_all(db: &DbConn) -> Result<Vec<Store>, DbErr> {
+        let stores = StoreEntity::find().all(db).await?;
 
-        Ok(store)
+        let mapped = stores.iter().map(|e| 
+            Store { 
+                id: e.id.clone(), 
+                name: e.name.clone(),
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
+                code: serde_json::from_value::<String>(serde_json::Value::String(e.code.clone())).unwrap(), 
+            }
+        ).collect();
+        
+        Ok(mapped)
     }
 
-    pub async fn generate(db: &DbConn) -> Result<Store, DbErr> {
-        // Create Transaction
-        let store = example_store();
+    pub async fn update(store: Store, id: &str, db: &DbConn) -> Result<Store, DbErr> {
+        let addr = convert_addr_to_geo(&format!("{} {} {} {}", store.contact.address.street, store.contact.address.street2, store.contact.address.po_code, store.contact.address.city));
+
+        match addr {
+            Ok((lat, lon)) => {
+                let mut new_contact = store.contact;
+
+                new_contact.address.lat = lat;
+                new_contact.address.lon = lon;
+
+                store::ActiveModel {
+                    id: Set(id.to_string()),
+                    name: Set(store.name.clone()),
+                    code: Set(store.code.clone()),
+                    contact: Set(json!(new_contact)),
+                }.update(db).await?;
         
-        // Insert & Fetch Transaction
-        match Store::insert(store, db).await {
-            Ok(data) => {
-                match Store::fetch_by_id(&data.last_insert_id, db).await {
+                Self::fetch_by_id(id, db).await
+            }
+            Err(_) => {
+                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())))
+            }
+        }
+    }
+
+    pub async fn generate(db: &DbConn) -> Result<Vec<Store>, DbErr> {
+        // Create Transaction
+        let stores = example_stores();
+
+        match Store::insert_many(stores, db).await {
+            Ok(_) => {
+                match Store::fetch_all(db).await {
                     Ok(res) => {
                         Ok(res)
                     },  
                     Err(e) => Err(e)
                 }
             },
-            Err(e) => Err(e),
+            Err(e) => Err(e)
         }
     }
 }
 
-fn example_store() -> Store {
-    Store { 
+fn example_stores() -> Vec<Store> {
+    vec![Store { 
         id: Uuid::new_v4().to_string(), 
-        name: "Carbine".to_string(), 
+        name: "Mt Wellington".to_string(), 
         contact: ContactInformation {
             name: "Torpedo7".into(),
             mobile: MobileNumber {
@@ -114,13 +158,43 @@ fn example_store() -> Store {
             },
             landline: "".into(),
             address: Address {
-                street: "9 Carbine Road".into(),
-                street2: "".into(),
+                street: "315-375 Mount Wellington Highway".into(),
+                street2: "Mount Wellington".into(),
                 city: "Auckland".into(),
                 country: "New Zealand".into(),
-                po_code: "100".into()
+                po_code: "1060".into(),
+                lat: -36.915501,
+                lon: 174.838745
             }
         }, 
         code: "001".to_string() 
+    },
+    Store { 
+        id: Uuid::new_v4().to_string(), 
+        name: "Westfield".to_string(), 
+        contact: ContactInformation {
+            name: "Torpedo7".into(),
+            mobile: MobileNumber {
+                region_code: "+64".into(),
+                root: "021212120".into()
+            },
+            email: Email {
+                root: "order".into(),
+                domain: "torpedo7.com".into(),
+                full: "order@torpedo7.com".into()
+            },
+            landline: "".into(),
+            address: Address {
+                street: "309 Broadway, Westfield Shopping Centre".into(),
+                street2: "Newmarket".into(),
+                city: "Auckland".into(),
+                country: "New Zealand".into(),
+                po_code: "1023".into(),
+                lat: -36.871820,
+                lon: 174.776730
+            }
+        }, 
+        code: "002".to_string() 
     }
+    ]
 }

@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment}, entities::customer};
+use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment, convert_addr_to_geo}, entities::customer};
 use chrono::Utc;
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}, QueryFilter, Condition};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}, QueryFilter, Condition, RuntimeErr};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -166,33 +166,64 @@ impl Customer {
     }
 
     pub async fn update(cust: CustomerInput, id: &str, db: &DbConn) -> Result<Customer, DbErr> {
-        customer::ActiveModel {
-            id: Set(id.to_string()),
-            name: Set(cust.name),
-            contact: Set(json!(cust.contact)),
-            order_history: Set(json!(cust.order_history)),
-            customer_notes: Set(json!(cust.customer_notes)),
-            special_pricing: Set(json!(cust.special_pricing)),
-            balance: Set(cust.balance),
-        }.update(db).await?;
+        let addr = convert_addr_to_geo(&format!("{} {} {} {}", cust.contact.address.street, cust.contact.address.street2, cust.contact.address.po_code, cust.contact.address.city));
 
-        Self::fetch_by_id(id, db).await
+        // !impl Validate form input/ contact information.
+
+        match addr {
+            Ok((lat, lon)) => {
+                let mut new_contact = cust.contact;
+
+                new_contact.address.lat = lat;
+                new_contact.address.lon = lon;
+
+                customer::ActiveModel {
+                    id: Set(id.to_string()),
+                    name: Set(cust.name),
+                    contact: Set(json!(new_contact)),
+                    order_history: Set(json!(cust.order_history)),
+                    customer_notes: Set(json!(cust.customer_notes)),
+                    special_pricing: Set(json!(cust.special_pricing)),
+                    balance: Set(cust.balance),
+                }.update(db).await?;
+        
+                Self::fetch_by_id(id, db).await
+            }
+            Err(_) => {
+                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())))
+            }
+        }
     }
 
     pub async fn update_contact_information(contact: ContactInformation, id: &str, db: &DbConn) -> Result<Customer, DbErr> {
         let customer = Self::fetch_by_id(id, db).await?;
+        // Get geo location for new contact information...
+        let addr = convert_addr_to_geo(&format!("{} {} {} {}", contact.address.street, contact.address.street2, contact.address.po_code, contact.address.city));
 
-        customer::ActiveModel {
-            id: Set(customer.id),
-            name: Set(customer.name),
-            contact: Set(json!(contact)),
-            order_history: Set(json!(customer.order_history)),
-            customer_notes: Set(json!(customer.customer_notes)),
-            special_pricing: Set(json!(customer.special_pricing)),
-            balance: Set(customer.balance),
-        }.update(db).await?;
+        match addr {
+            Ok((lat, lon)) => {
+                let mut new_contact = contact;
 
-        Self::fetch_by_id(id, db).await 
+                new_contact.address.lat = lat;
+                new_contact.address.lon = lon;
+
+                customer::ActiveModel {
+                    id: Set(customer.id),
+                    name: Set(customer.name),
+                    contact: Set(json!(new_contact)),
+                    order_history: Set(json!(customer.order_history)),
+                    customer_notes: Set(json!(customer.customer_notes)),
+                    special_pricing: Set(json!(customer.special_pricing)),
+                    balance: Set(customer.balance),
+                }.update(db).await?;
+        
+                Self::fetch_by_id(id, db).await 
+            }
+            Err(_) => {
+                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())))
+            }
+        }
+        
     }
 }
 
@@ -236,11 +267,13 @@ pub fn example_customer() -> CustomerInput {
         email: Email::from("carl@kennith.com".to_string()),
         landline: "".into(),
         address: Address {
-            street: "9 Carbine Road".into(),
-            street2: "".into(),
+            street: "54 Arney Crescent".into(),
+            street2: "Remuera".into(),
             city: "Auckland".into(),
             country: "New Zealand".into(),
-            po_code: "100".into(),
+            po_code: "1050".into(),
+            lat: -36.869870,
+            lon: 174.790520
         },
     };
 

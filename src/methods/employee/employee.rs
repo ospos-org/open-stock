@@ -2,7 +2,7 @@ use std::{fmt::{Display, self}};
 
 use argonautica::{Verifier, Hasher};
 use chrono::Utc;
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, RuntimeErr};
 use serde::{Serialize, Deserialize};
 use serde_json::{json};
 use uuid::Uuid;
@@ -10,7 +10,7 @@ use uuid::Uuid;
 use argonautica::config::{Backend, Variant, Version};
 use futures_cpupool::CpuPool;
 
-use crate::{methods::{Id, Name, ContactInformation, History, MobileNumber, Email, Address}, entities::employee};
+use crate::{methods::{Id, Name, ContactInformation, History, MobileNumber, Email, Address, convert_addr_to_geo}, entities::employee};
 use crate::entities::prelude::Employee as Epl;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -38,7 +38,7 @@ pub enum Action {
     CreateStore, DeleteStore, ModifyStore, FetchStore,
     CreateSupplier, DeleteSupplier, ModifySupplier, FetchSupplier,
     
-    AccessAdminPanel, SuperUserDo, GenerateTemplateContent
+    AccessAdminPanel, SuperUserDo, GenerateTemplateContent, FetchGeoLocation
 }
 
 /// Stores a password hash, signed as a key using the users login ID.
@@ -221,17 +221,30 @@ impl Employee {
     }
 
     pub async fn update(empl: Employee, id: &str, db: &DbConn) -> Result<Employee, DbErr> {
-        employee::ActiveModel {
-            id: Set(id.to_string()),
-            name: Set(json!(empl.name)),
-            auth: Set(json!(empl.auth)),
-            contact: Set(json!(empl.contact)),
-            clock_history: Set(json!(empl.clock_history)),
-            level: Set(json!(empl.level)),
-        }.update(db).await?;
+        let addr = convert_addr_to_geo(&format!("{} {} {} {}", empl.contact.address.street, empl.contact.address.street2, empl.contact.address.po_code, empl.contact.address.city));
 
-        Ok(empl)
-        // Self::fetch_by_id(id, db).await
+        match addr {
+            Ok((lat, lon)) => {
+                let mut new_contact = empl.contact;
+
+                new_contact.address.lat = lat;
+                new_contact.address.lon = lon;
+
+                employee::ActiveModel {
+                    id: Set(id.to_string()),
+                    name: Set(json!(empl.name)),
+                    auth: Set(json!(empl.auth)),
+                    contact: Set(json!(new_contact)),
+                    clock_history: Set(json!(empl.clock_history)),
+                    level: Set(json!(empl.level)),
+                }.update(db).await?;
+        
+                Self::fetch_by_id(id, db).await
+            }
+            Err(_) => {
+                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())))
+            }
+        }
     }
 
     pub async fn generate(db: &DbConn) -> Result<Employee, DbErr> {
@@ -292,6 +305,8 @@ pub fn example_employee() -> EmployeeInput {
                 city: "Auckland".into(),
                 country: "New Zealand".into(),
                 po_code: "100".into(),
+                lat: -36.915500,
+                lon: 174.838740
             },
         },
         clock_history: vec![
@@ -364,6 +379,10 @@ pub fn example_employee() -> EmployeeInput {
             Access {
                 action: Action::CreateStore,
                 authority: 0
+            },
+            Access {
+                action: Action::FetchGeoLocation,
+                authority: 1
             }
         ]
     }

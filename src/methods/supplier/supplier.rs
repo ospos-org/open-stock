@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use crate::{methods::{Name, ContactInformation, MobileNumber, Email, Address, Transaction, example_transaction}, entities::{supplier}};
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait};
+use crate::{methods::{Name, ContactInformation, MobileNumber, Email, Address, Transaction, example_transaction, convert_addr_to_geo}, entities::{supplier}};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, RuntimeErr};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -119,14 +119,28 @@ impl Supplier {
     }
 
     pub async fn update(suppl: SupplierInput, id: &str, db: &DbConn) -> Result<Supplier, DbErr> {
-        supplier::ActiveModel {
-            id: Set(id.to_string()),
-            name: Set(json!(suppl.name)),
-            contact: Set(json!(suppl.contact)),
-            transaction_history: Set(json!(suppl.transaction_history)),
-        }.update(db).await?;
+        let addr = convert_addr_to_geo(&format!("{} {} {} {}", suppl.contact.address.street, suppl.contact.address.street2, suppl.contact.address.po_code, suppl.contact.address.city));
 
-        Self::fetch_by_id(id, db).await
+        match addr {
+            Ok((lat, lon)) => {
+                let mut new_contact = suppl.contact;
+
+                new_contact.address.lat = lat;
+                new_contact.address.lon = lon;
+
+                supplier::ActiveModel {
+                    id: Set(id.to_string()),
+                    name: Set(json!(suppl.name)),
+                    contact: Set(json!(new_contact)),
+                    transaction_history: Set(json!(suppl.transaction_history)),
+                }.update(db).await?;
+        
+                Self::fetch_by_id(id, db).await
+            }
+            Err(_) => {
+                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())))
+            }
+        }
     }
 }
 
@@ -160,12 +174,14 @@ pub fn example_supplier() -> SupplierInput {
         email: Email::from("carl@kennith.com".to_string()),
         landline: "".into(),
         address: Address {
-            street: "9 Carbine Road".into(),
-            street2: "".into(),
+            street: "315-375 Mount Wellington Highway".into(),
+            street2: "Mount Wellington".into(),
             city: "Auckland".into(),
             country: "New Zealand".into(),
-            po_code: "100".into(),
-        },
+            po_code: "1060".into(),
+            lat: -36.915501,
+            lon: 174.838745
+        }
     };
 
     let _t = example_transaction();

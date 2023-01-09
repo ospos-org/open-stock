@@ -35,7 +35,7 @@ pub async fn get_by_code(conn: Connection<'_, Db>, code: &str, cookies: &CookieJ
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>
-) -> Result<Json<Store>, Status> {
+) -> Result<Json<Vec<Store>>, Status> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;

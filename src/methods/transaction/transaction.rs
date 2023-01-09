@@ -261,17 +261,26 @@ impl Display for Transaction {
 
 pub fn example_transaction() -> TransactionInit {
     let torpedo7 = ContactInformation {
-        name: "Torpedo7".into(),
-        mobile: MobileNumber::from("021212120".to_string()),
-        email: Email::from("order@torpedo7.com".to_string()),
+        name: "Torpedo7 Mt Wellington".into(),
+        mobile: MobileNumber {
+            region_code: "+64".into(),
+            root: "021212120".into()
+        },
+        email: Email {
+            root: "order".into(),
+            domain: "torpedo7.com".into(),
+            full: "order@torpedo7.com".into()
+        },
         landline: "".into(),
         address: Address {
-            street: "9 Carbine Road".into(),
-            street2: "".into(),
+            street: "315-375 Mount Wellington Highway".into(),
+            street2: "Mount Wellington".into(),
             city: "Auckland".into(),
             country: "New Zealand".into(),
-            po_code: "100".into(),
-        },
+            po_code: "1060".into(),
+            lat: -36.915501,
+            lon: 174.838745
+        }
     };
 
     let order = Order {

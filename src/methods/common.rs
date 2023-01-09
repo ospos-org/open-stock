@@ -7,7 +7,6 @@ use sea_orm::{DatabaseConnection, DbErr, EntityTrait, QuerySelect, ColumnTrait};
 use serde::{Serialize, Deserialize};
 use crate::entities::session::Entity as SessionEntity;
 use crate::entities::employee::Entity as Employee;
-
 use super::{ProductExchange, Employee as EmployeeObj};
 
 #[macro_export]
@@ -114,7 +113,9 @@ pub struct Address {
     pub street2: String,
     pub city: String,
     pub country: String,
-    pub po_code: String
+    pub po_code: String,
+    pub lat: f64,
+    pub lon: f64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

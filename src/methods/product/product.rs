@@ -325,7 +325,7 @@ fn example_product() -> Product {
                         store: Location {
                             code: "001".into(),
                             contact: ContactInformation {
-                                name: "Torpedo7".into(),
+                                name: "Torpedo7 Mt Wellington".into(),
                                 mobile: MobileNumber {
                                     region_code: "+64".into(),
                                     root: "021212120".into()
@@ -337,11 +337,13 @@ fn example_product() -> Product {
                                 },
                                 landline: "".into(),
                                 address: Address {
-                                    street: "9 Carbine Road".into(),
-                                    street2: "".into(),
+                                    street: "315-375 Mount Wellington Highway".into(),
+                                    street2: "Mount Wellington".into(),
                                     city: "Auckland".into(),
                                     country: "New Zealand".into(),
-                                    po_code: "100".into()
+                                    po_code: "1060".into(),
+                                    lat: -36.915501,
+                                    lon: 174.838745
                                 }
                             }
                         }, 
@@ -355,7 +357,7 @@ fn example_product() -> Product {
                         store: Location {
                             code: "002".into(),
                             contact: ContactInformation {
-                                name: "Torpedo7".into(),
+                                name: "Torpedo7 Westfield".into(),
                                 mobile: MobileNumber {
                                     region_code: "+64".into(),
                                     root: "021212120".into()
@@ -367,11 +369,13 @@ fn example_product() -> Product {
                                 },
                                 landline: "".into(),
                                 address: Address {
-                                    street: "9 Carbine Road".into(),
-                                    street2: "".into(),
+                                    street: "309 Broadway, Westfield Shopping Centre".into(),
+                                    street2: "Newmarket".into(),
                                     city: "Auckland".into(),
                                     country: "New Zealand".into(),
-                                    po_code: "100".into()
+                                    po_code: "1023".into(),
+                                    lat: -36.871820,
+                                    lon: 174.776730
                                 }
                             }
                         }, 
@@ -394,7 +398,7 @@ fn example_product() -> Product {
                     stock_group: "RANDOM".into(), 
                     sales_group: "RANDOM".into(), 
                     value_stream: "RANDOM".into(), 
-                    brand: "Torq Group".into(), 
+                    brand: "SELLER_GROUP".into(), 
                     unit: "".into(), 
                     tax_code: "GSL".into(), 
                     weight: "5.6".into(), 
@@ -413,7 +417,7 @@ fn example_product() -> Product {
                         store: Location {
                             code: "001".into(),
                             contact: ContactInformation {
-                                name: "Torpedo7".into(),
+                                name: "Torpedo7 Mt Wellington".into(),
                                 mobile: MobileNumber {
                                     region_code: "+64".into(),
                                     root: "021212120".into()
@@ -425,11 +429,13 @@ fn example_product() -> Product {
                                 },
                                 landline: "".into(),
                                 address: Address {
-                                    street: "9 Carbine Road".into(),
-                                    street2: "".into(),
+                                    street: "315-375 Mount Wellington Highway".into(),
+                                    street2: "Mount Wellington".into(),
                                     city: "Auckland".into(),
                                     country: "New Zealand".into(),
-                                    po_code: "100".into()
+                                    po_code: "1060".into(),
+                                    lat: -36.915501,
+                                    lon: 174.838745
                                 }
                             }
                         }, 
@@ -443,7 +449,7 @@ fn example_product() -> Product {
                         store: Location {
                             code: "002".into(),
                             contact: ContactInformation {
-                                name: "Torpedo7".into(),
+                                name: "Torpedo7 Westfield".into(),
                                 mobile: MobileNumber {
                                     region_code: "+64".into(),
                                     root: "021212120".into()
@@ -455,11 +461,13 @@ fn example_product() -> Product {
                                 },
                                 landline: "".into(),
                                 address: Address {
-                                    street: "9 Carbine Road".into(),
-                                    street2: "".into(),
+                                    street: "309 Broadway, Westfield Shopping Centre".into(),
+                                    street2: "Newmarket".into(),
                                     city: "Auckland".into(),
                                     country: "New Zealand".into(),
-                                    po_code: "100".into()
+                                    po_code: "1023".into(),
+                                    lat: -36.871820,
+                                    lon: 174.776730
                                 }
                             }
                         }, 
@@ -482,7 +490,7 @@ fn example_product() -> Product {
                     stock_group: "RANDOM".into(), 
                     sales_group: "RANDOM".into(), 
                     value_stream: "RANDOM".into(), 
-                    brand: "Torq Group".into(), 
+                    brand: "SELLER_GROUP".into(), 
                     unit: "".into(), 
                     tax_code: "GSL".into(), 
                     weight: "5.6".into(), 
@@ -501,7 +509,7 @@ fn example_product() -> Product {
                         store: Location {
                             code: "001".into(),
                             contact: ContactInformation {
-                                name: "Torpedo7".into(),
+                                name: "Torpedo7 Mt Wellington".into(),
                                 mobile: MobileNumber {
                                     region_code: "+64".into(),
                                     root: "021212120".into()
@@ -513,11 +521,13 @@ fn example_product() -> Product {
                                 },
                                 landline: "".into(),
                                 address: Address {
-                                    street: "9 Carbine Road".into(),
-                                    street2: "".into(),
+                                    street: "315-375 Mount Wellington Highway".into(),
+                                    street2: "Mount Wellington".into(),
                                     city: "Auckland".into(),
                                     country: "New Zealand".into(),
-                                    po_code: "100".into()
+                                    po_code: "1060".into(),
+                                    lat: -36.915501,
+                                    lon: 174.838745
                                 }
                             }
                         }, 
@@ -531,7 +541,7 @@ fn example_product() -> Product {
                         store: Location {
                             code: "002".into(),
                             contact: ContactInformation {
-                                name: "Torpedo7".into(),
+                                name: "Torpedo7 Westfield".into(),
                                 mobile: MobileNumber {
                                     region_code: "+64".into(),
                                     root: "021212120".into()
@@ -543,11 +553,13 @@ fn example_product() -> Product {
                                 },
                                 landline: "".into(),
                                 address: Address {
-                                    street: "9 Carbine Road".into(),
-                                    street2: "".into(),
+                                    street: "309 Broadway, Westfield Shopping Centre".into(),
+                                    street2: "Newmarket".into(),
                                     city: "Auckland".into(),
                                     country: "New Zealand".into(),
-                                    po_code: "100".into()
+                                    po_code: "1023".into(),
+                                    lat: -36.871820,
+                                    lon: 174.776730
                                 }
                             }
                         }, 
@@ -570,7 +582,7 @@ fn example_product() -> Product {
                     stock_group: "RANDOM".into(), 
                     sales_group: "RANDOM".into(), 
                     value_stream: "RANDOM".into(), 
-                    brand: "Torq Group".into(), 
+                    brand: "SELLER_GROUP".into(), 
                     unit: "".into(), 
                     tax_code: "GSL".into(), 
                     weight: "5.6".into(), 
