@@ -163,18 +163,12 @@ impl Session {
 }
 
 pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
-    for c in cookies.iter() {
-        println!("Name: '{}', Value: '{}'", c.name(), c.value());
-    }
-
     match cookies.get("key")
         .map(|crumb| format!("{}", crumb.value())) {
             Some(val) => {
-                println!("{}", val);
                 Some(val)
             }
             None => {
-                println!("Uh oh, the cookie jar is empty.");
                 None
             }
         }
@@ -188,8 +182,6 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
     
     match session {
         Some((val, empl)) => {
-            println!("{:?} and {:?}", val, empl);
-
             match empl {
                 Some(e) => {
                     Ok(Session {

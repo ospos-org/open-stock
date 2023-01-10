@@ -109,7 +109,6 @@ impl Supplier {
         let r = Supplier::insert(cust, &db).await.unwrap();
         match Supplier::fetch_by_id(&r.last_insert_id, &db).await {
             Ok(cust) => {
-                println!("Retrieved Customer:\n{}", cust);
                 Ok(cust)
             }
             Err(e) => {
@@ -122,11 +121,9 @@ impl Supplier {
         let addr = convert_addr_to_geo(&format!("{} {} {} {}", suppl.contact.address.street, suppl.contact.address.street2, suppl.contact.address.po_code, suppl.contact.address.city));
 
         match addr {
-            Ok((lat, lon)) => {
+            Ok(ad) => {
                 let mut new_contact = suppl.contact;
-
-                new_contact.address.lat = lat;
-                new_contact.address.lon = lon;
+                new_contact.address = ad;
 
                 supplier::ActiveModel {
                     id: Set(id.to_string()),

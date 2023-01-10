@@ -156,7 +156,6 @@ impl Customer {
         let r = Customer::insert(cust, &db).await.unwrap();
         match Customer::fetch_by_id(&r.last_insert_id, &db).await {
             Ok(cust) => {
-                println!("Retrieved Customer:\n{}", cust);
                 Ok(cust)
             }
             Err(e) => {
@@ -171,11 +170,9 @@ impl Customer {
         // !impl Validate form input/ contact information.
 
         match addr {
-            Ok((lat, lon)) => {
+            Ok(ad) => {
                 let mut new_contact = cust.contact;
-
-                new_contact.address.lat = lat;
-                new_contact.address.lon = lon;
+                new_contact.address = ad;
 
                 customer::ActiveModel {
                     id: Set(id.to_string()),
@@ -201,11 +198,9 @@ impl Customer {
         let addr = convert_addr_to_geo(&format!("{} {} {} {}", contact.address.street, contact.address.street2, contact.address.po_code, contact.address.city));
 
         match addr {
-            Ok((lat, lon)) => {
+            Ok(ad) => {
                 let mut new_contact = contact;
-
-                new_contact.address.lat = lat;
-                new_contact.address.lon = lon;
+                new_contact.address = ad;
 
                 customer::ActiveModel {
                     id: Set(customer.id),
@@ -294,6 +289,7 @@ pub fn example_customer() -> CustomerInput {
                     ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
                     ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
                 ],
+                previous_failed_fulfillment_attempts: vec![],
                 status: vec![OrderStatusAssignment {
                     status: OrderStatus::Transit(
                         TransitInformation {

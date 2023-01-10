@@ -384,7 +384,39 @@ fn example_product() -> Product {
                             quantity_on_order: 2.0, 
                             quantity_unsellable: 2.0 
                         }   
-                    }
+                    },
+                    Stock { 
+                        store: Location {
+                            code: "003".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7 Albany".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "6 Mercari Way".into(),
+                                    street2: "Albany".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "0632".into(),
+                                    lat: -36.7323515,
+                                    lon: 174.7082982
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_sellable: 1.0, 
+                            quantity_on_order: 0.0, 
+                            quantity_unsellable: 2.0 
+                        }   
+                    },
                 ], 
                 images: vec![
                     "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
@@ -477,6 +509,38 @@ fn example_product() -> Product {
                             quantity_unsellable: 0.0 
                         }   
                     },
+                    Stock { 
+                        store: Location {
+                            code: "003".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7 Albany".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "6 Mercari Way".into(),
+                                    street2: "Albany".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "0632".into(),
+                                    lat: -36.7323515,
+                                    lon: 174.7082982
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_sellable: 1.0, 
+                            quantity_on_order: 0.0, 
+                            quantity_unsellable: 2.0 
+                        }   
+                    },
                 ], 
                 images: vec![
                     "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
@@ -532,7 +596,7 @@ fn example_product() -> Product {
                             }
                         }, 
                         quantity: Quantity { 
-                            quantity_sellable: 0.0, 
+                            quantity_sellable: 1.0, 
                             quantity_on_order: 0.0, 
                             quantity_unsellable: 2.0 
                         }   
@@ -568,7 +632,39 @@ fn example_product() -> Product {
                             quantity_on_order: 0.0, 
                             quantity_unsellable: 1.0 
                         }   
-                    }
+                    },
+                    Stock { 
+                        store: Location {
+                            code: "003".into(),
+                            contact: ContactInformation {
+                                name: "Torpedo7 Albany".into(),
+                                mobile: MobileNumber {
+                                    region_code: "+64".into(),
+                                    root: "021212120".into()
+                                },
+                                email: Email {
+                                    root: "order".into(),
+                                    domain: "torpedo7.com".into(),
+                                    full: "order@torpedo7.com".into()
+                                },
+                                landline: "".into(),
+                                address: Address {
+                                    street: "6 Mercari Way".into(),
+                                    street2: "Albany".into(),
+                                    city: "Auckland".into(),
+                                    country: "New Zealand".into(),
+                                    po_code: "0632".into(),
+                                    lat: -36.7323515,
+                                    lon: 174.7082982
+                                }
+                            }
+                        }, 
+                        quantity: Quantity { 
+                            quantity_sellable: 1.0, 
+                            quantity_on_order: 0.0, 
+                            quantity_unsellable: 2.0 
+                        }   
+                    },
                 ], 
                 images: vec![
                     "https://www.torpedo7.co.nz/images/products/T7TEO23YBHT_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-blanc-du-blanc.jpg?v=845eb9a5288642009c05".into()

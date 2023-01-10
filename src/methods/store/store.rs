@@ -102,11 +102,9 @@ impl Store {
         let addr = convert_addr_to_geo(&format!("{} {} {} {}", store.contact.address.street, store.contact.address.street2, store.contact.address.po_code, store.contact.address.city));
 
         match addr {
-            Ok((lat, lon)) => {
+            Ok(ad) => {
                 let mut new_contact = store.contact;
-
-                new_contact.address.lat = lat;
-                new_contact.address.lon = lon;
+                new_contact.address = ad;
 
                 store::ActiveModel {
                     id: Set(id.to_string()),
@@ -142,59 +140,87 @@ impl Store {
 }
 
 fn example_stores() -> Vec<Store> {
-    vec![Store { 
-        id: Uuid::new_v4().to_string(), 
-        name: "Mt Wellington".to_string(), 
-        contact: ContactInformation {
-            name: "Torpedo7".into(),
-            mobile: MobileNumber {
-                region_code: "+64".into(),
-                root: "021212120".into()
-            },
-            email: Email {
-                root: "order".into(),
-                domain: "torpedo7.com".into(),
-                full: "order@torpedo7.com".into()
-            },
-            landline: "".into(),
-            address: Address {
-                street: "315-375 Mount Wellington Highway".into(),
-                street2: "Mount Wellington".into(),
-                city: "Auckland".into(),
-                country: "New Zealand".into(),
-                po_code: "1060".into(),
-                lat: -36.915501,
-                lon: 174.838745
-            }
-        }, 
-        code: "001".to_string() 
-    },
-    Store { 
-        id: Uuid::new_v4().to_string(), 
-        name: "Westfield".to_string(), 
-        contact: ContactInformation {
-            name: "Torpedo7".into(),
-            mobile: MobileNumber {
-                region_code: "+64".into(),
-                root: "021212120".into()
-            },
-            email: Email {
-                root: "order".into(),
-                domain: "torpedo7.com".into(),
-                full: "order@torpedo7.com".into()
-            },
-            landline: "".into(),
-            address: Address {
-                street: "309 Broadway, Westfield Shopping Centre".into(),
-                street2: "Newmarket".into(),
-                city: "Auckland".into(),
-                country: "New Zealand".into(),
-                po_code: "1023".into(),
-                lat: -36.871820,
-                lon: 174.776730
-            }
-        }, 
-        code: "002".to_string() 
-    }
+    vec![
+        Store { 
+            id: Uuid::new_v4().to_string(), 
+            name: "Mt Wellington".to_string(), 
+            contact: ContactInformation {
+                name: "Torpedo7 Mt Wellington".into(),
+                mobile: MobileNumber {
+                    region_code: "+64".into(),
+                    root: "021212120".into()
+                },
+                email: Email {
+                    root: "order".into(),
+                    domain: "torpedo7.com".into(),
+                    full: "order@torpedo7.com".into()
+                },
+                landline: "".into(),
+                address: Address {
+                    street: "315-375 Mount Wellington Highway".into(),
+                    street2: "Mount Wellington".into(),
+                    city: "Auckland".into(),
+                    country: "New Zealand".into(),
+                    po_code: "1060".into(),
+                    lat: -36.915501,
+                    lon: 174.838745
+                }
+            }, 
+            code: "001".to_string() 
+        },
+        Store { 
+            id: Uuid::new_v4().to_string(), 
+            name: "Westfield".to_string(), 
+            contact: ContactInformation {
+                name: "Torpedo7 Westfield".into(),
+                mobile: MobileNumber {
+                    region_code: "+64".into(),
+                    root: "021212120".into()
+                },
+                email: Email {
+                    root: "order".into(),
+                    domain: "torpedo7.com".into(),
+                    full: "order@torpedo7.com".into()
+                },
+                landline: "".into(),
+                address: Address {
+                    street: "309 Broadway, Westfield Shopping Centre".into(),
+                    street2: "Newmarket".into(),
+                    city: "Auckland".into(),
+                    country: "New Zealand".into(),
+                    po_code: "1023".into(),
+                    lat: -36.871820,
+                    lon: 174.776730
+                }
+            }, 
+            code: "002".to_string() 
+        },
+        Store {
+            id: Uuid::new_v4().to_string(), 
+            name: "Albany".to_string(), 
+            contact: ContactInformation {
+                name: "Torpedo7 Albany".into(),
+                mobile: MobileNumber {
+                    region_code: "+64".into(),
+                    root: "021212120".into()
+                },
+                email: Email {
+                    root: "order".into(),
+                    domain: "torpedo7.com".into(),
+                    full: "order@torpedo7.com".into()
+                },
+                landline: "".into(),
+                address: Address {
+                    street: "6 Mercari Way".into(),
+                    street2: "Albany".into(),
+                    city: "Auckland".into(),
+                    country: "New Zealand".into(),
+                    po_code: "0632".into(),
+                    lat: -36.7323515,
+                    lon: 174.7082982
+                }
+            }, 
+            code: "003".to_string() 
+        }
     ]
 }

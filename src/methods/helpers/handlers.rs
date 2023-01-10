@@ -3,12 +3,12 @@ use rocket::{routes, patch, http::{Status, CookieJar}, serde::json::{Json}, post
 use sea_orm_rocket::{Connection};
 use serde::{Deserialize, Serialize};
 
-use crate::{pool::Db, methods::{Employee, Store, Product, Customer, cookie_status_wrapper, Action}, check_permissions};
-use photon_geocoding::{PhotonApiClient, PhotonFeature};
+use crate::{pool::Db, methods::{Employee, Store, Product, Customer, cookie_status_wrapper, Action, Address}, check_permissions};
+use photon_geocoding::{PhotonApiClient, PhotonFeature, filter::{ForwardFilter, PhotonLayer}, LatLon};
 use geo::VincentyDistance;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![generate_template, address_to_geolocation, distance_to_stores]
+    routes![generate_template, address_to_geolocation, distance_to_stores, suggest_addr]
 }
 
 #[derive(Serialize, Deserialize)]
@@ -38,7 +38,7 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, St
 }
 
 #[post("/address", data="<address>")]
-pub async fn address_to_geolocation(conn: Connection<'_, Db>, address: &str, cookies: &CookieJar<'_>) -> Result<Json<(f64, f64)>, Status> {
+pub async fn address_to_geolocation(conn: Connection<'_, Db>, address: &str, cookies: &CookieJar<'_>) -> Result<Json<Address>, Status> {
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchGeoLocation);
@@ -49,14 +49,59 @@ pub async fn address_to_geolocation(conn: Connection<'_, Db>, address: &str, coo
     }
 }
 
-pub fn convert_addr_to_geo(address: &str) -> Result<(f64, f64), Status> {
+pub fn convert_addr_to_geo(address: &str) -> Result<Address, Status> {
     let api: PhotonApiClient = PhotonApiClient::default();
-    let mut result: Vec<PhotonFeature> = api.forward_search(address, None).unwrap();
-    match result.get_mut(0) {
+    let result: Vec<PhotonFeature> = api.forward_search(address, None).unwrap();
+    match result.get(0) {
         Some(loc) => {
-            Ok((loc.coords.lat, loc.coords.lon))
+            println!("{:?}", loc);
+
+            Ok(Address { 
+                street: format!("{} {}", loc.house_number.clone().unwrap_or("0".to_string()), loc.street.clone().unwrap_or("".to_string())), 
+                street2: format!("{}", loc.district.clone().unwrap_or("".to_string())), 
+                city: loc.city.clone().unwrap_or("".to_string()), 
+                country: loc.country.clone().unwrap_or("".to_string()), 
+                po_code: loc.postcode.clone().unwrap_or("".to_string()), 
+                lat: loc.coords.lat, 
+                lon: loc.coords.lon 
+            })
         },
         None => Err(Status::UnprocessableEntity)
+    }
+}
+
+pub fn convert_addresses_to_geo(address: &str, origin: LatLon) -> Result<Vec<Address>, Status> {
+    let api: PhotonApiClient = PhotonApiClient::default();
+    let result: Vec<PhotonFeature> = api.forward_search(address, Some(ForwardFilter::new()
+        .location_bias(origin, Some(16), Some(0.3))
+        .limit(5)
+        .layer(vec![PhotonLayer::House])
+    )).unwrap();
+
+    let mapped = result.iter().map(|loc| 
+        Address { 
+            street: format!("{} {}", loc.house_number.clone().unwrap_or("0".to_string()), loc.street.clone().unwrap_or("".to_string())), 
+            street2: format!("{}", loc.district.clone().unwrap_or("".to_string())), 
+            city: loc.city.clone().unwrap_or("".to_string()), 
+            country: loc.country.clone().unwrap_or("".to_string()), 
+            po_code: loc.postcode.clone().unwrap_or("".to_string()), 
+            lat: loc.coords.lat, 
+            lon: loc.coords.lon 
+        }
+    ).collect();
+
+    Ok(mapped)
+}
+
+#[post("/suggest", data="<address>")]
+pub async fn suggest_addr(conn: Connection<'_, Db>, address: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Address>>, Status> {
+    let db = conn.into_inner();
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchGeoLocation);
+
+    match convert_addresses_to_geo(address, LatLon { lat: session.employee.contact.address.lat.clone(), lon: session.employee.contact.address.lon.clone() }) {
+        Ok(val) => Ok(Json(val)),
+        Err(status) => Err(status),
     }
 }
 

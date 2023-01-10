@@ -132,8 +132,6 @@ impl Transaction {
 
         
         let mapped = res.iter().map(|t| {
-            println!("{:?}", serde_json::from_value::<OrderList>(t.products.clone()));
-
             Transaction {
                 id: t.id.clone(),
                 customer: t.customer.clone(),
@@ -296,6 +294,7 @@ pub fn example_transaction() -> TransactionInit {
             ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
             ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
         ],
+        previous_failed_fulfillment_attempts: vec![],
         status: vec![
             OrderStatusAssignment { 
                 status: OrderStatus::Transit(

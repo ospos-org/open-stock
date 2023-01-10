@@ -224,11 +224,9 @@ impl Employee {
         let addr = convert_addr_to_geo(&format!("{} {} {} {}", empl.contact.address.street, empl.contact.address.street2, empl.contact.address.po_code, empl.contact.address.city));
 
         match addr {
-            Ok((lat, lon)) => {
+            Ok(ad) => {
                 let mut new_contact = empl.contact;
-
-                new_contact.address.lat = lat;
-                new_contact.address.lon = lon;
+                new_contact.address = ad;
 
                 employee::ActiveModel {
                     id: Set(id.to_string()),

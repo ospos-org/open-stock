@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use chrono::{Utc, DateTime};
 use serde::{Serialize, Deserialize};
-use crate::methods::{Location, ProductPurchaseList, NoteList, ContactInformation, Url, DiscountValue, Id, HistoryList};
+use crate::methods::{Location, ProductPurchaseList, NoteList, ContactInformation, Url, DiscountValue, Id, HistoryList, History, Store};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Order {
@@ -16,6 +16,8 @@ pub struct Order {
     pub status: OrderStatusAssignmentList,
     pub status_history: Vec<OrderState>,
     pub order_history: HistoryList,
+
+    pub previous_failed_fulfillment_attempts: Vec<History<Store>>,
 
     pub order_notes: NoteList,
     pub reference: String,

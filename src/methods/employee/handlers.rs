@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use chrono::{Utc, Duration as ChronoDuration};
 use rocket::http::{CookieJar, Cookie, SameSite};
-use rocket::time::{Instant, OffsetDateTime};
+use rocket::time::{OffsetDateTime};
 use rocket::{http::Status, get};
 use rocket::{routes, post, patch};
 use rocket::serde::json::Json;
@@ -56,8 +56,6 @@ pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: Json<Name>, cooki
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    println!("{}", json!(new_transaction));
-
     if session.employee.name == new_transaction {
         Ok(Json(vec![session.employee]))
     }else {
@@ -73,8 +71,6 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &Cookie
 
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchEmployee);
-
-    println!("{}", json!(new_transaction));
 
     let employee = Employee::fetch_by_level(new_transaction, db).await.unwrap();
     Ok(Json(employee))
@@ -161,8 +157,6 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
 
                         cookies.add(cookie);
 
-                        println!("Created and set cookie!");
-
                         Ok(Json(api_key))
                     },
                     Err(_) => Err(Status::InternalServerError)
@@ -184,16 +178,10 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>, c
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateEmployee);
 
-    let start = Instant::now();
-
     match Employee::insert(new_transaction, db).await {
         Ok(data) => {
-            println!("function=insert_into cum_duration={:?}", start.elapsed());
-
             match Employee::fetch_by_id(&data.last_insert_id, db).await {
                 Ok(res) => {
-                    println!("function=fetch_by_id cum_duration={:?}", start.elapsed());
-
                     Ok(Json(res))
                 },  
                 Err(reason) => {
