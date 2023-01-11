@@ -1,4 +1,4 @@
-use rocket::{routes, patch, get, http::{CookieJar, Status}, serde::json::Json, post};
+use rocket::{routes, get, http::{CookieJar, Status}, serde::json::Json, post};
 use sea_orm_rocket::{Connection};
 
 use crate::{pool::Db, methods::{cookie_status_wrapper, Action}, check_permissions};
@@ -31,7 +31,7 @@ pub async fn get_by_code(conn: Connection<'_, Db>, code: &str, cookies: &CookieJ
     Ok(Json(store))
 }
 
-#[patch("/generate")]
+#[post("/generate")]
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>

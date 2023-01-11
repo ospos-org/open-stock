@@ -14,7 +14,7 @@ pub struct Payment {
 
     pub status: PaymentStatus,
     pub processor: PaymentProcessor,
-    pub order_id: String,
+    pub order_ids: Vec<String>,
 
     pub delay_action: PaymentAction,
     /// Duration in the RFC3339 format

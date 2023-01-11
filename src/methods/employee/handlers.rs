@@ -4,7 +4,7 @@ use chrono::{Utc, Duration as ChronoDuration};
 use rocket::http::{CookieJar, Cookie, SameSite};
 use rocket::time::{OffsetDateTime};
 use rocket::{http::Status, get};
-use rocket::{routes, post, patch};
+use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm::{EntityTrait, Set};
 use sea_orm_rocket::{Connection};
@@ -76,7 +76,7 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &Cookie
     Ok(Json(employee))
 }
 
-#[patch("/generate")]
+#[post("/generate")]
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>

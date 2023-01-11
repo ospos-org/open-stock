@@ -1,5 +1,5 @@
 use rocket::http::CookieJar;
-use rocket::{http::Status, get, patch};
+use rocket::{http::Status, get};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
@@ -68,7 +68,7 @@ async fn update(
     }
 }
 
-#[patch("/generate")]
+#[post("/generate")]
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>

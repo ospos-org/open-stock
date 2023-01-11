@@ -1,6 +1,6 @@
 use rocket::http::CookieJar;
 use rocket::{http::Status, get};
-use rocket::{routes, post, patch};
+use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 use crate::check_permissions;
@@ -107,7 +107,7 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<Product>, cookies
     }
 }
 
-#[patch("/generate")]
+#[post("/generate")]
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>

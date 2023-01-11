@@ -347,7 +347,7 @@ pub fn example_transaction() -> TransactionInit {
                 software_version: "k0.5.2".to_string(), 
                 token: Uuid::new_v4().to_string() 
             }, 
-            order_id: Uuid::new_v4().to_string(), 
+            order_ids: vec![Uuid::new_v4().to_string()], 
             delay_action: PaymentAction::Cancel, 
             delay_duration: "PT12H".to_string()
         }],

@@ -1,5 +1,5 @@
 use geo::{point};
-use rocket::{routes, patch, http::{Status, CookieJar}, serde::json::{Json}, post, get};
+use rocket::{routes, http::{Status, CookieJar}, serde::json::{Json}, post, get};
 use sea_orm_rocket::{Connection};
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,7 @@ pub struct All {
 }
 
 /// This route does not require authentication, but is not enabled in release mode.
-#[patch("/generate")]
+#[post("/generate")]
 pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Status> {
     let db = conn.into_inner();
 
