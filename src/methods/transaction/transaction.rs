@@ -305,7 +305,8 @@ pub fn example_transaction() -> TransactionInit {
                         assigned_products: vec!["132522-22".to_string()]
                     }
                 ), 
-                assigned_products: vec!["132522-22".to_string()]
+                assigned_products: vec!["132522-22".to_string()],
+                timestamp: Utc::now()
             }
         ],
         order_history: vec![],

@@ -1,9 +1,11 @@
+use chrono::Utc;
 use geo::{point};
 use rocket::{routes, http::{Status, CookieJar}, serde::json::{Json}, post, get};
 use sea_orm_rocket::{Connection};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::{pool::Db, methods::{Employee, Store, Product, Customer, cookie_status_wrapper, Action, Address}, check_permissions};
+use crate::{pool::Db, methods::{Employee, Store, Product, Customer, cookie_status_wrapper, Action, Address, Transaction, Session}, check_permissions};
 use photon_geocoding::{PhotonApiClient, PhotonFeature, filter::{ForwardFilter, PhotonLayer}, LatLon};
 use geo::VincentyDistance;
 
@@ -16,7 +18,8 @@ pub struct All {
     employee: Employee,
     stores: Vec<Store>,
     product: Product,
-    customer: Customer
+    customer: Customer,
+    transaction: Transaction
 }
 
 /// This route does not require authentication, but is not enabled in release mode.
@@ -28,12 +31,14 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, St
     let stores = Store::generate(db).await.unwrap();
     let product = Product::generate(db).await.unwrap();
     let customer = Customer::generate(db).await.unwrap();
+    let transaction = Transaction::generate(db, Session { id: Uuid::new_v4().to_string(), key: format!(""), employee: employee.clone(), expiry: Utc::now() }).await.unwrap();
 
     Ok(rocket::serde::json::Json(All {
         employee,
         stores,
         product,
-        customer
+        customer,
+        transaction
     }))
 }
 

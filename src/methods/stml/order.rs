@@ -46,7 +46,8 @@ pub struct OrderState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderStatusAssignment {
     pub status: OrderStatus,
-    pub assigned_products: Vec<Id>
+    pub assigned_products: Vec<Id>,
+    pub timestamp: DateTime<Utc>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

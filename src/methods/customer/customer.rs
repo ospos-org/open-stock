@@ -299,7 +299,8 @@ pub fn example_customer() -> CustomerInput {
                             assigned_products: vec![]
                         }
                     ),
-                    assigned_products: vec![]
+                    assigned_products: vec![],
+                    timestamp: Utc::now()
                 }],
                 order_history: vec![],
                 order_notes: vec![
