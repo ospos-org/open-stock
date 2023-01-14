@@ -13,8 +13,8 @@ pub struct Order {
 
     pub products: ProductPurchaseList,
 
-    pub status: OrderStatusAssignmentList,
-    pub status_history: Vec<OrderState>,
+    pub status: OrderStatusAssignment,
+    pub status_history: Vec<History<OrderStatusAssignment>>,
     pub order_history: HistoryList,
 
     pub previous_failed_fulfillment_attempts: Vec<History<Store>>,
@@ -23,10 +23,14 @@ pub struct Order {
     pub reference: String,
     pub creation_date: DateTime<Utc>,
     
-    pub discount: DiscountValue
+    pub discount: DiscountValue,
+    pub order_type: OrderType
 }
 
-pub type OrderStatusAssignmentList = Vec<OrderStatusAssignment>; 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum OrderType {
+    Direct, Shipment, Pickup, Quote
+}
 
 impl ToString for Order {
     fn to_string(&self) -> String {

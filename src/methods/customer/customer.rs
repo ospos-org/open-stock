@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderState, TransitInformation, OrderStatusAssignment, convert_addr_to_geo}, entities::customer};
+use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, TransitInformation, OrderStatusAssignment, convert_addr_to_geo, History}, entities::customer};
 use chrono::Utc;
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}, QueryFilter, Condition, RuntimeErr};
 use serde::{Serialize, Deserialize};
@@ -277,6 +277,7 @@ pub fn example_customer() -> CustomerInput {
         contact: customer.clone(),
         order_history: vec![
             Order {
+                order_type: crate::methods::OrderType::Pickup,
                 destination: Location {
                     code: "001".into(),
                     contact: customer.clone()
@@ -286,11 +287,11 @@ pub fn example_customer() -> CustomerInput {
                     contact: customer.clone()
                 },
                 products: vec![
-                    ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
-                    ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
+                    ProductPurchase { id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
+                    ProductPurchase { id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
                 ],
                 previous_failed_fulfillment_attempts: vec![],
-                status: vec![OrderStatusAssignment {
+                status: OrderStatusAssignment {
                     status: OrderStatus::Transit(
                         TransitInformation {
                             shipping_company: customer.clone(),
@@ -301,7 +302,7 @@ pub fn example_customer() -> CustomerInput {
                     ),
                     assigned_products: vec![],
                     timestamp: Utc::now()
-                }],
+                },
                 order_history: vec![],
                 order_notes: vec![
                     Note {
@@ -313,7 +314,7 @@ pub fn example_customer() -> CustomerInput {
                 reference: "TOR-19592".into(),
                 creation_date: Utc::now(),
                 id: Uuid::new_v4().to_string(),
-                status_history: vec![OrderState { status: OrderStatus::Queued, timestamp: Utc::now() }],
+                status_history: vec![ History::<OrderStatusAssignment> { item: OrderStatusAssignment { status: OrderStatus::Queued, timestamp: Utc::now(), assigned_products: vec![] }, timestamp: Utc::now(), reason: "".to_string() }],
                 discount: DiscountValue::Absolute(0),
             }
         ],

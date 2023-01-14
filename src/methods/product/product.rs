@@ -189,6 +189,8 @@ pub struct ProductPurchase {
     pub variant: VariantIdTag,
     pub discount: DiscountMap,
 
+    pub id: String,
+
     // Cost before discount, discount will be applied on the product cost.
     pub product_cost: f32,
     pub quantity: i32,
@@ -319,6 +321,7 @@ fn example_product() -> Product {
         ], 
         variants: vec![
             VariantInformation { 
+                id: "SM-BLK-ITM".to_string(),
                 name: "Small Black".into(), 
                 stock: vec![
                     Stock { 
@@ -443,6 +446,7 @@ fn example_product() -> Product {
                 loyalty_discount: DiscountValue::Absolute(15)
             },
             VariantInformation { 
+                id: "M-BLK-ITM".to_string(),
                 name: "Medium Black".into(), 
                 stock: vec![
                     Stock { 
@@ -567,6 +571,7 @@ fn example_product() -> Product {
                 loyalty_discount: DiscountValue::Absolute(25)
             },
             VariantInformation { 
+                id: "LG-WHT-ITM".to_string(),
                 name: "Large White".into(), 
                 stock: vec![
                     Stock { 

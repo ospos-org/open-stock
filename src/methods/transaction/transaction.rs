@@ -7,28 +7,23 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderState, OrderStatusAssignment, History, ProductExchange, Session, greatest_discount, Price, PaymentStatus, PaymentProcessor, PaymentAction}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, TransitInformation, Note, OrderStatusAssignment, History, ProductExchange, Session, greatest_discount, Price, PaymentStatus, PaymentProcessor, PaymentAction}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
 // Discounts on the transaction are applied per-order - such that they are unique to each item, i.e. each item can be discounted individually where needed to close a sale.
 // A discount placed upon the payment object is an order-discount, such that it will act upon the basket: 
 
-/*
-    -- Transaction --
-    An order group is parented by a transaction, this can include 1 or more orders. 
-    It is attached to a customer, and represents the transaction for the purchase or sale of goods.
-
-    The products attribute: An order list which is often comprised of 1 order.
-    -   Why would there be more than 1 order in a transaction?
-            If a consumer purchases multiple goods which need to be dealt with separately, the transaction will do so, An example might be:
-            A surfboard which is shipped to the consumer whilst 3 accessories are taken from the shop directly, thus two orders (1 shipment and 1 direct),
-            whereby the 2nd order will contain multiple (3) products and the 1st only one.
-
-    IN:     As a purchase order it's transaction type takes the form of "In", the customer object will be treated as the company bought from and the payment as an outward payment in exchange for the goods.
-    OUT:    A sale - It can occur in-store or online and is comprised of the sale of goods outlined in the order list.
-*/
-
+/// **Transaction** <br />
+/// An order group is parented by a transaction, this can include 1 or more orders. 
+/// It is attached to a customer, and represents the transaction for the purchase or sale of goods. <br />
+///
+/// The products attribute: An order list which is often comprised of 1 order.
+/// -   Why would there be more than 1 order in a transaction?
+///     - If a consumer purchases multiple goods which need to be dealt with separately, the transaction will do so, An example might be: A surfboard which is shipped to the consumer whilst 3 accessories are taken from the shop directly, thus two orders (1 shipment and 1 direct), whereby the 2nd order will contain multiple (3) products and the 1st only one.
+///
+/// `IN:`     As a purchase order it's transaction type takes the form of "In", the customer object will be treated as the company bought from and the payment as an outward payment in exchange for the goods. <br />
+/// `OUT:`    A sale - It can occur in-store or online and is comprised of the sale of goods outlined in the order list.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Transaction {
     pub id: Id,
@@ -211,13 +206,9 @@ impl Display for Transaction {
                         )
                     ).collect();
 
-                let statuses: String = f.status
-                    .iter()
-                    .map(|p| 
-                        format!(
-                            "{}", p, 
-                        )
-                    ).collect();
+                let statuses: String = format!(
+                    "{}", f.status, 
+                );
 
                 format!(
                     "-\t{} {} {} -> {} {} [-]{} \n{}\n\t{}\n", 
@@ -286,29 +277,29 @@ pub fn example_transaction() -> TransactionInit {
             code: "001".into(),
             contact: torpedo7.clone()
         },
+        order_type: crate::methods::OrderType::Pickup,
         origin: Location {
             code: "002".into(),
             contact: torpedo7.clone()
         },
         products: vec![
-            ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
-            ProductPurchase { product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
+            ProductPurchase { id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
+            ProductPurchase { id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
         ],
         previous_failed_fulfillment_attempts: vec![],
-        status: vec![
-            OrderStatusAssignment { 
-                status: OrderStatus::Transit(
-                    TransitInformation {
-                        shipping_company: torpedo7.clone(),
-                        query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
-                        tracking_code: "1523123".into(),
-                        assigned_products: vec!["132522-22".to_string()]
-                    }
-                ), 
-                assigned_products: vec!["132522-22".to_string()],
-                timestamp: Utc::now()
-            }
-        ],
+        status: OrderStatusAssignment { 
+            // status: OrderStatus::Transit(
+            //     TransitInformation {
+            //         shipping_company: torpedo7.clone(),
+            //         query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
+            //         tracking_code: "1523123".into(),
+            //         assigned_products: vec!["132522-22".to_string()]
+            //     }
+            // )
+            status: OrderStatus::Fulfilled, 
+            assigned_products: vec!["132522-22".to_string()],
+            timestamp: Utc::now()
+        },
         order_history: vec![],
         order_notes: vec![
             Note {
@@ -320,7 +311,7 @@ pub fn example_transaction() -> TransactionInit {
         reference: "TOR-19592".into(),
         creation_date: Utc::now(),
         id: Uuid::new_v4().to_string(),
-        status_history: vec![OrderState { status: OrderStatus::Queued, timestamp: Utc::now() }],
+        status_history: vec![ History::<OrderStatusAssignment> { item: OrderStatusAssignment { status: OrderStatus::Queued, timestamp: Utc::now(), assigned_products: vec!["132522-22".to_string()] }, timestamp: Utc::now(), reason: "".to_string() }],
         discount: DiscountValue::Absolute(0),
     };
 
