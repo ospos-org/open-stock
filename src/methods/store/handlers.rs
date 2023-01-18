@@ -6,7 +6,18 @@ use crate::{pool::Db, methods::{cookie_status_wrapper, Action}, check_permission
 use super::{Store};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_code, generate, update]
+    routes![get, get_all, get_by_code, generate, update]
+}
+
+#[get("/")]
+pub async fn get_all(conn: Connection<'_, Db>, cookies: &CookieJar<'_>) -> Result<Json<Vec<Store>>, Status> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchStore);
+
+    let stores = Store::fetch_all(db).await.unwrap();
+    Ok(Json(stores))
 }
 
 #[get("/<id>")]

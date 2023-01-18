@@ -74,3 +74,13 @@ CREATE TABLE IF NOT EXISTS `Store` (
   `code` text NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS `Promotion` (
+  `id` varchar(100) NOT NULL,
+  `name` text NOT NULL,
+  `buy` json NOT NULL,
+  `get` json NOT NULL,
+  `valid_till` datetime NOT NULL,
+  `timestamp` datetime NOT NULL,
+  PRIMARY KEY `id` (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;

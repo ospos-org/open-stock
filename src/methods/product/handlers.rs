@@ -7,10 +7,13 @@ use crate::check_permissions;
 use crate::methods::{cookie_status_wrapper, Action};
 use crate::pool::Db;
 
-use super::Product;
+use super::{Product, Promotion, PromotionInput};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_name_exact, create, update, generate, search_query]
+    routes![
+        get, get_by_name, get_by_name_exact, create, update, generate, search_query,
+        get_promotion, get_promotion_by_query, create_promotion, update_promotion
+    ]
 }
 
 #[get("/<id>")]
@@ -120,5 +123,76 @@ async fn generate(
     match Product::generate(db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(Status::BadRequest)
+    }
+}
+
+#[get("/promotion/<id>")]
+pub async fn get_promotion(conn: Connection<'_, Db>, id: i32, cookies: &CookieJar<'_>) -> Result<Json<Promotion>, Status> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchProduct);
+
+    let product = Promotion::fetch_by_id(&id.to_string(), db).await.unwrap();
+    Ok(Json(product))
+}
+
+#[get("/promotion/search/<query>")]
+pub async fn get_promotion_by_query(conn: Connection<'_, Db>, query: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Promotion>>, Status> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchProduct);
+
+    let product = Promotion::fetch_by_query(&query.to_string(), db).await.unwrap();
+    Ok(Json(product))
+}
+
+
+#[post("/promotion/<id>", data = "<input_data>")]
+async fn update_promotion(
+    conn: Connection<'_, Db>,
+    id: &str,
+    input_data: Json<PromotionInput>, 
+    cookies: &CookieJar<'_>
+) -> Result<Json<Promotion>, Status> {
+    let input_data = input_data.clone().into_inner();
+    let db = conn.into_inner();
+    
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::ModifyProduct);
+
+    match Promotion::update(input_data, id, db).await {
+        Ok(res) => {
+            Ok(Json(res))
+        },
+        Err(_) => Err(Status::BadRequest),
+    }
+}
+
+#[post("/", data = "<input_data>")]
+pub async fn create_promotion(conn: Connection<'_, Db>, input_data: Json<PromotionInput>, cookies: &CookieJar<'_>) -> Result<Json<Promotion>, Status> {
+    let new_promotion = input_data.clone().into_inner();
+    let db = conn.into_inner();
+    
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::CreateProduct);
+    
+    match Promotion::insert(new_promotion, db).await {
+        Ok(data) => {
+            match Promotion::fetch_by_id(&data.last_insert_id, db).await {
+                Ok(res) => {
+                    Ok(Json(res))
+                },  
+                Err(reason) => {
+                    println!("[dberr]: {}", reason);
+                    Err(Status::InternalServerError)
+                }
+            }
+        },
+        Err(reason) => {
+            println!("[dberr]: {}", reason);
+            Err(Status::InternalServerError)
+        },
     }
 }
