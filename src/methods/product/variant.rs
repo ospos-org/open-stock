@@ -1,13 +1,13 @@
 use std::fmt::Display;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Days};
 use sea_orm::{DbConn, DbErr, EntityTrait, QuerySelect, ColumnTrait, Set, ActiveModelTrait, InsertResult};
 use serde::{Deserialize, Serialize};
 
 use serde_json::json;
 use uuid::Uuid;
 use crate::entities::promotion;
-use crate::methods::{StockList, HistoryList, Url, DiscountValue, Id, Session};
+use crate::methods::{StockList, HistoryList, Url, DiscountValue, Id};
 use crate::entities::prelude::Promotion as Promotions;
 
 pub type VariantIdTag = Vec<VariantId>;
@@ -133,6 +133,24 @@ impl Promotion {
 
         Self::fetch_by_id(id, db).await
     }
+
+    pub async fn generate(db: &DbConn) -> Result<Promotion, DbErr> {
+        let promotion = example_promotion();
+
+        match Self::insert(promotion.clone(), db).await {
+            Ok(last) => {
+                Ok(Promotion {
+                    id: last.last_insert_id,
+                    name: promotion.name,
+                    buy: promotion.buy,
+                    get: promotion.get,
+                    valid_till: promotion.valid_till,
+                    timestamp: promotion.timestamp
+                })
+            },
+            Err(e) => Err(e),
+        }
+    }
 }
 
 /// Represents all sub-variant types; i.e. All 'White' variants, whether small, long-sleeve, ... it represents the sub-group of all which are 'White'.
@@ -182,5 +200,15 @@ impl Display for Variant {
             "\t{} ({}) ${}", 
             self.name, self.variant_code, self.marginal_price 
         )
+    }
+}
+
+fn example_promotion() -> PromotionInput {
+    PromotionInput { 
+        name: format!("Buy 1 Get 1 Half Price"), 
+        buy: PromotionBuy::This(2.0), 
+        get: PromotionGet::This((1.0, DiscountValue::Percentage(50))), 
+        valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
+        timestamp: Utc::now()
     }
 }
