@@ -59,12 +59,12 @@ pub struct PromotionInput {
 #[derive(Deserialize, Serialize, Clone)]
 enum PromotionBuy {
     // This(quantity), Specific((id, quantity)), Any(quantity)
-    This(f32), Specific((String, f32)), Any(f32)
+    Specific((String, f32)), Any(f32)
 }
 
 #[derive(Deserialize, Serialize, Clone)]
 enum PromotionGet {
-    // This((quantity, discount)), Specific((id, (quantity, discount))), Any((quantity, discount))
+    // This((quantity, discount)), (Other)Specific((id, (quantity, discount))), Any((quantity, discount))
     This((f32, DiscountValue)), Specific((String, (f32, DiscountValue))), Any((f32, DiscountValue))
 }
 
@@ -103,8 +103,14 @@ impl Promotion {
 
     pub async fn fetch_by_query(query: &str, db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
         let res = Promotions::find()
+            // Is the bought product
             .having(promotion::Column::Buy.contains(query))
+            // Is the promoted product
             .having(promotion::Column::Get.contains(query))
+            // Meets the Any criterion
+            .having(promotion::Column::Buy.contains("Any"))
+            // Meets the Any criterion
+            .having(promotion::Column::Get.contains("Any"))
             .all(db).await?;
 
         let mapped = res.iter().map(|p| {
@@ -206,8 +212,8 @@ impl Display for Variant {
 fn example_promotion() -> PromotionInput {
     PromotionInput { 
         name: format!("Buy 1 Get 1 Half Price"), 
-        buy: PromotionBuy::This(2.0), 
-        get: PromotionGet::This((1.0, DiscountValue::Percentage(50))), 
+        buy: PromotionBuy::Any(1.0), 
+        get: PromotionGet::Any((1.0, DiscountValue::Percentage(50))), 
         valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
         timestamp: Utc::now()
     }

@@ -12,7 +12,7 @@ use super::{Product, Promotion, PromotionInput};
 pub fn routes() -> Vec<rocket::Route> {
     routes![
         get, get_by_name, get_by_name_exact, create, update, generate, search_query,
-        get_promotion, get_promotion_by_query, create_promotion, update_promotion
+        get_promotion, get_promotion_by_query, create_promotion, update_promotion, generate_promotion
     ]
 }
 
@@ -170,7 +170,7 @@ async fn update_promotion(
     }
 }
 
-#[post("/", data = "<input_data>")]
+#[post("/promotion", data = "<input_data>")]
 pub async fn create_promotion(conn: Connection<'_, Db>, input_data: Json<PromotionInput>, cookies: &CookieJar<'_>) -> Result<Json<Promotion>, Status> {
     let new_promotion = input_data.clone().into_inner();
     let db = conn.into_inner();
@@ -194,5 +194,21 @@ pub async fn create_promotion(conn: Connection<'_, Db>, input_data: Json<Promoti
             println!("[dberr]: {}", reason);
             Err(Status::InternalServerError)
         },
+    }
+}
+
+#[post("/generate/promotion")]
+async fn generate_promotion(
+    conn: Connection<'_, Db>,
+    cookies: &CookieJar<'_>
+) -> Result<Json<Product>, Status> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::GenerateTemplateContent);
+
+    match Product::generate(db).await {
+        Ok(res) => Ok(Json(res)),
+        Err(_) => Err(Status::BadRequest)
     }
 }
