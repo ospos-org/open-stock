@@ -7,12 +7,12 @@ use crate::check_permissions;
 use crate::methods::{cookie_status_wrapper, Action};
 use crate::pool::Db;
 
-use super::{Product, Promotion, PromotionInput};
+use super::{Product, Promotion, PromotionInput, ProductWPromotion};
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![
-        get, get_by_name, get_by_name_exact, create, update, generate, search_query,
-        get_promotion, get_promotion_by_query, create_promotion, update_promotion, generate_promotion
+        get, get_with_associated_promotions, get_by_name, get_by_name_exact, create, update, generate, search_query,
+        get_promotion, get_promotion_by_query, create_promotion, update_promotion, generate_promotion, search_with_associated_promotions
     ]
 }
 
@@ -24,6 +24,17 @@ pub async fn get(conn: Connection<'_, Db>, id: i32, cookies: &CookieJar<'_>) -> 
     check_permissions!(session.clone(), Action::FetchProduct);
 
     let product = Product::fetch_by_id(&id.to_string(), db).await.unwrap();
+    Ok(Json(product))
+}
+
+#[get("/with_promotions/<id>")]
+pub async fn get_with_associated_promotions(conn: Connection<'_, Db>, id: i32, cookies: &CookieJar<'_>) -> Result<Json<ProductWPromotion>, Status> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchProduct);
+
+    let product = Product::fetch_by_id_with_promotion(&id.to_string(), db).await.unwrap();
     Ok(Json(product))
 }
 
@@ -59,6 +70,17 @@ pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &Cooki
     check_permissions!(session.clone(), Action::FetchProduct);
 
     let employee = Product::search(query, db).await.unwrap();
+    Ok(Json(employee))
+}
+
+#[get("/search/with_promotions/<query>")]
+pub async fn search_with_associated_promotions(conn: Connection<'_, Db>, query: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<ProductWPromotion>>, Status> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchProduct);
+
+    let employee = Product::search_with_promotion(query, db).await.unwrap();
     Ok(Json(employee))
 }
 

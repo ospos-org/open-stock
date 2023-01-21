@@ -39,12 +39,12 @@ pub struct VariantInformation {
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Promotion {
-    id: Id,
-    name: String,
-    buy: PromotionBuy,
-    get: PromotionGet,
-    valid_till: DateTime<Utc>,
-    timestamp: DateTime<Utc>
+    pub id: Id,
+    pub name: String,
+    pub buy: PromotionBuy,
+    pub get: PromotionGet,
+    pub valid_till: DateTime<Utc>,
+    pub timestamp: DateTime<Utc>
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -57,13 +57,13 @@ pub struct PromotionInput {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-enum PromotionBuy {
+pub enum PromotionBuy {
     // This(quantity), Specific((id, quantity)), Any(quantity)
     Specific((String, f32)), Any(f32)
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-enum PromotionGet {
+pub  enum PromotionGet {
     // This((quantity, discount)), (Other)Specific((id, (quantity, discount))), Any((quantity, discount))
     This((f32, DiscountValue)), Specific((String, (f32, DiscountValue))), Any((f32, DiscountValue))
 }

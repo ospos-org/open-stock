@@ -1,13 +1,16 @@
 use std::{fmt::Display};
 
+use chrono::{Utc, DateTime};
 use rand::Rng;
 use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, Condition, QueryFilter, sea_query::{Expr, Func}};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
-use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity, DiscountMap}, entities::{sea_orm_active_enums::TransactionType, products}};
-use super::{VariantCategoryList, VariantIdTag, VariantCategory, Variant, StockInformation, VariantInformation};
+use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity, DiscountMap}, entities::{sea_orm_active_enums::TransactionType, products, promotion}};
+use super::{VariantCategoryList, VariantIdTag, VariantCategory, Variant, StockInformation, VariantInformation, Promotion, PromotionGet, PromotionBuy};
 use crate::entities::prelude::Products;
+use crate::entities::prelude::Promotion as Promotions;
+use futures::future::join_all;
 
 #[derive(Deserialize, Serialize, Clone)]
 /// A product, containing a list of `Vec<Variant>`, an identifiable `sku` along with identifying information such as `tags`, `description` and `specifications`.
@@ -25,6 +28,12 @@ pub struct Product {
     pub tags: TagList,
     pub description: String,
     pub specifications: Vec<(String, String)>,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct ProductWPromotion {
+    pub product: Product,
+    pub promotions: Vec<Promotion>
 }
 
 impl Display for Product {
@@ -70,6 +79,7 @@ impl Product {
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Product, DbErr> {
         let pdt = Products::find_by_id(id.to_string()).one(db).await?;
+        
         let p = pdt.unwrap();
 
         Ok(Product { 
@@ -83,6 +93,48 @@ impl Product {
             description: p.description, 
             specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap() 
         })
+    }
+
+    pub async fn fetch_by_id_with_promotion(id: &str, db: &DbConn) -> Result<ProductWPromotion, DbErr> {
+        let pdt = Products::find_by_id(id.to_string()).one(db).await?;
+        let promos = Promotions::find()
+            .filter(
+                Condition::any()
+                    .add(promotion::Column::Buy.contains(id))
+                    .add(promotion::Column::Get.contains(id))
+                    .add(promotion::Column::ValidTill.gte(Utc::now()))
+            )
+            .all(db).await?;
+
+        let mapped: Vec<Promotion> = promos.iter().map(|p| 
+            Promotion { 
+                name: p.name.clone(), 
+                buy: serde_json::from_value::<PromotionBuy>(p.buy.clone()).unwrap(),
+                get: serde_json::from_value::<PromotionGet>(p.get.clone()).unwrap(), 
+                id: p.id.clone(), 
+                valid_till: DateTime::from_utc(p.valid_till, Utc), 
+                timestamp: DateTime::from_utc(p.timestamp, Utc), 
+            }
+        ).collect();
+    
+        let p = pdt.unwrap();
+
+        Ok(
+            ProductWPromotion {
+                product: Product { 
+                    name: p.name, 
+                    company: p.company,
+                    variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
+                    variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(), 
+                    sku: p.sku, 
+                    images: serde_json::from_value::<Vec<Url>>(p.images).unwrap(), 
+                    tags: serde_json::from_value::<TagList>(p.tags).unwrap(), 
+                    description: p.description, 
+                    specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap() 
+                },
+                promotions: mapped
+            }
+        )
     }
 
     pub async fn search(query: &str, db: &DbConn) -> Result<Vec<Product>, DbErr> {
@@ -110,6 +162,66 @@ impl Product {
         ).collect();
 
         Ok(mapped)
+    }
+
+    pub async fn search_with_promotion(query: &str, db: &DbConn) -> Result<Vec<ProductWPromotion>, DbErr> {
+        let res = products::Entity::find()
+            .filter(
+                Condition::any()
+                    .add(Expr::expr(Func::lower(Expr::col(products::Column::Name))).like(format!("%{}%", query)))
+                    .add(products::Column::Sku.contains(query))
+                    .add(products::Column::Variants.contains(query))
+            )
+            .all(db).await?;
+        
+        let mapped: Vec<ProductWPromotion> = res.iter().map(|p| {
+            ProductWPromotion {
+                product: Product { 
+                    name: p.name.clone(), 
+                    company: p.company.clone(),
+                    variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups.clone()).unwrap(), 
+                    variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants.clone()).unwrap(), 
+                    sku: p.sku.clone(), 
+                    images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
+                    tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
+                    description: p.description.clone(), 
+                    specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+                },
+                promotions: vec![]
+            }
+        }).collect();
+
+        let with_promotions = join_all(mapped.iter().map(|p| async move {
+            let b = db.clone();
+
+            let promos 
+                = Promotions::find()
+                .filter(
+                    Condition::any()
+                        .add(promotion::Column::Buy.contains(&p.product.sku))
+                        .add(promotion::Column::Get.contains(&p.product.sku))
+                        .add(promotion::Column::ValidTill.gte(Utc::now()))
+                )
+                .all(&b).await.unwrap();
+
+            let mapped: Vec<Promotion> = promos.iter().map(|p| 
+                Promotion { 
+                    name: p.name.clone(), 
+                    buy: serde_json::from_value::<PromotionBuy>(p.buy.clone()).unwrap(),
+                    get: serde_json::from_value::<PromotionGet>(p.get.clone()).unwrap(), 
+                    id: p.id.clone(), 
+                    valid_till: DateTime::from_utc(p.valid_till, Utc), 
+                    timestamp: DateTime::from_utc(p.timestamp, Utc), 
+                }
+            ).collect();
+
+            ProductWPromotion {
+                product: p.product.clone(),
+                promotions: mapped
+            }
+        })).await;
+
+        Ok(with_promotions)
     }
 
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Product>, DbErr> {
