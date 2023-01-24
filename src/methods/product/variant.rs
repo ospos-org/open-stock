@@ -65,7 +65,7 @@ pub enum PromotionBuy {
 #[derive(Deserialize, Serialize, Clone)]
 pub  enum PromotionGet {
     // This((quantity, discount)), (Other)Specific((id, (quantity, discount))), Any((quantity, discount))
-    This((f32, DiscountValue)), Specific((String, (f32, DiscountValue))), Any((f32, DiscountValue))
+    SoloThis(DiscountValue), This((f32, DiscountValue)), Specific((String, (f32, DiscountValue))), Any((f32, DiscountValue))
 }
 
 impl Promotion {
@@ -210,10 +210,18 @@ impl Display for Variant {
 }
 
 fn example_promotion() -> PromotionInput {
+    // PromotionInput { 
+    //     name: format!("Buy 1 Get 1 Half Price"), 
+    //     buy: PromotionBuy::Any(1.0), 
+    //     get: PromotionGet::Any((1.0, DiscountValue::Percentage(50))), 
+    //     valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
+    //     timestamp: Utc::now()
+    // }
+
     PromotionInput { 
-        name: format!("Buy 1 Get 1 Half Price"), 
+        name: format!("50% off T-shirts"), 
         buy: PromotionBuy::Any(1.0), 
-        get: PromotionGet::Any((1.0, DiscountValue::Percentage(50))), 
+        get: PromotionGet::SoloThis(DiscountValue::Percentage(50)), 
         valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
         timestamp: Utc::now()
     }
