@@ -17,10 +17,10 @@ pub fn routes() -> Vec<rocket::Route> {
 pub struct All {
     employee: Employee,
     stores: Vec<Store>,
-    product: Product,
+    products: Vec<Product>,
     customer: Customer,
     transaction: Transaction,
-    promotion: Promotion
+    promotions: Vec<Promotion>
 }
 
 /// This route does not require authentication, but is not enabled in release mode.
@@ -30,18 +30,18 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, St
 
     let employee = Employee::generate(db).await.unwrap();
     let stores = Store::generate(db).await.unwrap();
-    let product = Product::generate(db).await.unwrap();
+    let products = Product::generate(db).await.unwrap();
     let customer = Customer::generate(db).await.unwrap();
     let transaction = Transaction::generate(db, Session { id: Uuid::new_v4().to_string(), key: format!(""), employee: employee.clone(), expiry: Utc::now() }).await.unwrap();
-    let promotion = Promotion::generate(db).await.unwrap();
+    let promotions = Promotion::generate(db).await.unwrap();
 
     Ok(rocket::serde::json::Json(All {
         employee,
         stores,
-        product,
+        products,
         customer,
         transaction,
-        promotion
+        promotions
     }))
 }
 

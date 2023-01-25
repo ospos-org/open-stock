@@ -140,21 +140,56 @@ impl Promotion {
         Self::fetch_by_id(id, db).await
     }
 
-    pub async fn generate(db: &DbConn) -> Result<Promotion, DbErr> {
-        let promotion = example_promotion();
+    pub async fn fetch_all(db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
+        let stores = Promotions::find().all(db).await?;
 
-        match Self::insert(promotion.clone(), db).await {
-            Ok(last) => {
-                Ok(Promotion {
-                    id: last.last_insert_id,
-                    name: promotion.name,
-                    buy: promotion.buy,
-                    get: promotion.get,
-                    valid_till: promotion.valid_till,
-                    timestamp: promotion.timestamp
-                })
+        let mapped = stores.iter().map(|e| 
+            Promotion { 
+                id: e.id.clone(), 
+                name: e.name.clone(),
+                buy: serde_json::from_value::<PromotionBuy>(e.buy.clone()).unwrap(), 
+                get: serde_json::from_value::<PromotionGet>(e.get.clone()).unwrap(), 
+                timestamp: DateTime::from_utc(e.timestamp, Utc),
+                valid_till: DateTime::from_utc(e.valid_till, Utc),
+            }
+        ).collect();
+        
+        Ok(mapped)
+    }
+
+    pub async fn insert_many(stores: Vec<PromotionInput>, db: &DbConn) -> Result<InsertResult<promotion::ActiveModel>, DbErr> {
+        let entities = stores.into_iter().map(|prm| {
+            let id = Uuid::new_v4().to_string();
+
+            promotion::ActiveModel {
+                id: Set(id.to_string()),
+                name: Set(prm.name.to_string()),
+                buy: Set(json!(prm.buy)),
+                get: Set(json!(prm.get)),
+                valid_till: Set(prm.valid_till.naive_utc()),
+                timestamp: Set(prm.timestamp.naive_utc()),
+            }
+        });
+
+        match Promotions::insert_many(entities).exec(db).await {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err)
+        }
+    }
+
+    pub async fn generate(db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
+        let promotions = example_promotions();
+
+        match Promotion::insert_many(promotions, db).await {
+            Ok(_) => {
+                match Promotion::fetch_all(db).await {
+                    Ok(res) => {
+                        Ok(res)
+                    },  
+                    Err(e) => Err(e)
+                }
             },
-            Err(e) => Err(e),
+            Err(e) => Err(e)
         }
     }
 }
@@ -164,7 +199,7 @@ impl Promotion {
 pub struct Variant {
     pub name: String,
     pub images: Vec<Url>,
-    pub marginal_price: i32,
+    pub marginal_price: f32,
     pub variant_code: String,
     pub order_history: HistoryList,
 }
@@ -209,20 +244,28 @@ impl Display for Variant {
     }
 }
 
-fn example_promotion() -> PromotionInput {
-    // PromotionInput { 
-    //     name: format!("Buy 1 Get 1 Half Price"), 
-    //     buy: PromotionBuy::Any(1.0), 
-    //     get: PromotionGet::Any((1.0, DiscountValue::Percentage(50))), 
-    //     valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
-    //     timestamp: Utc::now()
-    // }
-
-    PromotionInput { 
-        name: format!("50% off T-shirts"), 
-        buy: PromotionBuy::Any(1.0), 
-        get: PromotionGet::SoloThis(DiscountValue::Percentage(50)), 
-        valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
-        timestamp: Utc::now()
-    }
+fn example_promotions() -> Vec<PromotionInput> {
+    vec![
+        PromotionInput { 
+            name: format!("Buy 1 Get 1 Half Price"), 
+            buy: PromotionBuy::Any(1.0), 
+            get: PromotionGet::Any((1.0, DiscountValue::Percentage(50))), 
+            valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
+            timestamp: Utc::now()
+        },
+        PromotionInput { 
+            name: format!("50% off T-shirts"), 
+            buy: PromotionBuy::Any(1.0), 
+            get: PromotionGet::SoloThis(DiscountValue::Percentage(50)), 
+            valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
+            timestamp: Utc::now()
+        },
+        PromotionInput { 
+            name: format!("Buy a Kayak, get a Life Jacket 50% off"), 
+            buy: PromotionBuy::Specific(("654321".into(), 1.0)), 
+            get: PromotionGet::Specific(("162534".into(), (1.0, DiscountValue::Percentage(50)))), 
+            valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
+            timestamp: Utc::now()
+        }
+    ]
 }

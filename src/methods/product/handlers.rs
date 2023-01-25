@@ -136,7 +136,7 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<Product>, cookies
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>
-) -> Result<Json<Product>, Status> {
+) -> Result<Json<Vec<Product>>, Status> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -223,13 +223,13 @@ pub async fn create_promotion(conn: Connection<'_, Db>, input_data: Json<Promoti
 async fn generate_promotion(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>
-) -> Result<Json<Product>, Status> {
+) -> Result<Json<Vec<Promotion>>, Status> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Product::generate(db).await {
+    match Promotion::generate(db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(Status::BadRequest)
     }
