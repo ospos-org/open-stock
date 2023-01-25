@@ -1,7 +1,6 @@
 use std::{fmt::Display};
 
 use chrono::{Utc, DateTime};
-use rand::Rng;
 use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, Condition, QueryFilter, sea_query::{Expr, Func}};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
@@ -806,7 +805,7 @@ fn example_products() -> Vec<Product> {
                         },
                     ], 
                     images: vec![
-                        "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
+                        "https://www.torpedo7.co.nz/images/products/T7KKK23NB0Z_zoom---2023-nippers-kids-kayak---paddle-1-83m-beaches.jpg".into()
                     ], 
                     marginal_price: 85.99, 
                     retail_price: 399.99,
@@ -859,7 +858,7 @@ fn example_products() -> Vec<Product> {
                         },
                     ], 
                     images: vec![
-                        "https://www.torpedo7.co.nz/images/products/T7TEO23YEAA_zoom---men-s-ecopulse-short-sleeve-explore-graphic-t-shirt-black.jpg?v=845eb9a5288642009c05".into()
+                        "https://www.torpedo7.co.nz/images/products/T7KKK23NB0Z_zoom---2023-nippers-kids-kayak---paddle-1-83m-beaches.jpg".into()
                     ], 
                     marginal_price: 85.99, 
                     retail_price: 399.99, 
