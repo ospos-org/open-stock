@@ -605,7 +605,8 @@ fn example_products() -> Vec<Product> {
                         max_volume: "6.00".into(), 
                         back_order: false, 
                         discontinued: false, 
-                        non_diminishing: false 
+                        non_diminishing: false,
+                        shippable: true
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
@@ -658,7 +659,8 @@ fn example_products() -> Vec<Product> {
                         max_volume: "6.00".into(), 
                         back_order: false, 
                         discontinued: false, 
-                        non_diminishing: false 
+                        non_diminishing: false,
+                        shippable: true
                     },
                     loyalty_discount: DiscountValue::Absolute(25)
                 },
@@ -711,7 +713,8 @@ fn example_products() -> Vec<Product> {
                         max_volume: "6.00".into(), 
                         back_order: false, 
                         discontinued: false, 
-                        non_diminishing: false 
+                        non_diminishing: false,
+                        shippable: true
                     },
                     loyalty_discount: DiscountValue::Absolute(5)
                 },
@@ -824,7 +827,8 @@ fn example_products() -> Vec<Product> {
                         max_volume: "6.00".into(), 
                         back_order: false, 
                         discontinued: false, 
-                        non_diminishing: false 
+                        non_diminishing: false, 
+                        shippable: true
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
@@ -877,7 +881,8 @@ fn example_products() -> Vec<Product> {
                         max_volume: "6.00".into(), 
                         back_order: false, 
                         discontinued: false, 
-                        non_diminishing: false 
+                        non_diminishing: false,
+                        shippable: true
                     },
                     loyalty_discount: DiscountValue::Absolute(25)
                 },
@@ -1002,7 +1007,8 @@ fn example_products() -> Vec<Product> {
                         max_volume: "6.00".into(), 
                         back_order: false, 
                         discontinued: false, 
-                        non_diminishing: false 
+                        non_diminishing: false,
+                        shippable: true
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
@@ -1055,7 +1061,8 @@ fn example_products() -> Vec<Product> {
                         max_volume: "6.00".into(), 
                         back_order: false, 
                         discontinued: false, 
-                        non_diminishing: false 
+                        non_diminishing: false,
+                        shippable: true
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
@@ -1108,7 +1115,8 @@ fn example_products() -> Vec<Product> {
                         max_volume: "6.00".into(), 
                         back_order: false, 
                         discontinued: false, 
-                        non_diminishing: false 
+                        non_diminishing: false,
+                        shippable: true
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },

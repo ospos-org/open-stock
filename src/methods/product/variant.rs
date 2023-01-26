@@ -63,9 +63,27 @@ pub enum PromotionBuy {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-pub  enum PromotionGet {
-    // This((quantity, discount)), (Other)Specific((id, (quantity, discount))), Any((quantity, discount))
-    SoloThis(DiscountValue), This((f32, DiscountValue)), Specific((String, (f32, DiscountValue))), Any((f32, DiscountValue))
+pub enum PromotionGet {
+    /// `SoloThis(discount)` <br />
+    /// *Represents the individual product.* <br /> <br />
+    /// Is used in cases where the product is the recipient of the promotion in inclusive quantity, i.e. 50% off t-shirts (applies to self)
+    SoloThis(DiscountValue),
+    /// `This((quantity, discount))` <br />
+    /// *Represents the continual product.* <br /> <br />
+    /// Applies when the following product is the recipient of the promotion, i.e. Buy 1 get 1 half price (product receives 50% discount, but is not directly matching the GET criterion (quantity >= 2...))
+    This((f32, DiscountValue)),
+    /// `Specific((sku, (quantity, discount)))` <br />
+    /// *Represents a specific product* <br /> <br />
+    ///  Is used to reference a specific product by its SKU, i.e. Buy any 1 product, get a lib balm $5 off.
+    Specific((String, (f32, DiscountValue))),
+    /// `Any((quantity, discount))` <br />
+    /// *Represents all products* <br /> <br />
+    /// A general match-any clause to refer to any product, i.e. Buy 1 get any other product $5 off.
+    Any((f32, DiscountValue)),
+    /// `Category(category, (quantity, discount))` <br />
+    /// *Represents all products within a category* <br /> <br />
+    /// Matches any product within a category, the category is referenced in a products `TagList`. I.e. Buy any 1 product, get any t-shirt 20% off. 
+    Category((String, (f32, DiscountValue)))
 }
 
 impl Promotion {
@@ -232,7 +250,9 @@ pub struct StockInformation {
     /// A product which is no longer source-able. Once the product's inventory is consumed it is indicated to never be replenished.
     pub discontinued: bool,
     /// A `non_diminishing` product is often a service rather than a product, i.e. freight. It is **not removed** from inventory upon consumption, rather attached.
-    pub non_diminishing: bool 
+    pub non_diminishing: bool,
+    /// A non-shippable good is one which cannot be dispatched between stores or sent to a customers home, this might be a fragile product, service, oversized good or edge case.
+    pub shippable: bool
 }
 
 impl Display for Variant {
@@ -247,16 +267,16 @@ impl Display for Variant {
 fn example_promotions() -> Vec<PromotionInput> {
     vec![
         PromotionInput { 
-            name: format!("Buy 1 Get 1 Half Price"), 
+            name: format!("Buy 1 Get 1 10% off"), 
             buy: PromotionBuy::Any(1.0), 
-            get: PromotionGet::Any((1.0, DiscountValue::Percentage(50))), 
+            get: PromotionGet::Any((1.0, DiscountValue::Percentage(10))), 
             valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
             timestamp: Utc::now()
         },
         PromotionInput { 
             name: format!("50% off T-shirts"), 
             buy: PromotionBuy::Any(1.0), 
-            get: PromotionGet::SoloThis(DiscountValue::Percentage(50)), 
+            get: PromotionGet::Category(("Tee".into(), (1.0, DiscountValue::Percentage(50)))), 
             valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
             timestamp: Utc::now()
         },
