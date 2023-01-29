@@ -84,7 +84,7 @@ async fn generate(
     }
 }
 
-#[post("/", data = "<input_data>")]
+#[post("/", data = "<input_data>", format = "json")]
 pub async fn create(conn: Connection<'_, Db>, input_data: Json<TransactionInit>, cookies: &CookieJar<'_>) -> Result<Json<Transaction>, Status> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();

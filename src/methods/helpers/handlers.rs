@@ -1,8 +1,9 @@
 use chrono::Utc;
 use geo::{point};
-use rocket::{routes, http::{Status, CookieJar}, serde::json::{Json}, post, get};
+use rocket::{routes, http::{Status, CookieJar}, serde::json::{Json}, post, get, catch};
 use sea_orm_rocket::{Connection};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::{pool::Db, methods::{Employee, Store, Product, Customer, cookie_status_wrapper, Action, Address, Transaction, Session, Promotion}, check_permissions};
@@ -148,4 +149,12 @@ pub async fn distance_to_stores(conn: Connection<'_, Db>, id: &str, cookies: &Co
             store_code: store.code
         }
     }).collect()))
+}
+
+#[catch(404)]
+fn not_found() -> serde_json::Value {
+    json!({
+        "status": "error",
+        "reason": "Resource was not found."
+    })
 }
