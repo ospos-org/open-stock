@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, HistoryList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, ProductExchange, Session, greatest_discount, Price, PaymentStatus, PaymentProcessor, PaymentAction}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, Session, greatest_discount, Price, PaymentStatus, PaymentProcessor, PaymentAction}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -53,7 +53,6 @@ pub struct TransactionInput {
 
     pub order_date: DateTime<Utc>,
     pub order_notes: NoteList,
-    pub order_history: HistoryList,
 
     pub salesperson: Id,
     pub till: Id,
@@ -70,7 +69,6 @@ pub struct TransactionInit {
 
     pub order_date: DateTime<Utc>,
     pub order_notes: NoteList,
-    pub order_history: HistoryList,
 
     pub till: Id,
 }
@@ -88,7 +86,6 @@ impl Transaction {
             payment: Set(json!(tsn.payment)),
             order_date: Set(tsn.order_date.naive_utc()),
             order_notes: Set(json!(tsn.order_notes)),
-            order_history: Set(json!(tsn.order_history)),
             salesperson: Set(session.employee.id),
             till: Set(tsn.till)
         };
@@ -154,7 +151,6 @@ impl Transaction {
             payment: Set(json!(tsn.payment)),
             order_date: Set(tsn.order_date.naive_utc()),
             order_notes: Set(json!(tsn.order_notes)),
-            order_history: Set(json!(tsn.order_history)),
             salesperson: Set(tsn.salesperson),
             till: Set(tsn.till)
         }.update(db).await?;
@@ -296,7 +292,7 @@ pub fn example_transaction() -> TransactionInit {
             //         assigned_products: vec!["132522-22".to_string()]
             //     }
             // )
-            status: OrderStatus::Fulfilled, 
+            status: OrderStatus::Fulfilled(Utc::now()), 
             assigned_products: vec!["132522-22".to_string()],
             timestamp: Utc::now()
         },
@@ -311,7 +307,7 @@ pub fn example_transaction() -> TransactionInit {
         reference: "TOR-19592".into(),
         creation_date: Utc::now(),
         id: Uuid::new_v4().to_string(),
-        status_history: vec![ History::<OrderStatusAssignment> { item: OrderStatusAssignment { status: OrderStatus::Queued, timestamp: Utc::now(), assigned_products: vec!["132522-22".to_string()] }, timestamp: Utc::now(), reason: "".to_string() }],
+        status_history: vec![ History::<OrderStatusAssignment> { item: OrderStatusAssignment { status: OrderStatus::Queued(Utc::now()), timestamp: Utc::now(), assigned_products: vec!["132522-22".to_string()] }, timestamp: Utc::now(), reason: "".to_string() }],
         discount: DiscountValue::Absolute(0),
     };
 
@@ -332,7 +328,7 @@ pub fn example_transaction() -> TransactionInit {
                 quantity: 0.10,
                 currency: "NZD".to_string()
             }, 
-            status: PaymentStatus::Unfulfilled, 
+            status: PaymentStatus::Unfulfilled(format!("Unable to fulfil payment requirements - insufficient funds.")), 
             processor: PaymentProcessor { 
                 location: "001".to_string(), 
                 employee: "EMPLOYEE_ID".to_string(), 
@@ -349,7 +345,7 @@ pub fn example_transaction() -> TransactionInit {
             timestamp: Utc::now(), 
             author: Uuid::new_v4().to_string()
         }],
-        order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
+        // order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
         till: "...".into(),
     };
 

@@ -56,16 +56,16 @@ pub struct OrderStatusAssignment {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OrderStatus {
-    /// Open Cart, Till Cart or Being Processed
-    Queued,
+    /// Open Cart, Till Cart or Being Processed, the date represents the time it was placed.
+    Queued(DateTime<Utc>),
     /// Delivery items: Contains a transit information docket - with assigned items and tracking information.
     Transit(TransitInformation),
     /// Click-n-collect item or Delivery being processed with date when processing started.
     Processing(DateTime<Utc>),
-    /// Click-n-collect item
-    InStore,
-    /// In-store purchase or Delivered Item
-    Fulfilled,
+    /// Click-n-collect item, date represents when it was readied-for-pickup.
+    InStore(DateTime<Utc>),
+    /// In-store purchase or Delivered Item, date represents when it was completed.
+    Fulfilled(DateTime<Utc>),
     /// Was unable to fulfill, reason is given
     Failed(String)
 }
@@ -73,11 +73,11 @@ pub enum OrderStatus {
 impl Display for OrderStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
-            OrderStatus::Queued => "QUEUED",
+            OrderStatus::Queued(_) => "QUEUED",
             OrderStatus::Transit(_) => "TRANSIT",
             OrderStatus::Processing(_) => "PROCESSING",
-            OrderStatus::InStore => "IN-STORE",
-            OrderStatus::Fulfilled => "FULFILLED",
+            OrderStatus::InStore(_) => "IN-STORE",
+            OrderStatus::Fulfilled(_) => "FULFILLED",
             OrderStatus::Failed(_reason) => {
                 "FAILED:"
             },

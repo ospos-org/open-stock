@@ -314,7 +314,7 @@ pub fn example_customer() -> CustomerInput {
                 reference: "TOR-19592".into(),
                 creation_date: Utc::now(),
                 id: Uuid::new_v4().to_string(),
-                status_history: vec![ History::<OrderStatusAssignment> { item: OrderStatusAssignment { status: OrderStatus::Queued, timestamp: Utc::now(), assigned_products: vec![] }, timestamp: Utc::now(), reason: "".to_string() }],
+                status_history: vec![ History::<OrderStatusAssignment> { item: OrderStatusAssignment { status: OrderStatus::Queued(Utc::now()), timestamp: Utc::now(), assigned_products: vec![] }, timestamp: Utc::now(), reason: "".to_string() }],
                 discount: DiscountValue::Absolute(0),
             }
         ],

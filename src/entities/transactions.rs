@@ -16,7 +16,6 @@ pub struct Model {
     pub payment: Json,
     pub order_date: DateTime,
     pub order_notes: Json,
-    pub order_history: Json,
     #[sea_orm(column_type = "Text")]
     pub salesperson: String,
     #[sea_orm(column_type = "Text")]

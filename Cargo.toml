@@ -31,7 +31,7 @@ rand = "0.8.5"
 photon-geocoding = { version = "1.1.0" }
 geo = "0.23.1"
 tokio = "1.22.0"
-rocket_contrib = "0.4.11"
+# rocket_contrib = "0.4.11"
 
 [dev-dependencies]
 tokio = { version = "1.22.0", features = ["rt"] }

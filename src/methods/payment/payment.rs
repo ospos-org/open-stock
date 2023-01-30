@@ -37,7 +37,7 @@ pub struct PaymentProcessor {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum PaymentStatus {
-    Unfulfilled, Pending, Processing, Failed(CardDetails), Complete(CardDetails)
+    Unfulfilled(String), Pending(String), Processing(String), Failed(CardDetails), Complete(CardDetails)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

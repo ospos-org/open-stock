@@ -49,7 +49,6 @@ CREATE TABLE IF NOT EXISTS `Transactions` (
   `payment` json NOT NULL,
   `order_date` datetime NOT NULL,
   `order_notes` json NOT NULL,
-  `order_history` json NOT NULL,
   `salesperson` text NOT NULL,
   `till` text NOT NULL,
   PRIMARY KEY `id` (`id`)
