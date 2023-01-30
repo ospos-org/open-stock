@@ -2,21 +2,13 @@ use std::fmt::Display;
 
 use crate::{methods::{stml::Order, EmployeeAuth, Attendance, Access, Action}, entities};
 use chrono::{Utc, DateTime};
-use rocket::{http::{CookieJar, Status}};
+use rocket::{http::{CookieJar}, serde::json::Json, Responder};
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait, QuerySelect, ColumnTrait};
 use serde::{Serialize, Deserialize};
 use crate::entities::session::Entity as SessionEntity;
 use crate::entities::employee::Entity as Employee;
 use super::{ProductExchange, Employee as EmployeeObj};
 
-#[macro_export]
-macro_rules! check_permissions {
-    ($session:expr, $permission:expr) => {
-        if !$session.has_permission($permission) {
-            return Err(Status::Unauthorized);
-        }
-    }
-}
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Name {
     pub first: String,
@@ -216,7 +208,7 @@ pub async fn _handle_cookie(db: &DatabaseConnection, cookies: &CookieJar<'_>) ->
     }
 }
 
-pub async fn cookie_status_wrapper(db: &DatabaseConnection, cookies: &CookieJar<'_>) -> Result<Session, Status> {
+pub async fn cookie_status_wrapper(db: &DatabaseConnection, cookies: &CookieJar<'_>) -> Result<Session, Error> {
     match get_key_cookie(cookies) {
         Some(val) => {
             match verify_cookie(val, db).await {
@@ -225,10 +217,49 @@ pub async fn cookie_status_wrapper(db: &DatabaseConnection, cookies: &CookieJar<
                 },
                 Err(err) => {
                     println!("[err]: {}", err);
-                    Err(Status::Unauthorized)
+                    Err(ErrorResponse::custom_unauthorized("Unable to validate cookie, user does not have valid session."))
                 },
             }
         },
-        None => Err(Status::Unauthorized),
+        None => Err(ErrorResponse::create_error("Unable to fetch user cookie.")),
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ErrorResponse {
+    message: String
+}
+
+impl ErrorResponse {
+    pub fn create_error(message: &str) -> Error {
+        Error::StandardError(Json(ErrorResponse { message: message.to_string() }))
+    }
+
+    pub fn input_error() -> Error {
+        Error::InputError(Json(ErrorResponse { message: "Unable to update fields due to malformed inputs".to_string() }))
+    }
+
+    pub fn unauthorized(action: Action) -> Error {
+        Error::Unauthorized(Json(ErrorResponse { message: format!("User lacks {:?} permission.", action) }))
+    }
+
+    pub fn custom_unauthorized(message: &str) -> Error {
+        Error::Unauthorized(Json(ErrorResponse { message: message.to_string() }))
+    }
+
+    pub fn db_err(message: sea_orm::DbErr) -> Error {
+        Error::DbError(Json(ErrorResponse { message: format!("SQL error, reason: {}", message) }))
+    }
+}
+
+#[derive(Debug, Responder)]
+pub enum Error {
+    #[response(status = 500, content_type = "json")]
+    StandardError(Json<ErrorResponse>),
+    #[response(status = 400, content_type = "json")]
+    InputError(Json<ErrorResponse>),
+    #[response(status = 401, content_type = "json")]
+    Unauthorized(Json<ErrorResponse>),
+    #[response(status = 500, content_type = "json")]
+    DbError(Json<ErrorResponse>),
 }

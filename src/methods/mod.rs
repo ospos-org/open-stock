@@ -9,6 +9,7 @@ pub(crate) mod employee;
 pub(crate) mod supplier;
 pub(crate) mod store;
 pub(crate) mod helpers;
+pub(crate) mod macros;
 
 pub use self::supplier::*;
 pub use self::employee::*;
@@ -20,3 +21,4 @@ pub use self::transaction::*;
 pub use self::common::*;
 pub use self::store::*;
 pub use self::helpers::*;
+pub use self::macros::*;

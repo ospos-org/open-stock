@@ -1,12 +1,11 @@
 use chrono::Utc;
 use geo::{point};
-use rocket::{routes, http::{Status, CookieJar}, serde::json::{Json}, post, get, catch};
+use rocket::{routes, http::{CookieJar}, serde::json::{Json}, post, get};
 use sea_orm_rocket::{Connection};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use uuid::Uuid;
 
-use crate::{pool::Db, methods::{Employee, Store, Product, Customer, cookie_status_wrapper, Action, Address, Transaction, Session, Promotion}, check_permissions};
+use crate::{pool::Db, methods::{Employee, Store, Product, Customer, cookie_status_wrapper, Action, Address, Transaction, Session, Promotion, Error, ErrorResponse}, check_permissions};
 use photon_geocoding::{PhotonApiClient, PhotonFeature, filter::{ForwardFilter, PhotonLayer}, LatLon};
 use geo::VincentyDistance;
 
@@ -26,7 +25,7 @@ pub struct All {
 
 /// This route does not require authentication, but is not enabled in release mode.
 #[post("/generate")]
-pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Status> {
+pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Error> {
     let db = conn.into_inner();
 
     let employee = Employee::generate(db).await.unwrap();
@@ -47,7 +46,7 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, St
 }
 
 #[post("/address", data="<address>")]
-pub async fn address_to_geolocation(conn: Connection<'_, Db>, address: &str, cookies: &CookieJar<'_>) -> Result<Json<Address>, Status> {
+pub async fn address_to_geolocation(conn: Connection<'_, Db>, address: &str, cookies: &CookieJar<'_>) -> Result<Json<Address>, Error> {
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchGeoLocation);
@@ -58,9 +57,10 @@ pub async fn address_to_geolocation(conn: Connection<'_, Db>, address: &str, coo
     }
 }
 
-pub fn convert_addr_to_geo(address: &str) -> Result<Address, Status> {
+pub fn convert_addr_to_geo(address: &str) -> Result<Address, Error> {
     let api: PhotonApiClient = PhotonApiClient::default();
     let result: Vec<PhotonFeature> = api.forward_search(address, None).unwrap();
+
     match result.get(0) {
         Some(loc) => {
             println!("{:?}", loc);
@@ -75,11 +75,11 @@ pub fn convert_addr_to_geo(address: &str) -> Result<Address, Status> {
                 lon: loc.coords.lon 
             })
         },
-        None => Err(Status::UnprocessableEntity)
+        None => Err(ErrorResponse::create_error("Unable to search for location."))
     }
 }
 
-pub fn convert_addresses_to_geo(address: &str, origin: LatLon) -> Result<Vec<Address>, Status> {
+pub fn convert_addresses_to_geo(address: &str, origin: LatLon) -> Result<Vec<Address>, Error> {
     let api: PhotonApiClient = PhotonApiClient::default();
     let result: Vec<PhotonFeature> = api.forward_search(address, Some(ForwardFilter::new()
         .location_bias(origin, Some(16), Some(0.3))
@@ -103,7 +103,7 @@ pub fn convert_addresses_to_geo(address: &str, origin: LatLon) -> Result<Vec<Add
 }
 
 #[post("/suggest", data="<address>")]
-pub async fn suggest_addr(conn: Connection<'_, Db>, address: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Address>>, Status> {
+pub async fn suggest_addr(conn: Connection<'_, Db>, address: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Address>>, Error> {
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchGeoLocation);
@@ -122,19 +122,19 @@ pub struct Distance {
 }
 
 #[get("/distance/<id>")]
-pub async fn distance_to_stores(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Distance>>, Status> {
+pub async fn distance_to_stores(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Distance>>, Error> {
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchGeoLocation);
 
     let customer = match Customer::fetch_by_id(id, db).await {
         Ok(c) => c,
-        Err(_) => return Err(Status::InternalServerError),
+        Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
 
     let stores = match Store::fetch_all(db).await {
         Ok(s) => s,
-        Err(_) => return Err(Status::InternalServerError),
+        Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
 
     let cust = point!(x: customer.contact.address.lat, y: customer.contact.address.lon);
@@ -149,12 +149,4 @@ pub async fn distance_to_stores(conn: Connection<'_, Db>, id: &str, cookies: &Co
             store_code: store.code
         }
     }).collect()))
-}
-
-#[catch(404)]
-fn not_found() -> serde_json::Value {
-    json!({
-        "status": "error",
-        "reason": "Resource was not found."
-    })
 }

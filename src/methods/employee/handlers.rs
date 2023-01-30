@@ -3,7 +3,7 @@ use std::time::Duration;
 use chrono::{Utc, Duration as ChronoDuration};
 use rocket::http::{CookieJar, Cookie, SameSite};
 use rocket::time::{OffsetDateTime};
-use rocket::{http::Status, get};
+use rocket::{get};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm::{EntityTrait, Set};
@@ -13,7 +13,7 @@ use serde_json::json;
 use uuid::Uuid;
 use crate::check_permissions;
 use crate::entities::session;
-use crate::methods::{Name, History, cookie_status_wrapper};
+use crate::methods::{Name, History, cookie_status_wrapper, Error, ErrorResponse};
 use crate::pool::Db;
 
 use super::{Employee, EmployeeInput, Attendance, TrackType, Action};
@@ -23,7 +23,7 @@ pub fn routes() -> Vec<rocket::Route> {
 }
 
 #[get("/<id>")]
-pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Status> {
+pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -38,7 +38,7 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
 }
 
 #[get("/name/<name>")]
-pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Status> {
+pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Error> {
     let db = conn.into_inner();
     
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -49,7 +49,7 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
 }
 
 #[get("/!name", data = "<name>")]
-pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: Json<Name>, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Status> {
+pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: Json<Name>, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Error> {
     let db = conn.into_inner();
     let new_transaction = name.clone().into_inner();
     
@@ -65,7 +65,7 @@ pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: Json<Name>, cooki
 }
 
 #[get("/level/<level>")]
-pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Status> {
+pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Error> {
     let db = conn.into_inner();
     let new_transaction = level.clone();
 
@@ -80,7 +80,7 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &Cookie
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>
-) -> Result<Json<Employee>, Status> {
+) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -88,7 +88,7 @@ async fn generate(
 
     match Employee::generate(db).await {
         Ok(res) => Ok(Json(res)),
-        Err(_) => Err(Status::BadRequest)
+        Err(err) => Err(ErrorResponse::db_err(err))
     }
 }
 
@@ -98,7 +98,7 @@ async fn update(
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<Employee>,
-) -> Result<Json<Employee>, Status> {
+) -> Result<Json<Employee>, Error> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
     
@@ -110,10 +110,10 @@ async fn update(
             Ok(res) => {
                 Ok(Json(res))
             },
-            Err(_) => Err(Status::BadRequest),
+            Err(_) => Err(ErrorResponse::input_error()),
         }
     }else {
-        Err(Status::Unauthorized)
+        Err(ErrorResponse::unauthorized(Action::ModifyEmployee))
     }
 }
 
@@ -123,14 +123,14 @@ pub struct Auth {
 }
 
 #[post("/auth/<id>", data = "<input_data>")]
-pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, cookies: &CookieJar<'_>) -> Result<Json<String>, Status> {
+pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, cookies: &CookieJar<'_>) -> Result<Json<String>, Error> {
     let input = input_data.clone().into_inner();
     let db = conn.into_inner();
 
     match Employee::verify(id, &input.pass, db).await {
         Ok(data) => {
             if !data {
-                Err(Status::Unauthorized)
+                Err(ErrorResponse::custom_unauthorized(&format!("Invalid password or id.")))
             }else {
                 // User is authenticated, lets give them an API key to work with...
                 let api_key = Uuid::new_v4().to_string();
@@ -159,19 +159,19 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
 
                         Ok(Json(api_key))
                     },
-                    Err(_) => Err(Status::InternalServerError)
+                    Err(reason) => Err(ErrorResponse::db_err(reason))
                 }
             }
         },
         Err(reason) => {
             println!("[dberr]: {}", reason);
-            Err(Status::InternalServerError)
+            Err(ErrorResponse::input_error())
         },
     }
 }
 
 #[post("/", data = "<input_data>")]
-pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Status> {
+pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Error> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
 
@@ -186,13 +186,13 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>, c
                 },  
                 Err(reason) => {
                     println!("[dberr]: {}", reason);
-                    Err(Status::InternalServerError)
+                    Err(ErrorResponse::db_err(reason))
                 }
             }
         },
         Err(reason) => {
             println!("[dberr]: {}", reason);
-            Err(Status::InternalServerError)
+            Err(ErrorResponse::input_error())
         },
     }
 }
@@ -205,7 +205,7 @@ pub struct LogRequest {
 }
 
 #[post("/log/<id>", data="<input_data>")]
-pub async fn log(conn: Connection<'_, Db>, input_data: Json<LogRequest>, id: &str) -> Result<Json<Employee>, Status> {
+pub async fn log(conn: Connection<'_, Db>, input_data: Json<LogRequest>, id: &str) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
     let data = input_data.into_inner();
 
@@ -234,13 +234,13 @@ pub async fn log(conn: Connection<'_, Db>, input_data: Json<LogRequest>, id: &st
                 }
                 Err(reason) => {
                     println!("[dberr]: {}", reason);
-                    Err(Status::InternalServerError)
+                    Err(ErrorResponse::db_err(reason))
                 }
             }
         },
         Err(reason) => {
             println!("[dberr]: {}", reason);
-            Err(Status::InternalServerError)
+            Err(ErrorResponse::input_error())
         },
     }
 }

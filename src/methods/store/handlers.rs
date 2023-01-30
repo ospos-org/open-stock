@@ -1,7 +1,7 @@
-use rocket::{routes, get, http::{CookieJar, Status}, serde::json::Json, post};
+use rocket::{routes, get, http::{CookieJar}, serde::json::Json, post};
 use sea_orm_rocket::{Connection};
 
-use crate::{pool::Db, methods::{cookie_status_wrapper, Action}, check_permissions};
+use crate::{pool::Db, methods::{cookie_status_wrapper, Action, Error, ErrorResponse}, check_permissions};
 
 use super::{Store};
 
@@ -10,7 +10,7 @@ pub fn routes() -> Vec<rocket::Route> {
 }
 
 #[get("/")]
-pub async fn get_all(conn: Connection<'_, Db>, cookies: &CookieJar<'_>) -> Result<Json<Vec<Store>>, Status> {
+pub async fn get_all(conn: Connection<'_, Db>, cookies: &CookieJar<'_>) -> Result<Json<Vec<Store>>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -21,7 +21,7 @@ pub async fn get_all(conn: Connection<'_, Db>, cookies: &CookieJar<'_>) -> Resul
 }
 
 #[get("/<id>")]
-pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Store>, Status> {
+pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Store>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -32,7 +32,7 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
 }
 
 #[get("/code/<code>")]
-pub async fn get_by_code(conn: Connection<'_, Db>, code: &str, cookies: &CookieJar<'_>) -> Result<Json<Store>, Status> {
+pub async fn get_by_code(conn: Connection<'_, Db>, code: &str, cookies: &CookieJar<'_>) -> Result<Json<Store>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -46,7 +46,7 @@ pub async fn get_by_code(conn: Connection<'_, Db>, code: &str, cookies: &CookieJ
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>
-) -> Result<Json<Vec<Store>>, Status> {
+) -> Result<Json<Vec<Store>>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -54,7 +54,7 @@ async fn generate(
 
     match Store::generate(db).await {
         Ok(res) => Ok(Json(res)),
-        Err(_) => Err(Status::BadRequest)
+        Err(err) => Err(ErrorResponse::db_err(err))
     }
 }
 
@@ -64,7 +64,7 @@ async fn update(
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<Store>,
-) -> Result<Json<Store>, Status> {
+) -> Result<Json<Store>, Error> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
@@ -76,9 +76,9 @@ async fn update(
             Ok(res) => {
                 Ok(Json(res))
             },
-            Err(_) => Err(Status::BadRequest),
+            Err(reason) => Err(ErrorResponse::db_err(reason)),
         }
     }else {
-        Err(Status::Unauthorized)
+        Err(ErrorResponse::unauthorized(Action::ModifyStore))
     }
 }

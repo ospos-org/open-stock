@@ -1,11 +1,11 @@
 use rocket::http::CookieJar;
-use rocket::{http::Status, get};
+use rocket::{get};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 
 use crate::check_permissions;
-use crate::methods::cookie_status_wrapper;
+use crate::methods::{cookie_status_wrapper, Error, ErrorResponse};
 use crate::pool::Db;
 use super::{Transaction, TransactionInput, TransactionInit};
 use crate::methods::employee::Action;
@@ -15,7 +15,7 @@ pub fn routes() -> Vec<rocket::Route> {
 }
 
 #[get("/<id>")]
-pub async fn get(conn: Connection<'_, Db>, id: String, cookies: &CookieJar<'_>) -> Result<Json<Transaction>, Status> {
+pub async fn get(conn: Connection<'_, Db>, id: String, cookies: &CookieJar<'_>) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
  
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -26,7 +26,7 @@ pub async fn get(conn: Connection<'_, Db>, id: String, cookies: &CookieJar<'_>) 
 }
 
 #[get("/ref/<name>")]
-pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Transaction>>, Status> {
+pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Transaction>>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -37,7 +37,7 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
 }
 
 #[get("/product/<sku>")]
-pub async fn get_by_product_sku(conn: Connection<'_, Db>, sku: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Transaction>>, Status> {
+pub async fn get_by_product_sku(conn: Connection<'_, Db>, sku: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Transaction>>, Error> {
     let db = conn.into_inner();
  
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -53,7 +53,7 @@ async fn update(
     id: &str,
     input_data: Json<TransactionInput>,
     cookies: &CookieJar<'_>
-) -> Result<Json<Transaction>, Status> {
+) -> Result<Json<Transaction>, Error> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
@@ -64,7 +64,7 @@ async fn update(
         Ok(res) => {
             Ok(Json(res))
         },
-        Err(_) => Err(Status::BadRequest),
+        Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
@@ -72,7 +72,7 @@ async fn update(
 async fn generate(
     conn: Connection<'_, Db>,
     cookies: &CookieJar<'_>
-) -> Result<Json<Transaction>, Status> {
+) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -80,12 +80,12 @@ async fn generate(
 
     match Transaction::generate(db, session).await {
         Ok(res) => Ok(Json(res)),
-        Err(_) => Err(Status::BadRequest)
+        Err(_) => Err(ErrorResponse::input_error())
     }
 }
 
 #[post("/", data = "<input_data>")]
-pub async fn create(conn: Connection<'_, Db>, input_data: Json<TransactionInit>, cookies: &CookieJar<'_>) -> Result<Json<Transaction>, Status> {
+pub async fn create(conn: Connection<'_, Db>, input_data: Json<TransactionInit>, cookies: &CookieJar<'_>) -> Result<Json<Transaction>, Error> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
 
@@ -98,9 +98,9 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<TransactionInit>,
                 Ok(res) => {
                     Ok(Json(res))
                 },  
-                Err(_) => Err(Status::InternalServerError)
+                Err(reason) => Err(ErrorResponse::db_err(reason))
             }
         },
-        Err(_) => Err(Status::InternalServerError),
+        Err(_) => Err(ErrorResponse::input_error()),
     }
 }

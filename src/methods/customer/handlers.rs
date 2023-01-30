@@ -1,10 +1,10 @@
 use rocket::http::CookieJar;
-use rocket::{http::Status, get};
+use rocket::{get};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 use crate::check_permissions;
-use crate::methods::{ContactInformation, cookie_status_wrapper, Action};
+use crate::methods::{ContactInformation, cookie_status_wrapper, Action, Error, ErrorResponse};
 use crate::pool::Db;
 
 use super::{Customer, CustomerInput};
@@ -14,7 +14,7 @@ pub fn routes() -> Vec<rocket::Route> {
 }
 
 #[get("/<id>")]
-pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Customer>, Status> {
+pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Customer>, Error> {
     let db = conn.into_inner();
     
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -25,7 +25,7 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
 }
 
 #[get("/name/<name>")]
-pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Status> {
+pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
     
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -37,7 +37,7 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
 
 /// Will search by both name, phone and email.
 #[get("/search/<query>")]
-pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Status> {
+pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
     
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -48,7 +48,7 @@ pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &Cooki
 }
 
 #[get("/phone/<phone>")]
-pub async fn get_by_phone(conn: Connection<'_, Db>, phone: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Status> {
+pub async fn get_by_phone(conn: Connection<'_, Db>, phone: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
     let new_phone = phone.clone();
     
@@ -60,7 +60,7 @@ pub async fn get_by_phone(conn: Connection<'_, Db>, phone: &str, cookies: &Cooki
 }
 
 #[get("/addr/<addr>")]
-pub async fn get_by_addr(conn: Connection<'_, Db>, addr: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Status> {
+pub async fn get_by_addr(conn: Connection<'_, Db>, addr: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
     let new_addr = addr.clone();
 
@@ -75,7 +75,7 @@ pub async fn get_by_addr(conn: Connection<'_, Db>, addr: &str, cookies: &CookieJ
 async fn generate(
     conn: Connection<'_, Db>, 
     cookies: &CookieJar<'_>
-) -> Result<Json<Customer>, Status> {
+) -> Result<Json<Customer>, Error> {
     let db = conn.into_inner();
     
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -83,7 +83,7 @@ async fn generate(
 
     match Customer::generate(db).await {
         Ok(res) => Ok(Json(res)),
-        Err(_) => Err(Status::BadRequest)
+        Err(err) => Err(ErrorResponse::db_err(err))
     }
 }
 
@@ -93,7 +93,7 @@ async fn update(
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<CustomerInput>,
-) -> Result<Json<Customer>, Status> {
+) -> Result<Json<Customer>, Error> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
@@ -104,7 +104,7 @@ async fn update(
         Ok(res) => {
             Ok(Json(res))
         },
-        Err(_) => Err(Status::BadRequest),
+        Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
@@ -114,7 +114,7 @@ async fn update_contact_info(
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<ContactInformation>,
-) -> Result<Json<Customer>, Status> {
+) -> Result<Json<Customer>, Error> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
@@ -125,12 +125,12 @@ async fn update_contact_info(
         Ok(res) => {
             Ok(Json(res))
         },
-        Err(_) => Err(Status::BadRequest),
+        Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
 #[post("/", data = "<input_data>")]
-pub async fn create(conn: Connection<'_, Db>, cookies: &CookieJar<'_>, input_data: Json<CustomerInput>) -> Result<Json<Customer>, Status> {
+pub async fn create(conn: Connection<'_, Db>, cookies: &CookieJar<'_>, input_data: Json<CustomerInput>) -> Result<Json<Customer>, Error> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
     
@@ -145,13 +145,13 @@ pub async fn create(conn: Connection<'_, Db>, cookies: &CookieJar<'_>, input_dat
                 },  
                 Err(reason) => {
                     println!("[dberr]: {}", reason);
-                    Err(Status::InternalServerError)
+                    Err(ErrorResponse::create_error(&format!("Fetch for customer failed, reason: {}", reason)))
                 }
             }
         },
         Err(reason) => {
             println!("[dberr]: {}", reason);
-            Err(Status::InternalServerError)
+            Err(ErrorResponse::input_error())
         },
     }
 }
