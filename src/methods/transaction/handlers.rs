@@ -68,9 +68,10 @@ async fn update(
     }
 }
 
-#[post("/generate")]
+#[post("/generate/<customer_id>")]
 async fn generate(
     conn: Connection<'_, Db>,
+    customer_id: &str,
     cookies: &CookieJar<'_>
 ) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
@@ -78,7 +79,7 @@ async fn generate(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Transaction::generate(db, session).await {
+    match Transaction::generate(db, customer_id, session).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error())
     }

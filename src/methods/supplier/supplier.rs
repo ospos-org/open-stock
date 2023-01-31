@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{methods::{Name, ContactInformation, MobileNumber, Email, Address, Transaction, example_transaction, convert_addr_to_geo}, entities::{supplier}};
+use crate::{methods::{Name, ContactInformation, MobileNumber, Email, Address, Transaction, convert_addr_to_geo}, entities::{supplier}};
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, RuntimeErr};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
@@ -54,6 +54,7 @@ impl Supplier {
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Supplier>, DbErr> {
         let res = supplier::Entity::find()
             .having(supplier::Column::Name.contains(name))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|s| 
@@ -71,6 +72,7 @@ impl Supplier {
     pub async fn fetch_by_phone(phone: &str, db: &DbConn) -> Result<Vec<Supplier>, DbErr> {
         let res = supplier::Entity::find()
             .having(supplier::Column::Contact.contains(phone))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|s| 
@@ -88,6 +90,7 @@ impl Supplier {
     pub async fn fetch_by_addr(addr: &str, db: &DbConn) -> Result<Vec<Supplier>, DbErr> {
         let res = supplier::Entity::find()
             .having(supplier::Column::Contact.contains(addr))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|s| 
@@ -180,14 +183,6 @@ pub fn example_supplier() -> SupplierInput {
             lon: 174.838745
         }
     };
-
-    let _t = example_transaction();
-
-    // Transaction {
-    //     id: "".into(),
-    //     salesperson: "".into(),
-    //     ..t
-    // };
 
     SupplierInput {
         name: Name { first: "".into(), middle: "".into(), last: "".into() },

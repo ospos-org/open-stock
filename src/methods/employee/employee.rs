@@ -166,6 +166,7 @@ impl Employee {
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
         let res = employee::Entity::find()
             .having(employee::Column::Name.contains(name))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|e| 
@@ -185,6 +186,7 @@ impl Employee {
     pub async fn fetch_by_name_exact(name: serde_json::Value, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
         let res = employee::Entity::find()
             .having(employee::Column::Name.eq(name))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|e| 
@@ -204,6 +206,7 @@ impl Employee {
     pub async fn fetch_by_level(level: i32, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
         let res = employee::Entity::find()
             .having(employee::Column::Level.eq(level))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|e| 

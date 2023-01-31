@@ -10,13 +10,21 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub name: String,
     pub contact: Json,
-    pub order_history: Json,
     pub customer_notes: Json,
     pub balance: f32,
     pub special_pricing: Json,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::transactions::Entity")]
+    Transactions,
+}
+
+impl Related<super::transactions::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Transactions.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

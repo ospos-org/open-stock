@@ -4,7 +4,7 @@ use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 use crate::check_permissions;
-use crate::methods::{ContactInformation, cookie_status_wrapper, Action, Error, ErrorResponse};
+use crate::methods::{ContactInformation, cookie_status_wrapper, Action, Error, ErrorResponse, CustomerWithTransactionsOut};
 use crate::pool::Db;
 
 use super::{Customer, CustomerInput};
@@ -37,7 +37,7 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
 
 /// Will search by both name, phone and email.
 #[get("/search/<query>")]
-pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Customer>>, Error> {
+pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<CustomerWithTransactionsOut>>, Error> {
     let db = conn.into_inner();
     
     let session = cookie_status_wrapper(db, cookies).await?;

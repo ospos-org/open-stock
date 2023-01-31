@@ -32,7 +32,7 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
     let stores = Store::generate(db).await.unwrap();
     let products = Product::generate(db).await.unwrap();
     let customer = Customer::generate(db).await.unwrap();
-    let transaction = Transaction::generate(db, Session { id: Uuid::new_v4().to_string(), key: format!(""), employee: employee.clone(), expiry: Utc::now() }).await.unwrap();
+    let transaction = Transaction::generate(db, &customer.id, Session { id: Uuid::new_v4().to_string(), key: format!(""), employee: employee.clone(), expiry: Utc::now() }).await.unwrap();
     let promotions = Promotion::generate(db).await.unwrap();
 
     Ok(rocket::serde::json::Json(All {

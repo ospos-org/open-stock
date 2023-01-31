@@ -120,6 +120,7 @@ impl Transaction {
     pub async fn fetch_by_ref(reference: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
         let res = Transactions::find()
             .having(transactions::Column::Products.contains(reference))
+            .limit(25)
             .all(db).await?;
 
         
@@ -158,9 +159,9 @@ impl Transaction {
         Self::fetch_by_id(id, db).await
     }
 
-    pub async fn generate(db: &DbConn, session: Session) -> Result<Transaction, DbErr> {
+    pub async fn generate(db: &DbConn, customer_id: &str, session: Session) -> Result<Transaction, DbErr> {
         // Create Transaction
-        let tsn = example_transaction();
+        let tsn = example_transaction(customer_id);
         
         // Insert & Fetch Transaction
         match Transaction::insert(tsn, session, db).await {
@@ -244,7 +245,7 @@ impl Display for Transaction {
 //     //...
 // }
 
-pub fn example_transaction() -> TransactionInit {
+pub fn example_transaction(customer_id: &str) -> TransactionInit {
     let torpedo7 = ContactInformation {
         name: "Torpedo7 Mt Wellington".into(),
         mobile: MobileNumber {
@@ -312,7 +313,7 @@ pub fn example_transaction() -> TransactionInit {
     };
 
     let transaction = TransactionInit {
-        customer: "...".into(),
+        customer: customer_id.into(),
         transaction_type: TransactionType::In,
         products: vec![order],
         order_total: 115.00,

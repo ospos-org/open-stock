@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
-use crate::{methods::{ContactInformation, OrderList, NoteList, Id, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, TransitInformation, OrderStatusAssignment, convert_addr_to_geo, History}, entities::customer};
-use chrono::Utc;
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}, QueryFilter, Condition, RuntimeErr};
+use crate::{methods::{ContactInformation, NoteList, Id, MobileNumber, Email, Address, convert_addr_to_geo }, entities::{customer}};
+use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, sea_query::{Func, Expr}, RuntimeErr, Statement, DbBackend, FromQueryResult, JsonValue};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -13,17 +12,38 @@ pub struct Customer {
     pub id: Id,
     pub name: String,
     pub contact: ContactInformation,
-    pub order_history: OrderList,
     pub customer_notes: NoteList,
     pub balance: f32,
-    pub special_pricing: String
+    pub special_pricing: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, FromQueryResult)]
+pub struct CustomerWithTransactions {
+    pub id: Id,
+    pub name: String,
+    pub contact: JsonValue,
+    pub customer_notes: JsonValue,
+    pub balance: f32,
+    pub special_pricing: JsonValue,
+    pub transactions: String
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct CustomerWithTransactionsOut {
+    pub id: Id,
+    pub name: String,
+    pub contact: ContactInformation,
+    pub customer_notes: NoteList,
+    pub balance: f32,
+    pub special_pricing: String,
+    pub transactions: String
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CustomerInput {
     pub name: String,
     pub contact: ContactInformation,
-    pub order_history: OrderList,
     pub customer_notes: NoteList,
     pub special_pricing: String,
     pub balance: f32,
@@ -37,7 +57,6 @@ impl Customer {
             id: Set(id),
             name: Set(cust.name),
             contact: Set(json!(cust.contact)),
-            order_history: Set(json!(cust.order_history)),
             customer_notes: Set(json!(cust.customer_notes)),
             balance: Set(cust.balance),
             special_pricing: Set(json!(cust.special_pricing)),
@@ -57,32 +76,44 @@ impl Customer {
             id: c.id, 
             name: c.name, 
             contact: serde_json::from_value::<ContactInformation>(c.contact).unwrap(),
-            order_history: serde_json::from_value::<OrderList>(c.order_history).unwrap(),
             customer_notes: serde_json::from_value::<NoteList>(c.customer_notes).unwrap(),
             special_pricing: serde_json::from_value::<String>(c.special_pricing).unwrap(),
             balance: c.balance, 
         })
     }
 
-    pub async fn search(query: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
-        let res = customer::Entity::find()
-            .filter(
-                Condition::any()
-                    .add(Expr::expr(Func::lower(Expr::col(customer::Column::Name))).like(format!("%{}%", query)))
-                    // Phone no. and email.
-                    .add(customer::Column::Contact.contains(query))
-            )
-            .all(db).await?;
+    pub async fn search(query: &str, db: &DbConn) -> Result<Vec<CustomerWithTransactionsOut>, DbErr> {
+        let as_str: Vec<CustomerWithTransactions> = CustomerWithTransactions::find_by_statement(Statement::from_sql_and_values(
+                DbBackend::MySql,
+                &format!("Select `Customer`.`id`, `Customer`.`name`, `Customer`.`contact`, `Customer`.`balance`, `Customer`.`customer_notes`, `Customer`.`special_pricing`, GROUP_CONCAT(`Transactions`.`id`) as transactions from `Customer` join `Transactions` on `Customer`.id = `Transactions`.customer
+                WHERE LOWER(`name`) LIKE '%{}%' OR `Customer`.`contact` LIKE '%{}%' 
+                group by `Customer`.`id`
+                limit 25", query, query),
+                vec![]
+            ))
+            .all(db)
+            .await?;
 
-        let mapped = res.iter().map(|c| 
-            Customer { 
+        // let res = customer::Entity::find()
+        //     .filter(
+        //         Condition::any()
+        //             .add(Expr::expr(Func::lower(Expr::col(customer::Column::Name))).like(format!("%{}%", query)))
+        //             // Phone no. and email.
+        //             .add(customer::Column::Contact.contains(query))
+                    
+        //     )
+        //     .limit(25)
+        //     .all(db).await?;
+
+        let mapped = as_str.iter().map(|c| 
+            CustomerWithTransactionsOut { 
                 id: c.id.clone(), 
                 name: c.name.clone(), 
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
-                order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
-                balance: c.balance
+                balance: c.balance,
+                transactions: c.transactions.clone()
             }
         ).collect();
 
@@ -92,6 +123,7 @@ impl Customer {
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
         let res = customer::Entity::find()
             .having(Expr::expr(Func::lower(Expr::col(customer::Column::Name))).like(format!("%{}%", name)))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|c| 
@@ -99,7 +131,6 @@ impl Customer {
                 id: c.id.clone(), 
                 name: c.name.clone(), 
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
-                order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
                 balance: c.balance
@@ -112,6 +143,7 @@ impl Customer {
     pub async fn fetch_by_phone(phone: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
         let res = customer::Entity::find()
             .having(customer::Column::Contact.contains(phone))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|c| 
@@ -119,7 +151,6 @@ impl Customer {
                 id: c.id.clone(), 
                 name: c.name.clone(), 
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
-                order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
                 balance: c.balance
@@ -132,6 +163,7 @@ impl Customer {
     pub async fn fetch_by_addr(addr: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
         let res = customer::Entity::find()
             .having(customer::Column::Contact.contains(addr))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|c| 
@@ -139,7 +171,6 @@ impl Customer {
                 id: c.id.clone(), 
                 name: c.name.clone(), 
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
-                order_history: serde_json::from_value::<OrderList>(c.order_history.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
                 balance: c.balance
@@ -178,7 +209,6 @@ impl Customer {
                     id: Set(id.to_string()),
                     name: Set(cust.name),
                     contact: Set(json!(new_contact)),
-                    order_history: Set(json!(cust.order_history)),
                     customer_notes: Set(json!(cust.customer_notes)),
                     special_pricing: Set(json!(cust.special_pricing)),
                     balance: Set(cust.balance),
@@ -206,7 +236,6 @@ impl Customer {
                     id: Set(customer.id),
                     name: Set(customer.name),
                     contact: Set(json!(new_contact)),
-                    order_history: Set(json!(customer.order_history)),
                     customer_notes: Set(json!(customer.customer_notes)),
                     special_pricing: Set(json!(customer.special_pricing)),
                     balance: Set(customer.balance),
@@ -224,15 +253,6 @@ impl Customer {
 
 impl Display for Customer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let order_history: String = self.order_history.iter()
-            .map(|f| 
-                format!(
-                    "{}: {:?}\n", 
-                    f.creation_date.format("%d/%m/%Y %H:%M"), 
-                    f.status, 
-                )
-            ).collect();
-
         let customer_notes: String = self.customer_notes.iter()
             .map(|f| 
                 format!(
@@ -244,12 +264,11 @@ impl Display for Customer {
 
         write!(
             f, 
-            "{} (${})\n{}\n({}) {} {}\n\n[Clock History]\n{}\n[Notes]\n{}
+            "{} (${})\n{}\n({}) {} {}\n\n[Notes]\n{}
             ", 
             self.name, self.balance, 
             self.id, 
             self.contact.mobile.region_code, self.contact.mobile.root, self.contact.email.full,
-            order_history,
             customer_notes
         )
     }
@@ -275,49 +294,6 @@ pub fn example_customer() -> CustomerInput {
     CustomerInput {
         name: "Carl Kennith".into(),
         contact: customer.clone(),
-        order_history: vec![
-            Order {
-                order_type: crate::methods::OrderType::Pickup,
-                destination: Location {
-                    code: "001".into(),
-                    contact: customer.clone()
-                },
-                origin: Location {
-                    code: "002".into(),
-                    contact: customer.clone()
-                },
-                products: vec![
-                    ProductPurchase { id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
-                    ProductPurchase { id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
-                ],
-                previous_failed_fulfillment_attempts: vec![],
-                status: OrderStatusAssignment {
-                    status: OrderStatus::Transit(
-                        TransitInformation {
-                            shipping_company: customer.clone(),
-                            query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
-                            tracking_code: "1523123".into(),
-                            assigned_products: vec![]
-                        }
-                    ),
-                    assigned_products: vec![],
-                    timestamp: Utc::now()
-                },
-                order_history: vec![],
-                order_notes: vec![
-                    Note {
-                        message: "Order shipped from warehouse.".into(), 
-                        timestamp: Utc::now(), 
-                        author: Uuid::new_v4().to_string()
-                    }
-                ],
-                reference: "TOR-19592".into(),
-                creation_date: Utc::now(),
-                id: Uuid::new_v4().to_string(),
-                status_history: vec![ History::<OrderStatusAssignment> { item: OrderStatusAssignment { status: OrderStatus::Queued(Utc::now()), timestamp: Utc::now(), assigned_products: vec![] }, timestamp: Utc::now(), reason: "".to_string() }],
-                discount: DiscountValue::Absolute(0),
-            }
-        ],
         special_pricing: "".into(),
         customer_notes: vec![],
         balance: 0.0,

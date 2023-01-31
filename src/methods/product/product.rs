@@ -144,6 +144,7 @@ impl Product {
                     .add(products::Column::Sku.contains(query))
                     .add(products::Column::Variants.contains(query))
             )
+            .limit(25)
             .all(db).await?;
 
         let mapped = res.iter().map(|p| 
@@ -171,6 +172,7 @@ impl Product {
                     .add(products::Column::Sku.contains(query))
                     .add(products::Column::Variants.contains(query))
             )
+            .limit(25)
             .all(db).await?;
         
         let mapped: Vec<ProductWPromotion> = res.iter().map(|p| {
@@ -201,6 +203,7 @@ impl Product {
                         .add(promotion::Column::Get.contains(&p.product.sku))
                         .add(promotion::Column::ValidTill.gte(Utc::now()))
                 )
+                .limit(25)
                 .all(&b).await.unwrap();
 
             let mapped: Vec<Promotion> = promos.iter().map(|p| 
@@ -226,6 +229,7 @@ impl Product {
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Product>, DbErr> {
         let res = products::Entity::find()
             .having(products::Column::Name.contains(name))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|p| 
@@ -248,6 +252,7 @@ impl Product {
     pub async fn fetch_by_name_exact(name: &str, db: &DbConn) -> Result<Vec<Product>, DbErr> {
         let res = products::Entity::find()
             .having(products::Column::Name.eq(name))
+            .limit(25)
             .all(db).await?;
             
         let mapped = res.iter().map(|p| 
@@ -565,7 +570,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 0.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 0.0 
+                                quantity_unsellable: 0.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -573,7 +579,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 4.0, 
                                 quantity_on_order: 2.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -581,7 +588,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                     ], 
@@ -619,7 +627,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 7.0,
                                 quantity_unsellable: 2.0,
-                                quantity_on_order: 4.0, 
+                                quantity_on_order: 4.0,
+                                quantity_allocated: 0.0 
                             }   
                         },
                         Stock { 
@@ -627,7 +636,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 0.0, 
                                 quantity_on_order: 1.0, 
-                                quantity_unsellable: 0.0 
+                                quantity_unsellable: 0.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -635,7 +645,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                     ], 
@@ -673,7 +684,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0 
                             }   
                         },
                         Stock { 
@@ -681,7 +693,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 3.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 1.0 
+                                quantity_unsellable: 1.0,
+                                quantity_allocated: 0.0 
                             }   
                         },
                         Stock { 
@@ -689,7 +702,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0 
                             }   
                         },
                     ], 
@@ -787,7 +801,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 4.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0 
                             }   
                         },
                         Stock { 
@@ -795,7 +810,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 1.0, 
-                                quantity_unsellable: 0.0 
+                                quantity_unsellable: 0.0,
+                                quantity_allocated: 0.0 
                             }   
                         },
                         Stock { 
@@ -803,7 +819,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 0.0, 
                                 quantity_on_order: 2.0, 
-                                quantity_unsellable: 1.0 
+                                quantity_unsellable: 1.0,
+                                quantity_allocated: 0.0 
                             }   
                         },
                     ], 
@@ -842,6 +859,7 @@ fn example_products() -> Vec<Product> {
                                 quantity_sellable: 7.0,
                                 quantity_unsellable: 2.0,
                                 quantity_on_order: 4.0, 
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -849,7 +867,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 0.0, 
                                 quantity_on_order: 1.0, 
-                                quantity_unsellable: 0.0 
+                                quantity_unsellable: 0.0,
+                                quantity_allocated: 0.0 
                             }   
                         },
                         Stock { 
@@ -857,7 +876,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                     ], 
@@ -967,7 +987,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 4.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -975,7 +996,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 1.0, 
-                                quantity_unsellable: 0.0 
+                                quantity_unsellable: 0.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -983,7 +1005,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 0.0, 
                                 quantity_on_order: 2.0, 
-                                quantity_unsellable: 1.0 
+                                quantity_unsellable: 1.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                     ], 
@@ -1021,7 +1044,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 4.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -1029,7 +1053,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 1.0, 
-                                quantity_unsellable: 0.0 
+                                quantity_unsellable: 0.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -1037,7 +1062,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 0.0, 
                                 quantity_on_order: 2.0, 
-                                quantity_unsellable: 1.0 
+                                quantity_unsellable: 1.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                     ], 
@@ -1075,7 +1101,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 4.0, 
                                 quantity_on_order: 0.0, 
-                                quantity_unsellable: 2.0 
+                                quantity_unsellable: 2.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -1083,7 +1110,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 1.0, 
                                 quantity_on_order: 1.0, 
-                                quantity_unsellable: 0.0 
+                                quantity_unsellable: 0.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                         Stock { 
@@ -1091,7 +1119,8 @@ fn example_products() -> Vec<Product> {
                             quantity: Quantity { 
                                 quantity_sellable: 0.0, 
                                 quantity_on_order: 2.0, 
-                                quantity_unsellable: 1.0 
+                                quantity_unsellable: 1.0,
+                                quantity_allocated: 0.0
                             }   
                         },
                     ], 
