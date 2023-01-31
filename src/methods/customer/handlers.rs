@@ -4,13 +4,13 @@ use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 use crate::check_permissions;
-use crate::methods::{ContactInformation, cookie_status_wrapper, Action, Error, ErrorResponse, CustomerWithTransactionsOut};
+use crate::methods::{ContactInformation, cookie_status_wrapper, Action, Error, ErrorResponse, CustomerWithTransactionsOut, Transaction};
 use crate::pool::Db;
 
 use super::{Customer, CustomerInput};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_phone, get_by_addr, create, update, generate, search_query, update_contact_info]
+    routes![get, get_by_name, get_by_phone, get_by_addr, create, update, generate, search_query, update_contact_info, find_related_transactions]
 }
 
 #[get("/<id>")]
@@ -44,6 +44,17 @@ pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &Cooki
     check_permissions!(session, Action::FetchCustomer);
 
     let employee = Customer::search(query, db).await.unwrap();
+    Ok(Json(employee))
+}
+
+#[get("/transactions/<id>")]
+pub async fn find_related_transactions(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Transaction>>, Error> {
+    let db = conn.into_inner();
+    
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session, Action::FetchCustomer);
+
+    let employee = Transaction::fetch_by_client_id(id, db).await.unwrap();
     Ok(Json(employee))
 }
 

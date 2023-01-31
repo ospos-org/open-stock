@@ -142,6 +142,32 @@ impl Transaction {
         Ok(mapped)
     }
 
+    pub async fn fetch_by_client_id(id: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
+        let tsn = Transactions::find()
+            .filter(
+                    Condition::any()
+                        .add(transactions::Column::Customer.eq(id))
+                )
+            .all(db).await?;
+
+        let mapped = tsn.iter().map(|t| {
+            Transaction {
+                id: t.id.clone(),
+                customer: t.customer.clone(),
+                transaction_type: t.transaction_type.clone(),
+                products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
+                order_total: t.order_total,
+                payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
+                order_date: DateTime::from_utc(t.order_date, Utc),
+                order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
+                salesperson: t.salesperson.clone(),
+                till: t.till.clone(),
+            }
+        }).collect();
+
+        Ok(mapped)
+    }
+
     pub async fn update(tsn: TransactionInput, id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
         transactions::ActiveModel {
             id: Set(id.to_string()),
