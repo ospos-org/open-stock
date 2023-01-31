@@ -122,7 +122,6 @@ impl Transaction {
             .having(transactions::Column::Products.contains(reference))
             .limit(25)
             .all(db).await?;
-
         
         let mapped = res.iter().map(|t| {
             Transaction {
@@ -144,11 +143,9 @@ impl Transaction {
 
     pub async fn fetch_by_client_id(id: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
         let tsn = Transactions::find()
-            .filter(
-                    Condition::any()
-                        .add(transactions::Column::Customer.eq(id))
-                )
-            .all(db).await?;
+            .having(transactions::Column::Customer.contains(id))
+            .all(db)
+            .await?;
 
         let mapped = tsn.iter().map(|t| {
             Transaction {
@@ -306,8 +303,8 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
             contact: torpedo7.clone()
         },
         products: vec![
-            ProductPurchase { id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
-            ProductPurchase { id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
+            ProductPurchase { product_name: format!("1.83m Kayak"), id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
+            ProductPurchase { product_name: format!("1.83m Kayak"), id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
         ],
         previous_failed_fulfillment_attempts: vec![],
         status: OrderStatusAssignment { 

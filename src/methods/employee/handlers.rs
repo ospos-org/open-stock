@@ -32,8 +32,10 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
     if session.employee.id == id {
         Ok(Json(session.employee))
     }else {
-        let employee = Employee::fetch_by_id(&id.to_string(), db).await.unwrap();
-        Ok(Json(employee))
+        match Employee::fetch_by_id(&id.to_string(), db).await {
+            Ok(customers) => Ok(Json(customers)),
+            Err(err) => Err(ErrorResponse::db_err(err)),
+        }
     }
 }
 

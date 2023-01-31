@@ -20,8 +20,10 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchCustomer);
 
-    let customer = Customer::fetch_by_id(&id, db).await.unwrap();
-    Ok(Json(customer))
+    match Customer::fetch_by_id(&id, db).await {
+        Ok(customers) => Ok(Json(customers)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
 }
 
 #[get("/name/<name>")]
@@ -31,8 +33,10 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchCustomer);
 
-    let employee = Customer::fetch_by_name(name, db).await.unwrap();
-    Ok(Json(employee))
+    match Customer::fetch_by_name(name, db).await {
+        Ok(customers) => Ok(Json(customers)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
 }
 
 /// Will search by both name, phone and email.
@@ -43,8 +47,10 @@ pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &Cooki
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchCustomer);
 
-    let employee = Customer::search(query, db).await.unwrap();
-    Ok(Json(employee))
+    match Customer::search(query, db).await {
+        Ok(customers) => Ok(Json(customers)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
 }
 
 #[get("/transactions/<id>")]
@@ -54,8 +60,10 @@ pub async fn find_related_transactions(conn: Connection<'_, Db>, id: &str, cooki
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchCustomer);
 
-    let employee = Transaction::fetch_by_client_id(id, db).await.unwrap();
-    Ok(Json(employee))
+    match Transaction::fetch_by_client_id(id, db).await {
+        Ok(transactions) => Ok(Json(transactions)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
 }
 
 #[get("/phone/<phone>")]
@@ -66,8 +74,10 @@ pub async fn get_by_phone(conn: Connection<'_, Db>, phone: &str, cookies: &Cooki
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchCustomer);
 
-    let employee = Customer::fetch_by_phone(new_phone, db).await.unwrap();
-    Ok(Json(employee))
+    match Customer::fetch_by_phone(new_phone, db).await {
+        Ok(customer) => Ok(Json(customer)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
 }
 
 #[get("/addr/<addr>")]
@@ -78,8 +88,10 @@ pub async fn get_by_addr(conn: Connection<'_, Db>, addr: &str, cookies: &CookieJ
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchCustomer);
 
-    let employee = Customer::fetch_by_addr(new_addr, db).await.unwrap();
-    Ok(Json(employee))
+    match Customer::fetch_by_addr(new_addr, db).await {
+        Ok(customers) => Ok(Json(customers)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
 }
 
 #[post("/generate")]

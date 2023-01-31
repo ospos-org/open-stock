@@ -352,6 +352,7 @@ pub struct ProductPurchase {
     pub product_code: ProductCode,
     pub variant: VariantIdTag,
     pub discount: DiscountMap,
+    pub product_name: String,
 
     pub id: String,
 
