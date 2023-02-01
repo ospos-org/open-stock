@@ -2,7 +2,7 @@ use core::fmt;
 use std::{fmt::{Display}};
 
 use chrono::{Utc, DateTime};
-use sea_orm::*;
+use sea_orm::{*, sea_query::{Expr, Func}};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -119,7 +119,7 @@ impl Transaction {
 
     pub async fn fetch_by_ref(reference: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
         let res = Transactions::find()
-            .having(transactions::Column::Products.contains(reference))
+            .having(Expr::expr(Func::lower(Expr::col(transactions::Column::Products))).like(format!("%{}%", reference.to_lowercase())))
             .limit(25)
             .all(db).await?;
         
