@@ -1,13 +1,13 @@
 use core::fmt;
 use std::{fmt::{Display}};
 
-use chrono::{Utc, DateTime};
+use chrono::{Utc, DateTime, Days, Duration};
 use sea_orm::{*, sea_query::{Expr, Func}};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, Session, greatest_discount, Price, PaymentStatus, PaymentProcessor, PaymentAction}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, Session, Price, PaymentStatus, PaymentProcessor, PaymentAction, TransitInformation}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -214,7 +214,8 @@ impl Display for Transaction {
                             p.product_cost, 
                             p.product_code, 
                             p.variant.concat(), 
-                            greatest_discount(p.discount.clone(), p.product_cost).to_string()
+                            p.discount.to_string()
+                            // greatest_discount(p.discount.clone(), p.product_cost).to_string()
                         )
                     ).collect();
 
@@ -297,14 +298,14 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
             code: "001".into(),
             contact: torpedo7.clone()
         },
-        order_type: crate::methods::OrderType::Pickup,
+        order_type: crate::methods::OrderType::Shipment,
         origin: Location {
             code: "002".into(),
             contact: torpedo7.clone()
         },
         products: vec![
-            ProductPurchase { product_name: format!("1.83m Kayak"), id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
-            ProductPurchase { product_name: format!("1.83m Kayak"), id: "ANY".to_string(), product_code:"132522".into(), discount: vec![], product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
+            ProductPurchase { product_name: format!("1.83m Kayak"), id: "ANY".to_string(), product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
+            ProductPurchase { product_name: format!("1.83m Kayak"), id: "ANY".to_string(), product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
         ],
         previous_failed_fulfillment_attempts: vec![],
         status: OrderStatusAssignment { 
@@ -331,7 +332,51 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
         reference: "TOR-19592".into(),
         creation_date: Utc::now(),
         id: Uuid::new_v4().to_string(),
-        status_history: vec![ History::<OrderStatusAssignment> { item: OrderStatusAssignment { status: OrderStatus::Queued(Utc::now()), timestamp: Utc::now(), assigned_products: vec!["132522-22".to_string()] }, timestamp: Utc::now(), reason: "".to_string() }],
+        status_history: vec![ 
+            History::<OrderStatusAssignment> { 
+                item: OrderStatusAssignment { 
+                    status: OrderStatus::Queued(Utc::now()), 
+                    timestamp: Utc::now(), 
+                    assigned_products: vec!["132522-22".to_string()] 
+                }, 
+                timestamp: Utc::now(), 
+                reason: "Order Placed".to_string() 
+            },
+            History::<OrderStatusAssignment> { 
+                item: OrderStatusAssignment { 
+                    status: OrderStatus::Processing(Utc::now().checked_add_signed(Duration::hours(1)).unwrap()), 
+                    timestamp: Utc::now().checked_add_signed(Duration::hours(1)).unwrap(), 
+                    assigned_products: vec!["132522-22".to_string()] 
+                }, 
+                timestamp: Utc::now().checked_add_signed(Duration::hours(1)).unwrap(), 
+                reason: "Order received by store crew.".to_string() 
+            },
+            History::<OrderStatusAssignment> { 
+                item: OrderStatusAssignment { 
+                    status: OrderStatus::Transit(
+                        TransitInformation {
+                            shipping_company: torpedo7.clone(),
+                            query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
+                            tracking_code: "1523123".into(),
+                            assigned_products: vec!["132522-22".to_string()]
+                        }
+                    ), 
+                    timestamp: Utc::now().checked_add_signed(Duration::hours(2)).unwrap(), 
+                    assigned_products: vec!["132522-22".to_string()] 
+                }, 
+                timestamp: Utc::now().checked_add_signed(Duration::hours(2)).unwrap(), 
+                reason: "Order shipped from warehouse.".to_string() 
+            },
+            History::<OrderStatusAssignment> { 
+                item: OrderStatusAssignment { 
+                    status: OrderStatus::Fulfilled(Utc::now().checked_add_days(Days::new(2)).unwrap()), 
+                    timestamp: Utc::now().checked_add_days(Days::new(2)).unwrap(), 
+                    assigned_products: vec!["132522-22".to_string()] 
+                }, 
+                timestamp: Utc::now().checked_add_days(Days::new(2)).unwrap(), 
+                reason: "Item Delivered".to_string() 
+            }
+        ],
         discount: DiscountValue::Absolute(0),
     };
 
