@@ -209,11 +209,10 @@ impl Display for Transaction {
                     .iter()
                     .map(|p| 
                         format!(
-                            "\t{}: ${} ({}:{})  [-]{}\n", 
+                            "\t{}: ${} ({})  [-]{}\n", 
                             p.quantity, 
                             p.product_cost, 
                             p.product_code, 
-                            p.variant.concat(), 
                             p.discount.to_string()
                             // greatest_discount(p.discount.clone(), p.product_cost).to_string()
                         )
@@ -304,8 +303,8 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
             contact: torpedo7.clone()
         },
         products: vec![
-            ProductPurchase { product_name: format!("1.83m Kayak"), id: "ANY".to_string(), product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15.00, variant: vec!["22".into()], quantity: 5 },
-            ProductPurchase { product_name: format!("1.83m Kayak"), id: "ANY".to_string(), product_code:"132522".into(), discount: DiscountValue::Absolute(0), product_cost: 15.00, variant: vec!["23".into()], quantity: 5 }
+            ProductPurchase { product_name: format!("Torpedo7 Nippers Kids Kayak & Paddle"), product_variant_name: format!("1.83m Beaches"), id: "PDT-KAYAK-PURCHASE-ID-1".to_string(), product_code: "54897443288214".into(), discount: DiscountValue::Absolute(0), product_cost: 399.99, quantity: 1 },
+            ProductPurchase { product_name: format!("Torpedo7 Kids Voyager II Paddle Vest"), product_variant_name: format!("Small Red (4-6y)"), id: "PDT-LIFEJACKET-PURCHASE-ID-1".to_string(), product_code: "51891265958214".into(), discount: DiscountValue::Absolute(0), product_cost: 139.99, quantity: 1 },
         ],
         previous_failed_fulfillment_attempts: vec![],
         status: OrderStatusAssignment { 
@@ -337,7 +336,7 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 item: OrderStatusAssignment { 
                     status: OrderStatus::Queued(Utc::now()), 
                     timestamp: Utc::now(), 
-                    assigned_products: vec!["132522-22".to_string()] 
+                    assigned_products: vec!["PDT-KAYAK-PURCHASE-ID-1".to_string(), ] 
                 }, 
                 timestamp: Utc::now(), 
                 reason: "Order Placed".to_string() 
@@ -346,7 +345,7 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 item: OrderStatusAssignment { 
                     status: OrderStatus::Processing(Utc::now().checked_add_signed(Duration::hours(1)).unwrap()), 
                     timestamp: Utc::now().checked_add_signed(Duration::hours(1)).unwrap(), 
-                    assigned_products: vec!["132522-22".to_string()] 
+                    assigned_products: vec!["PDT-KAYAK-PURCHASE-ID-1".to_string()] 
                 }, 
                 timestamp: Utc::now().checked_add_signed(Duration::hours(1)).unwrap(), 
                 reason: "Order received by store crew.".to_string() 

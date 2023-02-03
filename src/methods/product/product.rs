@@ -348,12 +348,13 @@ impl Product {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductPurchase {
-    // Includes variant
+    // Is the barcode of the product.
     pub product_code: ProductCode,
-    pub variant: VariantIdTag,
     pub discount: DiscountValue,
-    pub product_name: String,
 
+    pub product_name: String,
+    pub product_variant_name: String,
+    
     pub id: String,
 
     // Cost before discount, discount will be applied on the product cost.
