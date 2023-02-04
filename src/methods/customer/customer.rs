@@ -70,16 +70,20 @@ impl Customer {
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Customer, DbErr> {
         let cust = Cust::find_by_id(id.to_string()).one(db).await?;
-        let c = cust.unwrap();
-
-        Ok(Customer { 
-            id: c.id, 
-            name: c.name, 
-            contact: serde_json::from_value::<ContactInformation>(c.contact).unwrap(),
-            customer_notes: serde_json::from_value::<NoteList>(c.customer_notes).unwrap(),
-            special_pricing: serde_json::from_value::<String>(c.special_pricing).unwrap(),
-            balance: c.balance, 
-        })
+        
+        match cust {
+            Some(c) => {
+                Ok(Customer { 
+                    id: c.id, 
+                    name: c.name, 
+                    contact: serde_json::from_value::<ContactInformation>(c.contact).unwrap(),
+                    customer_notes: serde_json::from_value::<NoteList>(c.customer_notes).unwrap(),
+                    special_pricing: serde_json::from_value::<String>(c.special_pricing).unwrap(),
+                    balance: c.balance, 
+                })
+            },
+            None => Err(DbErr::RecordNotFound(format!("Unable to find customer record value"))),
+        }
     }
 
     pub async fn search(query: &str, db: &DbConn) -> Result<Vec<CustomerWithTransactionsOut>, DbErr> {

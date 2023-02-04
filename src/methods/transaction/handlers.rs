@@ -21,8 +21,10 @@ pub async fn get(conn: Connection<'_, Db>, id: String, cookies: &CookieJar<'_>) 
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    let transaction = Transaction::fetch_by_id(&id, db).await.unwrap();
-    Ok(Json(transaction))
+    match Transaction::fetch_by_id(&id, db).await {
+        Ok(transaction) => Ok(Json(transaction)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/ref/<name>")]
@@ -32,8 +34,10 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    let transaction = Transaction::fetch_by_ref(name, db).await.unwrap();
-    Ok(Json(transaction))
+    match Transaction::fetch_by_ref(name, db).await {
+        Ok(transaction) => Ok(Json(transaction)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/product/<sku>")]
@@ -43,8 +47,10 @@ pub async fn get_by_product_sku(conn: Connection<'_, Db>, sku: &str, cookies: &C
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    let transaction = Transaction::fetch_by_ref(sku, db).await.unwrap();
-    Ok(Json(transaction))
+    match Transaction::fetch_by_ref(sku, db).await {
+        Ok(transaction) => Ok(Json(transaction)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[post("/<id>", data = "<input_data>")]

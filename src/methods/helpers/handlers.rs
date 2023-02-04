@@ -151,13 +151,13 @@ pub async fn distance_to_stores(conn: Connection<'_, Db>, id: &str, cookies: &Co
     }).collect()))
 }
 
-#[get("/distance/store/<id>")]
-pub async fn distance_to_stores_from_store(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Distance>>, Error> {
+#[get("/distance/store/<store_code>")]
+pub async fn distance_to_stores_from_store(conn: Connection<'_, Db>, store_code: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Distance>>, Error> {
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchGeoLocation);
 
-    let store_ = match Store::fetch_by_id(id, db).await {
+    let store_ = match Store::fetch_by_code(store_code, db).await {
         Ok(c) => c,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };

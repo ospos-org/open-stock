@@ -97,7 +97,6 @@ impl Transaction {
     }
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
-        // 15ms Overhead -> Hopefully SeaORM becomes further optimized in the future :D
         let tsn = Transactions::find_by_id(id.to_string()).one(db).await?;
         let t = tsn.unwrap();
 
