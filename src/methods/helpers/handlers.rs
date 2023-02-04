@@ -10,7 +10,7 @@ use photon_geocoding::{PhotonApiClient, PhotonFeature, filter::{ForwardFilter, P
 use geo::VincentyDistance;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![generate_template, address_to_geolocation, distance_to_stores, suggest_addr]
+    routes![generate_template, address_to_geolocation, distance_to_stores, suggest_addr, distance_to_stores_from_store]
 }
 
 #[derive(Serialize, Deserialize)]
@@ -138,6 +138,36 @@ pub async fn distance_to_stores(conn: Connection<'_, Db>, id: &str, cookies: &Co
     };
 
     let cust = point!(x: customer.contact.address.lat, y: customer.contact.address.lon);
+
+    Ok(Json(stores.into_iter().map(|store| {
+        let stor = point!(x: store.contact.address.lat, y: store.contact.address.lon);
+
+        Distance {
+            /// Defaults to the diameter of the earth, i.e. longest distance between two points (minimizes priority if incorrect data is provided)
+            distance: stor.vincenty_distance(&cust).unwrap_or(12756000.01),
+            store_id: store.id,
+            store_code: store.code
+        }
+    }).collect()))
+}
+
+#[get("/distance/store/<id>")]
+pub async fn distance_to_stores_from_store(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Distance>>, Error> {
+    let db = conn.into_inner();
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session, Action::FetchGeoLocation);
+
+    let store_ = match Store::fetch_by_id(id, db).await {
+        Ok(c) => c,
+        Err(reason) => return Err(ErrorResponse::db_err(reason)),
+    };
+
+    let stores = match Store::fetch_all(db).await {
+        Ok(s) => s,
+        Err(reason) => return Err(ErrorResponse::db_err(reason)),
+    };
+
+    let cust = point!(x: store_.contact.address.lat, y: store_.contact.address.lon);
 
     Ok(Json(stores.into_iter().map(|store| {
         let stor = point!(x: store.contact.address.lat, y: store.contact.address.lon);
