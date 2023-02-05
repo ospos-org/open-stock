@@ -182,7 +182,6 @@ pub async fn get_promotion_by_query(conn: Connection<'_, Db>, query: &str, cooki
     Ok(Json(product))
 }
 
-
 #[post("/promotion/<id>", data = "<input_data>")]
 async fn update_promotion(
     conn: Connection<'_, Db>,

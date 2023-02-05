@@ -1,7 +1,7 @@
 use std::{fmt::Display};
 
 use chrono::{Utc, DateTime};
-use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, Condition, QueryFilter, sea_query::{Expr, Func}};
+use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, Condition, QueryFilter, sea_query::{Expr, Func}, Statement};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
@@ -197,13 +197,30 @@ impl Product {
 
             let promos 
                 = Promotions::find()
-                .filter(
-                    Condition::any()
-                        .add(promotion::Column::Buy.contains(&p.product.sku))
-                        .add(promotion::Column::Get.contains(&p.product.sku))
-                        .add(promotion::Column::ValidTill.gte(Utc::now()))
+                // .filter(
+                //     Condition::any()
+                //         .add(promotion::Column::Buy.contains(&p.product.sku))
+                //         .add(promotion::Column::Buy.contains(&p.product.tags[0]))
+                //         .add(promotion::Column::Get.contains(&p.product.sku))
+                //         .add(promotion::Column::Buy.contains("Any"))
+                //         .add(promotion::Column::Get.contains("Any"))
+                // )
+                .from_raw_sql(
+                    Statement::from_sql_and_values(
+                        sea_orm::DatabaseBackend::MySql, 
+                        &format!(
+                            "SELECT * FROM Promotion WHERE `buy` LIKE '%Any%' 
+                            OR `get` LIKE '%Any%'
+                            OR `buy` LIKE '%{}%'
+                            OR `get` LIKE '%{}%'
+                            OR `buy` LIKE '%{}%'
+                            OR `get` LIKE '%{}%'
+                            AND `valid_till` >= NOW()
+                            LIMIT 25",
+                            p.product.sku, p.product.sku, p.product.tags.join("%' OR `buy` LIKE '%"), p.product.tags.join("%' OR `get` LIKE '%")),
+                        vec![]
+                    )
                 )
-                .limit(25)
                 .all(&b).await.unwrap();
 
             let mapped: Vec<Promotion> = promos.iter().map(|p| 

@@ -59,7 +59,7 @@ pub struct PromotionInput {
 #[derive(Deserialize, Serialize, Clone)]
 pub enum PromotionBuy {
     // This(quantity), Specific((id, quantity)), Any(quantity)
-    Specific((String, f32)), Any(f32)
+    Specific((String, f32)), Any(f32), Category((String, f32))
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -275,8 +275,8 @@ fn example_promotions() -> Vec<PromotionInput> {
         },
         PromotionInput { 
             name: format!("50% off T-shirts"), 
-            buy: PromotionBuy::Any(1.0), 
-            get: PromotionGet::Category(("Tee".into(), (1.0, DiscountValue::Percentage(50)))), 
+            buy: PromotionBuy::Category(("Tee".into(), 1.0)), 
+            get: PromotionGet::SoloThis(DiscountValue::Percentage(50)), 
             valid_till: Utc::now().checked_add_days(Days::new(7)).unwrap(), 
             timestamp: Utc::now()
         },
