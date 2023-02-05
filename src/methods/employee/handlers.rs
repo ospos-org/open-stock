@@ -33,7 +33,7 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
         Ok(Json(session.employee))
     }else {
         match Employee::fetch_by_id(&id.to_string(), db).await {
-            Ok(customers) => Ok(Json(customers)),
+            Ok(employee) => Ok(Json(employee)),
             Err(err) => Err(ErrorResponse::db_err(err)),
         }
     }
@@ -46,8 +46,10 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchEmployee);
 
-    let employee = Employee::fetch_by_name(name, db).await.unwrap();
-    Ok(Json(employee))
+    match Employee::fetch_by_name(name, db).await {
+        Ok(employees) => Ok(Json(employees)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/!name", data = "<name>")]
@@ -61,8 +63,10 @@ pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: Json<Name>, cooki
     if session.employee.name == new_transaction {
         Ok(Json(vec![session.employee]))
     }else {
-        let employee = Employee::fetch_by_name_exact(json!(new_transaction), db).await.unwrap();
-        Ok(Json(employee))
+        match Employee::fetch_by_name_exact(json!(new_transaction), db).await {
+            Ok(employees) => Ok(Json(employees)),
+            Err(reason) => Err(ErrorResponse::db_err(reason))
+        }
     }
 }
 
@@ -74,8 +78,10 @@ pub async fn get_by_level(conn: Connection<'_, Db>, level: i32, cookies: &Cookie
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session, Action::FetchEmployee);
 
-    let employee = Employee::fetch_by_level(new_transaction, db).await.unwrap();
-    Ok(Json(employee))
+    match Employee::fetch_by_level(new_transaction, db).await {
+        Ok(employees) => Ok(Json(employees)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[post("/generate")]

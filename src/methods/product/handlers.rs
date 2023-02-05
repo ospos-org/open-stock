@@ -23,8 +23,10 @@ pub async fn get(conn: Connection<'_, Db>, id: i32, cookies: &CookieJar<'_>) -> 
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let product = Product::fetch_by_id(&id.to_string(), db).await.unwrap();
-    Ok(Json(product))
+    match Product::fetch_by_id(&id.to_string(), db).await {
+        Ok(product) => Ok(Json(product)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/with_promotions/<id>")]
@@ -34,8 +36,10 @@ pub async fn get_with_associated_promotions(conn: Connection<'_, Db>, id: i32, c
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let product = Product::fetch_by_id_with_promotion(&id.to_string(), db).await.unwrap();
-    Ok(Json(product))
+    match Product::fetch_by_id_with_promotion(&id.to_string(), db).await {
+        Ok(product) => Ok(Json(product)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/name/<name>")]
@@ -45,8 +49,10 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let product = Product::fetch_by_name(name, db).await.unwrap();
-    Ok(Json(product))
+    match Product::fetch_by_name(name, db).await {
+        Ok(products) => Ok(Json(products)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 /// References exact name
@@ -57,8 +63,10 @@ pub async fn get_by_name_exact(conn: Connection<'_, Db>, name: &str, cookies: &C
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let product = Product::fetch_by_name_exact(name, db).await.unwrap();
-    Ok(Json(product))
+    match Product::fetch_by_name_exact(name, db).await {
+        Ok(products) => Ok(Json(products)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 /// Will search by both name, phone and email.
@@ -69,8 +77,10 @@ pub async fn search_query(conn: Connection<'_, Db>, query: &str, cookies: &Cooki
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let employee = Product::search(query, db).await.unwrap();
-    Ok(Json(employee))
+    match Product::search(query, db).await {
+        Ok(products) => Ok(Json(products)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/search/with_promotions/<query>")]
@@ -80,8 +90,10 @@ pub async fn search_with_associated_promotions(conn: Connection<'_, Db>, query: 
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let employee = Product::search_with_promotion(query, db).await.unwrap();
-    Ok(Json(employee))
+    match Product::search_with_promotion(query, db).await {
+        Ok(products) => Ok(Json(products)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[post("/<id>", data = "<input_data>")]

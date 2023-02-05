@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `Customer` (
 
 CREATE TABLE IF NOT EXISTS `Transactions` (
   `id` varchar(100) NOT NULL,
-  `customer` varchar(100) NOT NULL,
+  `customer` json NOT NULL,
   `transaction_type` enum('in', 'out', 'pending-in', 'pending-out') NOT NULL,
   `products` json NOT NULL,
   `order_total` FLOAT NOT NULL,
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS `Transactions` (
   `order_notes` json NOT NULL,
   `salesperson` text NOT NULL,
   `till` text NOT NULL,
-  PRIMARY KEY `id` (`id`),
-  FOREIGN KEY (customer) REFERENCES `Customer`(id)
+  PRIMARY KEY `id` (`id`)
+  -- FOREIGN KEY (customer) REFERENCES `Customer`(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 CREATE TABLE IF NOT EXISTS `Employee` (

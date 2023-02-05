@@ -89,10 +89,13 @@ impl Customer {
     pub async fn search(query: &str, db: &DbConn) -> Result<Vec<CustomerWithTransactionsOut>, DbErr> {
         let as_str: Vec<CustomerWithTransactions> = CustomerWithTransactions::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
-                &format!("Select `Customer`.`id`, `Customer`.`name`, `Customer`.`contact`, `Customer`.`balance`, `Customer`.`customer_notes`, `Customer`.`special_pricing`, GROUP_CONCAT(`Transactions`.`id`) as transactions from `Customer` join `Transactions` on `Customer`.id = `Transactions`.customer
-                WHERE LOWER(`name`) LIKE '%{}%' OR `Customer`.`contact` LIKE '%{}%' 
-                group by `Customer`.`id`
-                limit 25", query, query),
+                &format!("SELECT Customer.*, GROUP_CONCAT(`Transactions`.`id`) as transactions
+                    FROM Customer
+                    JOIN Transactions ON CAST(REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '\"', '') AS UNSIGNED) = Customer.id
+                    WHERE LOWER(Customer.name) LIKE '%{}%' OR Customer.contact LIKE '%{}%' 
+                    GROUP BY Customer.id
+                    LIMIT 25",
+                query, query),
                 vec![]
             ))
             .all(db)

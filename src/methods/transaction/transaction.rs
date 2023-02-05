@@ -11,6 +11,17 @@ use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, Mobi
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransactionCustomer {
+    customer_type: CustomerType,
+    customer_id: String
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum CustomerType {
+    Store, Individual, Commercial
+} 
+
 // Discounts on the transaction are applied per-order - such that they are unique to each item, i.e. each item can be discounted individually where needed to close a sale.
 // A discount placed upon the payment object is an order-discount, such that it will act upon the basket: 
 
@@ -28,7 +39,7 @@ use crate::entities::prelude::Transactions;
 pub struct Transaction {
     pub id: Id,
 
-    pub customer: Id,
+    pub customer: TransactionCustomer,
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
@@ -44,7 +55,7 @@ pub struct Transaction {
 
 #[derive(Deserialize, Clone)]
 pub struct TransactionInput {
-    pub customer: Id,
+    pub customer: TransactionCustomer,
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
@@ -60,7 +71,7 @@ pub struct TransactionInput {
 
 #[derive(Deserialize, Clone)]
 pub struct TransactionInit {
-    pub customer: Id,
+    pub customer: TransactionCustomer,
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
@@ -79,7 +90,7 @@ impl Transaction {
 
         let insert_crud = transactions::ActiveModel {
             id: Set(id),
-            customer: Set(tsn.customer),
+            customer: Set(json!(tsn.customer)),
             transaction_type: Set(tsn.transaction_type),
             products: Set(json!(tsn.products)),
             order_total: Set(tsn.order_total),
@@ -102,7 +113,7 @@ impl Transaction {
 
         let t = Transaction {
             id: t.id,
-            customer: t.customer,
+            customer: serde_json::from_value::<TransactionCustomer>(t.customer).unwrap(),
             transaction_type: t.transaction_type,
             products: serde_json::from_value::<OrderList>(t.products).unwrap(),
             order_total: t.order_total,
@@ -125,7 +136,7 @@ impl Transaction {
         let mapped = res.iter().map(|t| {
             Transaction {
                 id: t.id.clone(),
-                customer: t.customer.clone(),
+                customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone()).unwrap(),
                 transaction_type: t.transaction_type.clone(),
                 products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
                 order_total: t.order_total,
@@ -149,7 +160,7 @@ impl Transaction {
         let mapped = tsn.iter().map(|t| {
             Transaction {
                 id: t.id.clone(),
-                customer: t.customer.clone(),
+                customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone()).unwrap(),
                 transaction_type: t.transaction_type.clone(),
                 products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
                 order_total: t.order_total,
@@ -167,7 +178,7 @@ impl Transaction {
     pub async fn update(tsn: TransactionInput, id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
         transactions::ActiveModel {
             id: Set(id.to_string()),
-            customer: Set(tsn.customer),
+            customer: Set(json!(tsn.customer)),
             transaction_type: Set(tsn.transaction_type),
             products: Set(json!(tsn.products)),
             order_total: Set(tsn.order_total),
@@ -379,7 +390,10 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
     };
 
     let transaction = TransactionInit {
-        customer: customer_id.into(),
+        customer: TransactionCustomer { 
+            customer_id: customer_id.into(),
+            customer_type: CustomerType::Individual
+        },
         transaction_type: TransactionType::In,
         products: vec![order],
         order_total: 115.00,

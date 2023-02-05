@@ -21,8 +21,10 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchSupplier);
 
-    let customer = Supplier::fetch_by_id(&id, db).await.unwrap();
-    Ok(Json(customer))
+    match Supplier::fetch_by_id(&id, db).await {
+        Ok(supplier) => Ok(Json(supplier)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/name/<name>")]
@@ -32,8 +34,10 @@ pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJ
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchSupplier);
 
-    let employee = Supplier::fetch_by_name(name, db).await.unwrap();
-    Ok(Json(employee))
+    match Supplier::fetch_by_name(name, db).await {
+        Ok(suppliers) => Ok(Json(suppliers)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/phone/<phone>")]
@@ -44,8 +48,10 @@ pub async fn get_by_phone(conn: Connection<'_, Db>, phone: &str, cookies: &Cooki
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchSupplier);
 
-    let employee = Supplier::fetch_by_phone(new_phone, db).await.unwrap();
-    Ok(Json(employee))
+    match Supplier::fetch_by_phone(new_phone, db).await {
+        Ok(suppliers) => Ok(Json(suppliers)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/addr/<addr>")]
@@ -56,8 +62,10 @@ pub async fn get_by_addr(conn: Connection<'_, Db>, addr: &str, cookies: &CookieJ
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchSupplier);
 
-    let employee = Supplier::fetch_by_addr(new_addr, db).await.unwrap();
-    Ok(Json(employee))
+    match Supplier::fetch_by_addr(new_addr, db).await {
+        Ok(suppliers) => Ok(Json(suppliers)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[post("/generate")]

@@ -16,8 +16,10 @@ pub async fn get_all(conn: Connection<'_, Db>, cookies: &CookieJar<'_>) -> Resul
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    let stores = Store::fetch_all(db).await.unwrap();
-    Ok(Json(stores))
+    match Store::fetch_all(db).await {
+        Ok(stores) => Ok(Json(stores)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/<id>")]
@@ -27,8 +29,10 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    let store = Store::fetch_by_id(&id.to_string(), db).await.unwrap();
-    Ok(Json(store))
+    match Store::fetch_by_id(&id.to_string(), db).await {
+        Ok(store) => Ok(Json(store)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[get("/code/<code>")]
@@ -38,8 +42,10 @@ pub async fn get_by_code(conn: Connection<'_, Db>, code: &str, cookies: &CookieJ
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    let store = Store::fetch_by_code(&code.to_string(), db).await.unwrap();
-    Ok(Json(store))
+    match Store::fetch_by_code(&code.to_string(), db).await {
+        Ok(store) => Ok(Json(store)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
 }
 
 #[post("/generate")]
