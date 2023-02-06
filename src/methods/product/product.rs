@@ -396,7 +396,8 @@ impl Display for ProductExchange {
             TransactionType::In => "IN",
             TransactionType::Out => "OUT",
             TransactionType::PendingIn => "PENDING-IN",
-            TransactionType::PendingOut => "PENDING-OUT"
+            TransactionType::PendingOut => "PENDING-OUT",
+            TransactionType::Saved => "[SAVED]"
         };
 
         write!(f, "{}: {}-{} x{}", method, self.product_code, self.variant.concat(), self.quantity)

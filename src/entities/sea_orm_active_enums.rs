@@ -17,5 +17,8 @@ pub enum TransactionType {
     PendingIn,
     /// For **proposed** outgoing transactions - all items within suborders of this transaction will be considered as subtractive towards inventory upon finalization (i.e. quote for sale of good to customer)
     #[sea_orm(string_value = "pending-out")]
-    PendingOut
+    PendingOut,
+    /// For **proposed** outgoing transactions - all items within suborders of this transaction will be considered as subtractive towards inventory upon finalization (i.e. quote for sale of good to customer)
+    #[sea_orm(string_value = "saved")]
+    Saved
 }

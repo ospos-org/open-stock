@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `Customer` (
 CREATE TABLE IF NOT EXISTS `Transactions` (
   `id` varchar(100) NOT NULL,
   `customer` json NOT NULL,
-  `transaction_type` enum('in', 'out', 'pending-in', 'pending-out') NOT NULL,
+  `transaction_type` enum('in', 'out', 'pending-in', 'pending-out', 'saved') NOT NULL,
   `products` json NOT NULL,
   `order_total` FLOAT NOT NULL,
   `payment` json NOT NULL,

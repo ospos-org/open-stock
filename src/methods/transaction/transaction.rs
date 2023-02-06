@@ -235,18 +235,23 @@ impl Transaction {
                                  var.stock.iter_mut().map(| mut stock | {
                                     if stock.store.code == intent.transaction_store_code {
                                         match intent.transaction_type {
-                                            crate::entities::sea_orm_active_enums::TransactionType::In => {
+                                            TransactionType::In => {
                                                 stock.quantity.quantity_sellable += intent.quantity_to_transact
                                             },
-                                            crate::entities::sea_orm_active_enums::TransactionType::Out => {
+                                            TransactionType::Out => {
                                                 stock.quantity.quantity_sellable -= intent.quantity_to_transact
                                             },
-                                            crate::entities::sea_orm_active_enums::TransactionType::PendingIn => {
+                                            TransactionType::PendingIn => {
                                                 stock.quantity.quantity_on_order += intent.quantity_to_transact
                                             },
-                                            crate::entities::sea_orm_active_enums::TransactionType::PendingOut => {
+                                            TransactionType::PendingOut => {
                                                 stock.quantity.quantity_allocated += intent.quantity_to_transact
                                             },
+                                            TransactionType::Saved => {
+                                                // A saved transaction should not be processed, but should be shifted into a specified IN or OUT variant.
+                                                // As this should never happen, the modified changes are left alone.
+                                                stock.quantity.quantity_allocated += 0.0
+                                            }
                                         }
                                     }
     
@@ -283,6 +288,7 @@ impl Transaction {
                             specifications: val.specifications,
                         };
 
+                        // Possible chance for an alternate client to have a modification during this time-frame, try implementing a queued solution.
                         match Product::update(product, &intent.product_sku, &db_).await {
                             Ok(val) => Ok(val),
                             Err(_) => Err(DbErr::Custom(format!(""))),
