@@ -227,30 +227,34 @@ impl Transaction {
 
             tokio::spawn(async move {
                 let db_ = database.clone();
-                
+
                 match Product::fetch_by_id(&intent.product_sku, &db_).await {
                     Ok(mut val) => {
                         let variants: Vec<VariantInformation> = val.variants.iter_mut().map(| var | {
-                            let stock_info: Vec<Stock> = var.stock.iter_mut().map(| mut stock | {
-                                if stock.store.code == intent.transaction_store_code {
-                                    match intent.transaction_type {
-                                        crate::entities::sea_orm_active_enums::TransactionType::In => {
-                                            stock.quantity.quantity_sellable += intent.quantity_to_transact
-                                        },
-                                        crate::entities::sea_orm_active_enums::TransactionType::Out => {
-                                            stock.quantity.quantity_sellable -= intent.quantity_to_transact
-                                        },
-                                        crate::entities::sea_orm_active_enums::TransactionType::PendingIn => {
-                                            stock.quantity.quantity_on_order += intent.quantity_to_transact
-                                        },
-                                        crate::entities::sea_orm_active_enums::TransactionType::PendingOut => {
-                                            stock.quantity.quantity_allocated += intent.quantity_to_transact
-                                        },
+                            let stock_info: Vec<Stock> = if var.barcode == intent.variant_code {
+                                 var.stock.iter_mut().map(| mut stock | {
+                                    if stock.store.code == intent.transaction_store_code {
+                                        match intent.transaction_type {
+                                            crate::entities::sea_orm_active_enums::TransactionType::In => {
+                                                stock.quantity.quantity_sellable += intent.quantity_to_transact
+                                            },
+                                            crate::entities::sea_orm_active_enums::TransactionType::Out => {
+                                                stock.quantity.quantity_sellable -= intent.quantity_to_transact
+                                            },
+                                            crate::entities::sea_orm_active_enums::TransactionType::PendingIn => {
+                                                stock.quantity.quantity_on_order += intent.quantity_to_transact
+                                            },
+                                            crate::entities::sea_orm_active_enums::TransactionType::PendingOut => {
+                                                stock.quantity.quantity_allocated += intent.quantity_to_transact
+                                            },
+                                        }
                                     }
-                                }
-
-                                stock.clone()
-                            }).collect::<Vec<Stock>>();
+    
+                                    stock.clone()
+                                }).collect::<Vec<Stock>>()
+                            }else {
+                                var.stock.clone()
+                            };
                             
                             VariantInformation {
                                 name: var.name.clone(),
