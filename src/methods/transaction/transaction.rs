@@ -137,6 +137,30 @@ impl Transaction {
         Ok(t)
     }
 
+    pub async fn fetch_all_saved(db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
+        let res = Transactions::find()
+            .having(Expr::expr(Func::lower(Expr::col(transactions::Column::TransactionType))).like(format!("%saved%")))
+            .limit(25)
+            .all(db).await?;
+
+        let mapped = res.iter().map(|t| {
+            Transaction {
+                id: t.id.clone(),
+                customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone()).unwrap(),
+                transaction_type: t.transaction_type.clone(),
+                products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
+                order_total: t.order_total,
+                payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
+                order_date: DateTime::from_utc(t.order_date, Utc),
+                order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
+                salesperson: t.salesperson.clone(),
+                till: t.till.clone(),
+            }
+        }).collect();
+
+        Ok(mapped)
+    }
+
     pub async fn fetch_by_ref(reference: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
         let res = Transactions::find()
             .having(Expr::expr(Func::lower(Expr::col(transactions::Column::Products))).like(format!("%{}%", reference.to_lowercase())))

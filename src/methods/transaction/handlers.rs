@@ -11,7 +11,7 @@ use super::{Transaction, TransactionInput, TransactionInit};
 use crate::methods::employee::Action;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_product_sku, create, update, generate]
+    routes![get, get_by_name, get_all_saved, get_by_product_sku, create, update, generate]
 }
 
 #[get("/<id>")]
@@ -22,6 +22,19 @@ pub async fn get(conn: Connection<'_, Db>, id: String, cookies: &CookieJar<'_>) 
     check_permissions!(session.clone(), Action::FetchTransaction);
 
     match Transaction::fetch_by_id(&id, db).await {
+        Ok(transaction) => Ok(Json(transaction)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
+}
+
+#[get("/saved")]
+pub async fn get_all_saved(conn: Connection<'_, Db>, cookies: &CookieJar<'_>) -> Result<Json<Vec<Transaction>>, Error> {
+    let db = conn.into_inner();
+ 
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchTransaction);
+
+    match Transaction::fetch_all_saved(db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason))
     }
