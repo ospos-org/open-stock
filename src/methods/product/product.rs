@@ -367,6 +367,7 @@ impl Product {
 pub struct ProductPurchase {
     // Is the barcode of the product.
     pub product_code: ProductCode,
+    pub product_sku: String,
     pub discount: DiscountValue,
 
     pub product_name: String,
@@ -376,7 +377,9 @@ pub struct ProductPurchase {
 
     // Cost before discount, discount will be applied on the product cost.
     pub product_cost: f32,
-    pub quantity: i32,
+    pub quantity: f32,
+
+    pub transaction_type: TransactionType
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -384,7 +387,7 @@ pub struct ProductExchange {
     pub method_type: TransactionType,
     pub product_code: ProductCode,
     pub variant: VariantIdTag,
-    pub quantity: i32,
+    pub quantity: f32,
 }
 
 impl Display for ProductExchange {
@@ -936,7 +939,7 @@ fn example_products() -> Vec<Product> {
                 "Recreational".into(),
                 "Water".into()
             ], 
-            description: "The Nippers Kayak is the ideal size for kid's wanting their own independence.  The compact, lightweight design with a V shaped hull and centre fin allows the kayak to track and manoeuvre easily. They’ll also enjoy the multiple foot holds to accommodate various heights and a lightweight, flexible paddle so they can push through water without too much resistance. With the Nippers Kayak from Torpedo7, there are no excuses for a bad day with mum and dad.".into(), 
+            description: "The Nippers Kayak is the ideal size for kid's wanting their own independence. The compact, lightweight design with a V shaped hull and centre fin allows the kayak to track and manoeuver easily. They’ll also enjoy the multiple foot holds to accommodate various heights and a lightweight, flexible paddle so they can push through water without too much resistance. With the Nippers Kayak from Torpedo7, there are no excuses for a bad day with mum and dad.".into(), 
             specifications: vec![
                 ("Length".into(), "183cm".into()),
                 ("Width".into(), "70cm".into()),

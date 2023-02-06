@@ -5,22 +5,32 @@ use chrono::{Utc, DateTime, Days, Duration};
 use sea_orm::{*, sea_query::{Expr, Func}};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
+use tokio::task::JoinError;
 use uuid::Uuid;
 
-use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, Session, Price, PaymentStatus, PaymentProcessor, PaymentAction, TransitInformation}, entities::{transactions, sea_orm_active_enums::TransactionType}};
+use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, Session, Price, PaymentStatus, PaymentProcessor, PaymentAction, TransitInformation, Product, VariantInformation, Stock}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransactionCustomer {
-    customer_type: CustomerType,
-    customer_id: String
+    pub customer_type: CustomerType,
+    pub customer_id: String
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CustomerType {
     Store, Individual, Commercial
 } 
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct QuantityAlterationIntent {
+    pub variant_code: String,
+    pub product_sku: String,
+    pub transaction_store_code: String,
+    pub transaction_type: TransactionType,
+    pub quantity_to_transact: f32
+}
 
 // Discounts on the transaction are applied per-order - such that they are unique to each item, i.e. each item can be discounted individually where needed to close a sale.
 // A discount placed upon the payment object is an order-discount, such that it will act upon the basket: 
@@ -209,6 +219,78 @@ impl Transaction {
             Err(e) => Err(e),
         }
     }
+
+    pub async fn process_intents(db: &DbConn, intents: Vec<QuantityAlterationIntent>) -> Vec<Result<Product, JoinError>> {
+        let intent_processor = intents.iter().map(| intent | async move {
+            let intent = intent.clone();
+            let database = db.clone();
+
+            tokio::spawn(async move {
+                let db_ = database.clone();
+                
+                match Product::fetch_by_id(&intent.product_sku, &db_).await {
+                    Ok(mut val) => {
+                        let variants: Vec<VariantInformation> = val.variants.iter_mut().map(| var | {
+                            let stock_info: Vec<Stock> = var.stock.iter_mut().map(| mut stock | {
+                                if stock.store.code == intent.transaction_store_code {
+                                    match intent.transaction_type {
+                                        crate::entities::sea_orm_active_enums::TransactionType::In => {
+                                            stock.quantity.quantity_sellable += intent.quantity_to_transact
+                                        },
+                                        crate::entities::sea_orm_active_enums::TransactionType::Out => {
+                                            stock.quantity.quantity_sellable -= intent.quantity_to_transact
+                                        },
+                                        crate::entities::sea_orm_active_enums::TransactionType::PendingIn => {
+                                            stock.quantity.quantity_on_order += intent.quantity_to_transact
+                                        },
+                                        crate::entities::sea_orm_active_enums::TransactionType::PendingOut => {
+                                            stock.quantity.quantity_allocated += intent.quantity_to_transact
+                                        },
+                                    }
+                                }
+
+                                stock.clone()
+                            }).collect::<Vec<Stock>>();
+                            
+                            VariantInformation {
+                                name: var.name.clone(),
+                                stock: stock_info,
+                                images: var.images.clone(),
+                                retail_price: var.retail_price,
+                                marginal_price: var.marginal_price,
+                                id: var.id.clone(),
+                                loyalty_discount: var.loyalty_discount.clone(),
+                                variant_code: var.variant_code.clone(),
+                                order_history: var.order_history.clone(),
+                                stock_information: var.stock_information.clone(),
+                                barcode: var.barcode.clone(),
+                            }
+                        }).collect::<Vec<VariantInformation>>();
+
+                        let product = Product {
+                            name: val.name,
+                            company: val.company,
+                            variant_groups: val.variant_groups,
+                            variants: variants,
+                            sku: val.sku,
+                            images: val.images,
+                            tags: val.tags,
+                            description: val.description,
+                            specifications: val.specifications,
+                        };
+
+                        match Product::update(product, &intent.product_sku, &db_).await {
+                            Ok(val) => Ok(val),
+                            Err(_) => Err(DbErr::Custom(format!(""))),
+                        }
+                    },
+                    Err(_) => Err(DbErr::Custom(format!(""))),
+                }.unwrap()
+            }).await
+        }).collect::<Vec<_>>();
+
+        futures::future::join_all(intent_processor).await
+    }
 }
 
 impl Display for Transaction {
@@ -313,8 +395,28 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
             contact: torpedo7.clone()
         },
         products: vec![
-            ProductPurchase { product_name: format!("Torpedo7 Nippers Kids Kayak & Paddle"), product_variant_name: format!("1.83m Beaches"), id: "PDT-KAYAK-PURCHASE-ID-1".to_string(), product_code: "54897443288214".into(), discount: DiscountValue::Absolute(0), product_cost: 399.99, quantity: 1 },
-            ProductPurchase { product_name: format!("Torpedo7 Kids Voyager II Paddle Vest"), product_variant_name: format!("Small Red (4-6y)"), id: "PDT-LIFEJACKET-PURCHASE-ID-1".to_string(), product_code: "51891265958214".into(), discount: DiscountValue::Absolute(0), product_cost: 139.99, quantity: 1 },
+            ProductPurchase { 
+                product_name: format!("Torpedo7 Nippers Kids Kayak & Paddle"), 
+                product_variant_name: format!("1.83m Beaches"), 
+                id: "PDT-KAYAK-PURCHASE-ID-1".to_string(), 
+                product_sku: "".into(),
+                product_code: "54897443288214".into(), 
+                discount: DiscountValue::Absolute(0), 
+                product_cost: 399.99, 
+                quantity: 1.0,
+                transaction_type: TransactionType::Out
+            },
+            ProductPurchase { 
+                product_name: format!("Torpedo7 Kids Voyager II Paddle Vest"), 
+                product_variant_name: format!("Small Red (4-6y)"), 
+                id: "PDT-LIFEJACKET-PURCHASE-ID-1".to_string(), 
+                product_sku: "".into(),
+                product_code: "51891265958214".into(), 
+                discount: DiscountValue::Absolute(0), 
+                product_cost: 139.99, 
+                quantity: 1.0,
+                transaction_type: TransactionType::Out
+            }
         ],
         previous_failed_fulfillment_attempts: vec![],
         status: OrderStatusAssignment { 

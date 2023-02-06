@@ -5,7 +5,7 @@ use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 
 use crate::check_permissions;
-use crate::methods::{cookie_status_wrapper, Error, ErrorResponse};
+use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, QuantityAlterationIntent};
 use crate::pool::Db;
 use super::{Transaction, TransactionInput, TransactionInit};
 use crate::methods::employee::Action;
@@ -99,8 +99,27 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<TransactionInit>,
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateTransaction);
 
+    let mut quantity_alteration_intents: Vec<QuantityAlterationIntent> = vec![];
+
+    // Make and modify the required changes to stock levels
+    new_transaction.products.iter().for_each(| order | {
+        order.products.iter().for_each(| product | {
+            quantity_alteration_intents.push(
+                QuantityAlterationIntent {
+                    variant_code: product.clone().product_code,
+                    product_sku: product.clone().product_sku,
+                    transaction_store_code: order.clone().origin.code,
+                    transaction_type: new_transaction.clone().transaction_type,
+                    quantity_to_transact: product.clone().quantity
+                }
+            );
+        });
+    });
+
     match Transaction::insert(new_transaction, session, db).await {
         Ok(data) => {
+            Transaction::process_intents(db, quantity_alteration_intents).await;
+
             match Transaction::fetch_by_id(&data.last_insert_id, db).await {
                 Ok(res) => {
                     Ok(Json(res))
