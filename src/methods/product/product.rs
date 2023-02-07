@@ -5,7 +5,7 @@ use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertR
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
-use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity}, entities::{sea_orm_active_enums::TransactionType, products, promotion}};
+use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity}, entities::{sea_orm_active_enums::TransactionType, products}};
 use super::{VariantCategoryList, VariantIdTag, VariantCategory, Variant, StockInformation, VariantInformation, Promotion, PromotionGet, PromotionBuy};
 use crate::entities::prelude::Products;
 use crate::entities::prelude::Promotion as Promotions;
@@ -96,15 +96,39 @@ impl Product {
 
     pub async fn fetch_by_id_with_promotion(id: &str, db: &DbConn) -> Result<ProductWPromotion, DbErr> {
         let pdt = Products::find_by_id(id.to_string()).one(db).await?;
-        let promos = Promotions::find()
-            .filter(
-                Condition::any()
-                    .add(promotion::Column::Buy.contains(id))
-                    .add(promotion::Column::Get.contains(id))
-                    .add(promotion::Column::ValidTill.gte(Utc::now()))
-            )
-            .all(db).await?;
+        let p = pdt.unwrap();
 
+        let product = Product { 
+            name: p.name, 
+            company: p.company,
+            variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
+            variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(), 
+            sku: p.sku, 
+            images: serde_json::from_value::<Vec<Url>>(p.images).unwrap(), 
+            tags: serde_json::from_value::<TagList>(p.tags).unwrap(), 
+            description: p.description, 
+            specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap() 
+        };
+
+        let promos = Promotions::find()
+                .from_raw_sql(
+                    Statement::from_sql_and_values(
+                        sea_orm::DatabaseBackend::MySql, 
+                        &format!(
+                            "SELECT * FROM Promotion WHERE `buy` LIKE '%Any%' 
+                            OR `get` LIKE '%Any%'
+                            OR `buy` LIKE '%{}%'
+                            OR `get` LIKE '%{}%'
+                            OR `buy` LIKE '%{}%'
+                            OR `get` LIKE '%{}%'
+                            AND `valid_till` >= NOW()
+                            LIMIT 25",
+                            product.sku, product.sku, product.tags.join("%' OR `buy` LIKE '%"), product.tags.join("%' OR `get` LIKE '%")),
+                        vec![]
+                    )
+                )
+                .all(db).await.unwrap();
+            
         let mapped: Vec<Promotion> = promos.iter().map(|p| 
             Promotion { 
                 name: p.name.clone(), 
@@ -115,22 +139,10 @@ impl Product {
                 timestamp: DateTime::from_utc(p.timestamp, Utc), 
             }
         ).collect();
-    
-        let p = pdt.unwrap();
 
         Ok(
             ProductWPromotion {
-                product: Product { 
-                    name: p.name, 
-                    company: p.company,
-                    variant_groups: serde_json::from_value::<VariantCategoryList>(p.variant_groups).unwrap(), 
-                    variants: serde_json::from_value::<Vec<VariantInformation>>(p.variants).unwrap(), 
-                    sku: p.sku, 
-                    images: serde_json::from_value::<Vec<Url>>(p.images).unwrap(), 
-                    tags: serde_json::from_value::<TagList>(p.tags).unwrap(), 
-                    description: p.description, 
-                    specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap() 
-                },
+                product: product,
                 promotions: mapped
             }
         )
@@ -166,12 +178,6 @@ impl Product {
 
     pub async fn search_with_promotion(query: &str, db: &DbConn) -> Result<Vec<ProductWPromotion>, DbErr> {
         let res = products::Entity::find()
-            // .filter(
-            //     Condition::any()
-            //         .add(Expr::expr(Func::lower(Expr::col(products::Column::Name))).like(format!("%{}%", query)))
-            //         .add(products::Column::Sku.contains(query))
-            //         .add(products::Column::Variants.contains(query))
-            // )
             .from_raw_sql(
                 Statement::from_sql_and_values(
                     sea_orm::DatabaseBackend::MySql, 

@@ -164,6 +164,7 @@ impl Transaction {
     pub async fn fetch_by_ref(reference: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
         let res = Transactions::find()
             .having(Expr::expr(Func::lower(Expr::col(transactions::Column::Products))).like(format!("%{}%", reference.to_lowercase())))
+            .having(transactions::Column::TransactionType.not_like("Saved"))
             .limit(25)
             .all(db).await?;
         

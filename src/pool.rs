@@ -1,12 +1,12 @@
 use std::{env, time::Duration};
 
 use async_trait::async_trait;
-use chrono::Utc;
+use chrono::{Utc, Duration as ChronoDuration};
 use dotenv::dotenv;
 use sea_orm::{EntityTrait, DbConn, QuerySelect, ColumnTrait};
 use sea_orm_rocket::{rocket::figment::Figment, Database};
 use rocket::tokio;
-use crate::entities::session;
+use crate::entities::{session, transactions};
 
 #[derive(Database, Debug)]
 #[database("stock")]
@@ -73,6 +73,37 @@ pub async fn session_garbage_collector(db: &DbConn) {
                 Err(err) => {
                     println!("[err]: Error in scheduled cron task: {:?}", err)
                 },
+        };
+
+        let time = Utc::now().checked_sub_signed(ChronoDuration::seconds(3600));
+
+        match time {
+            Some(val) => {
+                match transactions::Entity::find()
+                    .having(transactions::Column::TransactionType.eq("saved"))
+                    .having(transactions::Column::OrderDate.lte(val.naive_utc()))
+                    .all(db).await {
+                        Ok(data) => {
+                            for model in data {
+                                // Delete all model instances of sessions which have surpassed their existence time-frame.
+                                match transactions::Entity::delete_by_id(model.id).exec(db).await {
+                                    Ok(_data) => {
+                                        println!("[log]: Culled transaction")
+                                    },
+                                    Err(err) => {
+                                        println!("[err]: Error in scheduled cron task: {:?}", err)
+                                    },
+                                }
+                            }
+                        },
+                        Err(err) => {
+                            println!("[err]: Error in scheduled cron task: {:?}", err)
+                        },
+                };
+            },
+            None => {
+                println!("[err]: Error in cron task: Unable to format DateTime")
+            }
         };
     }
 }
