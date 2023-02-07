@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS `Products` (
   `tags` json NOT NULL,
   `description` text NOT NULL,
   `specifications` json NOT NULL,
-  PRIMARY KEY `sku` (`sku`)
+  PRIMARY KEY `sku` (`sku`),
+  FULLTEXT indx(`name`,`company`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 CREATE TABLE IF NOT EXISTS `Customer` (

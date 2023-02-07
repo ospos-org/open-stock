@@ -166,14 +166,22 @@ impl Product {
 
     pub async fn search_with_promotion(query: &str, db: &DbConn) -> Result<Vec<ProductWPromotion>, DbErr> {
         let res = products::Entity::find()
-            .filter(
-                Condition::any()
-                    .add(Expr::expr(Func::lower(Expr::col(products::Column::Name))).like(format!("%{}%", query)))
-                    .add(products::Column::Sku.contains(query))
-                    .add(products::Column::Variants.contains(query))
+            // .filter(
+            //     Condition::any()
+            //         .add(Expr::expr(Func::lower(Expr::col(products::Column::Name))).like(format!("%{}%", query)))
+            //         .add(products::Column::Sku.contains(query))
+            //         .add(products::Column::Variants.contains(query))
+            // )
+            .from_raw_sql(
+                Statement::from_sql_and_values(
+                    sea_orm::DatabaseBackend::MySql, 
+                    &format!("SELECT * FROM `Products` WHERE MATCH(`name`, `company`) AGAINST('{}' IN NATURAL LANGUAGE MODE) OR `Products`.`sku` LIKE '%{}%' OR `Products`.`variants` LIKE '%{}%' LIMIT 25", 
+                    query, query, query),
+                    vec![]
+                )
             )
-            .limit(25)
-            .all(db).await?;
+            .all(db)
+            .await?;
         
         let mapped: Vec<ProductWPromotion> = res.iter().map(|p| {
             ProductWPromotion {
