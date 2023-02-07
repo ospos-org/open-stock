@@ -275,6 +275,11 @@ impl Transaction {
                                                 // A saved transaction should not be processed, but should be shifted into a specified IN or OUT variant.
                                                 // As this should never happen, the modified changes are left alone.
                                                 stock.quantity.quantity_allocated += 0.0
+                                            },
+                                            TransactionType::Quote => {
+                                                // A saved transaction should not be processed, but should be shifted into a specified IN or OUT variant.
+                                                // As this should never happen, the modified changes are left alone.
+                                                stock.quantity.quantity_allocated += 0.0
                                             }
                                         }
                                     }

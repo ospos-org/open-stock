@@ -397,7 +397,8 @@ impl Display for ProductExchange {
             TransactionType::Out => "OUT",
             TransactionType::PendingIn => "PENDING-IN",
             TransactionType::PendingOut => "PENDING-OUT",
-            TransactionType::Saved => "[SAVED]"
+            TransactionType::Saved => "[SAVED]",
+            TransactionType::Quote => "[QUOTE]"
         };
 
         write!(f, "{}: {}-{} x{}", method, self.product_code, self.variant.concat(), self.quantity)
@@ -909,7 +910,7 @@ fn example_products() -> Vec<Product> {
                     ], 
                     marginal_price: 85.99, 
                     retail_price: 399.99, 
-                    variant_code: vec!["01".into(), "22".into()], 
+                    variant_code: vec!["02".into(), "22".into()], 
                     order_history: vec![], 
                     barcode: "54897443288214".into(),
                     stock_information: StockInformation { 
