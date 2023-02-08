@@ -11,7 +11,7 @@ use super::{Transaction, TransactionInput, TransactionInit};
 use crate::methods::employee::Action;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_all_saved, get_by_product_sku, create, update, generate]
+    routes![get, get_by_name, get_all_saved, get_by_product_sku, create, update, generate, delete]
 }
 
 #[get("/<id>")]
@@ -141,5 +141,22 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<TransactionInit>,
             }
         },
         Err(_) => Err(ErrorResponse::input_error()),
+    }
+}
+
+#[post("/delete/<id>")]
+async fn delete(
+    conn: Connection<'_, Db>,
+    id: &str,
+    cookies: &CookieJar<'_>
+) -> Result<(), Error> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::DeleteTransaction);
+
+    match Transaction::delete(id, db).await {
+        Ok(_res) => Ok(()),
+        Err(_) => Err(ErrorResponse::input_error())
     }
 }

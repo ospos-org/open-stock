@@ -331,6 +331,13 @@ impl Transaction {
 
         futures::future::join_all(intent_processor).await
     }
+
+    pub async fn delete(id: &str, db: &DbConn) -> Result<DeleteResult, DbErr> {
+        Ok(Transactions::delete(transactions::ActiveModel {
+            id: Set(id.to_string()),
+            ..Default::default()
+        }).exec(db).await?)
+    }
 }
 
 impl Display for Transaction {
