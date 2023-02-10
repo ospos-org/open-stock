@@ -23,7 +23,7 @@ services:
       - 8080:8080
 
   open-stock:
-    image: bennjii/open-stock:latest
+    image: ghcr.io/bennjii/open-stock:latest
     restart: always
     ports: 
       - "8000:8000"
@@ -36,3 +36,9 @@ services:
       - RUST_LOG=debug
       - ROCKET_ADDRESS=0.0.0.0
       - ROCKET_PORT=8000
+
+  open-pos:
+    image: ghcr.io/bennjii/open-pos:latest
+    restart: always
+    ports: 
+      - 3000:80

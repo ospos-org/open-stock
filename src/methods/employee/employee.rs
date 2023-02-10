@@ -354,6 +354,10 @@ pub fn example_employee() -> EmployeeInput {
                 authority: 0
             },
             Access {
+                action: Action::DeleteTransaction,
+                authority: 1
+            },
+            Access {
                 action: Action::ModifyTransaction,
                 authority: 1
             },
