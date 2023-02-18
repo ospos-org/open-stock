@@ -41,4 +41,4 @@ services:
     image: ghcr.io/bennjii/open-pos:latest
     restart: always
     ports: 
-      - 3000:80
+      - 3000:3000
