@@ -12,6 +12,7 @@ use crate::entities::prelude::Employee as Epl;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Employee {
     pub id: Id,
+    pub rid: String,
     pub name: Name,
     pub auth: EmployeeAuth,
     pub contact: ContactInformation,
@@ -83,6 +84,7 @@ impl Employee {
     pub async fn insert(empl: EmployeeInput, db: &DbConn) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
         
         let id = Uuid::new_v4().to_string();
+        let rid = alea::i32_in_range(0, 9999);
 
 //        let hasher = argon2::password_hash::PasswordHash::new(s);
 
@@ -120,6 +122,7 @@ impl Employee {
 
         let insert_crud = employee::ActiveModel {
             id: Set(id),
+            rid: Set(format!("{:0>#4}", rid)),
             name: Set(json!(empl.name)),
             auth: Set(json!(EmployeeAuth {
                 hash: hash
@@ -160,7 +163,8 @@ impl Employee {
         match empl {
             Some(e) => {
                 Ok(Employee { 
-                    id: e.id, 
+                    id: e.id,
+                    rid: e.rid,
                     name: serde_json::from_value::<Name>(e.name).unwrap(),
                     auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
                     contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(), 
@@ -182,7 +186,8 @@ impl Employee {
             
         let mapped = res.iter().map(|e| 
             Employee { 
-                id: e.id.clone(), 
+                id: e.id.clone(),
+                rid: e.rid.clone(),
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
@@ -202,7 +207,8 @@ impl Employee {
             
         let mapped = res.iter().map(|e| 
             Employee { 
-                id: e.id.clone(), 
+                id: e.id.clone(),
+                rid: e.rid.clone(),
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
@@ -222,7 +228,8 @@ impl Employee {
             
         let mapped = res.iter().map(|e| 
             Employee { 
-                id: e.id.clone(), 
+                id: e.id.clone(),
+                rid: e.rid.clone(),
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
@@ -244,6 +251,7 @@ impl Employee {
 
                 employee::ActiveModel {
                     id: Set(id.to_string()),
+                    rid: Set(empl.rid),
                     name: Set(json!(empl.name)),
                     auth: Set(json!(empl.auth)),
                     contact: Set(json!(new_contact)),

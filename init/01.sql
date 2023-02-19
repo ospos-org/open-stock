@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS `Transactions` (
 
 CREATE TABLE IF NOT EXISTS `Employee` (
   `id` varchar(100) NOT NULL,
+  `rid` varchar(100) NOT NULL,
   `name` json NOT NULL,
   `contact` json NOT NULL,
   `auth` json NOT NULL,
