@@ -180,7 +180,8 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
                         id: val.id,
                         key: val.key,
                         employee: EmployeeObj { 
-                            id: e.id.clone(), 
+                            id: e.id.clone(),
+                            rid: e.rid.clone(),
                             name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
                             auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                             contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 

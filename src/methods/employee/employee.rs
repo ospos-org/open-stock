@@ -148,7 +148,7 @@ impl Employee {
     pub async fn verify_with_rid(rid: &str, pass: &str, db: &DbConn) -> Result<Employee, DbErr> {
         let empl = Self::fetch_by_rid(rid, db).await?;
 
-        let valid_user: Option<Employee> = None;
+        let mut valid_user: Option<Employee> = None;
 
         for employee in empl {
             let is_valid = argon2::verify_encoded(&employee.auth.hash, pass.as_bytes()).unwrap();
