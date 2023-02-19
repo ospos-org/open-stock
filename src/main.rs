@@ -6,7 +6,7 @@ pub(crate) mod methods;
 pub(crate) mod entities;
 pub(crate) mod pool;
 
-extern crate argonautica;
+extern crate argon2;
 extern crate futures_cpupool;
 
 pub struct CORS;

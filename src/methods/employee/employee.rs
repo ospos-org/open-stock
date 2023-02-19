@@ -1,14 +1,10 @@
 use std::{fmt::{Display, self}};
 
-use argonautica::{Verifier, Hasher};
 use chrono::Utc;
 use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, RuntimeErr};
 use serde::{Serialize, Deserialize};
 use serde_json::{json};
 use uuid::Uuid;
-
-use argonautica::config::{Backend, Variant, Version};
-use futures_cpupool::CpuPool;
 
 use crate::{methods::{Id, Name, ContactInformation, History, MobileNumber, Email, Address, convert_addr_to_geo}, entities::employee};
 use crate::entities::prelude::Employee as Epl;
@@ -81,33 +77,46 @@ impl Display for Employee {
     }
 }
 
+use argon2::{self, Config};
+
 impl Employee {
     pub async fn insert(empl: EmployeeInput, db: &DbConn) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
         
         let id = Uuid::new_v4().to_string();
 
-        let mut hasher = Hasher::default();
-        hasher
-            .configure_backend(Backend::C) // Default is `Backend::C`
-            .configure_cpu_pool(CpuPool::new(8))
-            .configure_hash_len(16) // Default is `32`
-            .configure_iterations(124) // Default is `192`
-            .configure_lanes(8) // Default is number of logical cores on your machine
-            .configure_memory_size(4096) // Default is `4096`
-            .configure_password_clearing(false) // Default is `false`
-            .configure_secret_key_clearing(false) // Default is `false`
-            .configure_threads(8) // Default is number of logical cores on your machine
-            .configure_variant(Variant::Argon2id) // Default is `Variant::Argon2id`
-            .configure_version(Version::_0x13); // Default is `Version::_0x13`
+//        let hasher = argon2::password_hash::PasswordHash::new(s);
 
-        let hash = hasher
-            .with_password(empl.password)
-            .with_secret_key("\
-                secret key that you should really store in a .env file \
-                instead of in code, but this is just an example\
-            ")
-            .hash()
-            .unwrap();
+//        let psw = argon2::password_hash::PasswordHasher::hash_password(empl.password, "\
+//                secret key that you should really store in a .env file \
+//                instead of in code, but this is just an example\
+//            ");
+        let password = empl.password;
+        let salt = b"randomsalt";
+        let config = Config::default();
+        let hash = argon2::hash_encoded(password.as_bytes(), salt, &config).unwrap();
+
+//        let mut hasher = Hasher::default();
+//        hasher
+//            .configure_backend(Backend::C) // Default is `Backend::C`
+//            .configure_cpu_pool(CpuPool::new(8))
+//            .configure_hash_len(16) // Default is `32`
+//            .configure_iterations(124) // Default is `192`
+//            .configure_lanes(8) // Default is number of logical cores on your machine
+//            .configure_memory_size(4096) // Default is `4096`
+//            .configure_password_clearing(false) // Default is `false`
+//            .configure_secret_key_clearing(false) // Default is `false`
+//            .configure_threads(8) // Default is number of logical cores on your machine
+//            .configure_variant(Variant::Argon2id) // Default is `Variant::Argon2id`
+//            .configure_version(Version::_0x13); // Default is `Version::_0x13`
+//
+//        let hash = hasher
+//            .with_password(empl.password)
+//            .with_secret_key("\
+//                secret key that you should really store in a .env file \
+//                instead of in code, but this is just an example\
+//            ")
+//            .hash()
+//            .unwrap();
 
         let insert_crud = employee::ActiveModel {
             id: Set(id),
@@ -129,16 +138,18 @@ impl Employee {
     pub async fn verify(id: &str, pass: &str, db: &DbConn) -> Result<bool, DbErr> {
         let empl = Self::fetch_by_id(id, db).await?;
 
-        let mut verifier = Verifier::default();
-        let is_valid = verifier
-            .with_hash(empl.auth.hash)
-            .with_password(pass)
-            .with_secret_key("\
-                secret key that you should really store in a .env file \
-                instead of in code, but this is just an example\
-            ")
-            .verify()
-            .unwrap();
+        let is_valid = argon2::verify_encoded(&empl.auth.hash, pass.as_bytes()).unwrap();
+
+//        let mut verifier = Verifier::default();
+//        let is_valid = verifier
+//            .with_hash(empl.auth.hash)
+//            .with_password(pass)
+//            .with_secret_key("\
+//                secret key that you should really store in a .env file \
+//                instead of in code, but this is just an example\
+//            ")
+//            .verify()
+//            .unwrap();
 
         Ok(is_valid)
     }

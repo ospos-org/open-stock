@@ -25,7 +25,9 @@ async-trait = { version = "0.1.58" }
 rocket = { version = "0.5.0-rc.2", features = [
   "json", "secrets"
 ] }
-argonautica = { version = "0.2", features = ["simd"] }
+rust-argon2 = "1.0"
+# argon2rs = { version = "0.2.5", features = ["simd"] }
+# argonautica = { version = "0.2", features = ["simd"] }
 futures-cpupool = "0.1.8"
 rand = "0.8.5"
 photon-geocoding = { version = "1.1.0" }
