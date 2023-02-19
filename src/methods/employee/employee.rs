@@ -140,21 +140,31 @@ impl Employee {
 
     pub async fn verify(id: &str, pass: &str, db: &DbConn) -> Result<bool, DbErr> {
         let empl = Self::fetch_by_id(id, db).await?;
-
         let is_valid = argon2::verify_encoded(&empl.auth.hash, pass.as_bytes()).unwrap();
 
-//        let mut verifier = Verifier::default();
-//        let is_valid = verifier
-//            .with_hash(empl.auth.hash)
-//            .with_password(pass)
-//            .with_secret_key("\
-//                secret key that you should really store in a .env file \
-//                instead of in code, but this is just an example\
-//            ")
-//            .verify()
-//            .unwrap();
-
         Ok(is_valid)
+    }
+
+    pub async fn verify_with_rid(rid: &str, pass: &str, db: &DbConn) -> Result<Employee, DbErr> {
+        let empl = Self::fetch_by_rid(rid, db).await?;
+
+        let valid_user: Option<Employee> = None;
+
+        for employee in empl {
+            let is_valid = argon2::verify_encoded(&employee.auth.hash, pass.as_bytes()).unwrap();
+
+            if is_valid && valid_user.is_none() {
+                valid_user = Some(employee);
+            }else if is_valid {
+                println!("User with same rid and password exists. Unsure which one to pass - insufficient information.")
+            }
+        }
+
+        if valid_user.is_some() {
+            Ok(valid_user.unwrap())
+        }else {
+            Err(DbErr::Query(RuntimeErr::Internal("Unable to locate user. No user exists.".to_string())))
+        }
     }
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Employee, DbErr> {
@@ -176,6 +186,28 @@ impl Employee {
                 Err(DbErr::RecordNotFound(id.to_string()))
             },
         }
+    }
+
+    pub async fn fetch_by_rid(rid: &str, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
+        let res = employee::Entity::find()
+            .having(employee::Column::Rid.contains(rid))
+            .limit(25)
+            .all(db)
+            .await?;
+
+        let mapped = res.iter().map(|e|
+            Employee {
+                id: e.id.clone(),
+                rid: e.rid.clone(),
+                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
+                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(),
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
+            }
+        ).collect();
+
+        Ok(mapped)
     }
 
     pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Employee>, DbErr> {

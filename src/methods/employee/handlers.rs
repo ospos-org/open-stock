@@ -39,6 +39,19 @@ pub async fn get(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) ->
     }
 }
 
+#[get("/rid/<rid>")]
+pub async fn get_by_rid(conn: Connection<'_, Db>, rid: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Error> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchEmployee);
+
+    match Employee::fetch_by_rid(&rid.to_string(), db).await {
+        Ok(employee) => Ok(Json(employee)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
+}
+
 #[get("/name/<name>")]
 pub async fn get_by_name(conn: Connection<'_, Db>, name: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Employee>>, Error> {
     let db = conn.into_inner();
@@ -174,6 +187,51 @@ pub async fn auth(id: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, co
         Err(reason) => {
             println!("[dberr]: {}", reason);
             Err(ErrorResponse::input_error())
+        },
+    }
+}
+
+#[post("/auth/rid/<rid>", data = "<input_data>")]
+pub async fn auth_rid(rid: &str, conn: Connection<'_, Db>, input_data: Json<Auth>, cookies: &CookieJar<'_>) -> Result<Json<String>, Error> {
+    let input = input_data.clone().into_inner();
+    let db = conn.into_inner();
+
+    match Employee::verify_with_rid(rid, &input.pass, db).await {
+        Ok(data) => {
+            // User is authenticated, lets give them an API key to work with...
+            let api_key = Uuid::new_v4().to_string();
+            let session_id = Uuid::new_v4().to_string();
+            let exp = Utc::now().checked_add_signed(ChronoDuration::minutes(10)).unwrap();
+
+            match session::Entity::insert(session::ActiveModel {
+                id: Set(session_id.to_string()),
+                key: Set(api_key.clone()),
+                employee_id: Set(data.id.to_string()),
+                expiry: Set(exp.naive_utc()),
+            }).exec(db).await {
+                Ok(_) => {
+                    let now = OffsetDateTime::now_utc();
+                    let expiry = now + Duration::from_secs(10 * 60);
+
+                    let cookie = Cookie::build("key", api_key.clone())
+                        .expires(expiry)
+                        .path("/")
+                        .secure(true)
+                        .same_site(SameSite::None)
+                        .http_only(true)
+                        .finish();
+
+                    cookies.add(cookie);
+
+                    Ok(Json(api_key))
+                },
+                Err(reason) => Err(ErrorResponse::db_err(reason))
+            }
+        },
+        Err(reason) => {
+            Err(ErrorResponse::custom_unauthorized(&format!("Invalid password or id.")))
+//            println!("[dberr]: {}", reason);
+//            Err(ErrorResponse::input_error())
         },
     }
 }
