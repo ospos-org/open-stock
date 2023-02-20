@@ -48,6 +48,7 @@ pub struct EmployeeAuth {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EmployeeInput {
     pub name: Name,
+    pub rid: String,
     pub contact: ContactInformation,
     pub password: String,
     pub clock_history: Vec<History<Attendance>>,
@@ -341,6 +342,7 @@ impl ToString for TrackType {
 pub fn example_employee() -> EmployeeInput {
     EmployeeInput {
         password: "1232".to_string(),
+        rid: "1111".to_string(),
         name: Name {
             first: "Carl".to_string(),
             middle: "".to_string(),

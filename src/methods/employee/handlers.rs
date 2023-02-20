@@ -7,7 +7,7 @@ use rocket::{get};
 use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm::{EntityTrait, Set};
-use sea_orm_rocket::{Connection};
+use sea_orm_rocket::Connection;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -19,7 +19,7 @@ use crate::pool::Db;
 use super::{Employee, EmployeeInput, Attendance, TrackType, Action};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_by_name_exact, get_by_level, create, update, log, generate, auth]
+    routes![get, get_by_name, get_by_rid, auth_rid, get_by_name_exact, get_by_level, create, update, log, generate, auth]
 }
 
 #[get("/<id>")]
@@ -229,7 +229,7 @@ pub async fn auth_rid(rid: &str, conn: Connection<'_, Db>, input_data: Json<Auth
             }
         },
         Err(reason) => {
-            Err(ErrorResponse::custom_unauthorized(&format!("Invalid password or id.")))
+            Err(ErrorResponse::custom_unauthorized(&format!("Invalid password or id. Reason: {}", reason)))
 //            println!("[dberr]: {}", reason);
 //            Err(ErrorResponse::input_error())
         },
