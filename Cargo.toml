@@ -23,7 +23,7 @@ async-stream = { version = "^0.3" }
 futures-util = { version = "^0.3" }
 async-trait = { version = "0.1.58" }
 rocket = { version = "0.5.0-rc.2", features = [
-  "json", "secrets"
+  "json", "secrets", "tls"
 ] }
 rust-argon2 = "1.0"
 # argon2rs = { version = "0.2.5", features = ["simd"] }

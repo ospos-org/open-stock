@@ -21,7 +21,7 @@ impl Fairing for CORS {
     }
 
     async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
-        response.set_header(Header::new("Access-Control-Allow-Origin", "https://178.128.97.146"));
+        response.set_header(Header::new("Access-Control-Allow-Origin", "https://open-retail.bennjii.dev"));
         response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
