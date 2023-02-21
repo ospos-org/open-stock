@@ -45,4 +45,4 @@ jobs:
             context: .
             platforms: linux/arm64
             push: true
-            tags: ghcr.io/bennjii/open-stock:latest
+            tags: ghcr.io/bennjii/open-stock:latest-arm
