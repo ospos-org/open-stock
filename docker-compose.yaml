@@ -11,7 +11,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: user
     ports:
-      - 3306:3306
+      - "3306:3306"
     volumes:
       - ./init:/docker-entrypoint-initdb.d
 
@@ -19,7 +19,7 @@ services:
     image: adminer
     restart: always
     ports:
-      - 8080:8080
+      - "8080:8080"
 
   open-stock:
     image: ghcr.io/bennjii/open-stock:latest
@@ -42,4 +42,4 @@ services:
     image: ghcr.io/bennjii/open-pos:latest
     restart: always
     ports: 
-      - 3000:3000
+      - "3000:3000"
