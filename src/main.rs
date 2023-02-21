@@ -33,9 +33,9 @@ impl Fairing for CORS {
 fn rocket() -> _ {
     dotenv::dotenv().ok();
 
-    let figment = Config::figment()
-        .merge(("tls.certs", "keys/certs.pem"))
-        .merge(("tls.key", "keys/key.pem"));
+//    let figment = Config::figment()
+//        .merge(("tls.certs", "keys/certs.pem"))
+//        .merge(("tls.key", "keys/key.pem"));
 
     rocket::build()
         .attach(Db::init())
@@ -47,5 +47,5 @@ fn rocket() -> _ {
         .mount("/supplier", methods::supplier::handlers::routes())  
         .mount("/store", methods::store::handlers::routes())
         .mount("/helpers", methods::helpers::handlers::routes())
-        .configure(figment)
+//        .configure(figment)
 }
