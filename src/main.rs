@@ -1,6 +1,7 @@
 use pool::Db;
 use rocket::{*, fairing::{Fairing, Info, Kind}, http::Header};
-use sea_orm_rocket::{Database};
+use sea_orm_rocket::Database;
+use rocket::config::Config;
 
 pub(crate) mod methods;
 pub(crate) mod entities;
@@ -32,6 +33,10 @@ impl Fairing for CORS {
 fn rocket() -> _ {
     dotenv::dotenv().ok();
 
+    let figment = Config::figment()
+        .merge(("tls.certs", "keys/certs.pem"))
+        .merge(("tls.key", "keys/key.pem"));
+
     rocket::build()
         .attach(Db::init())
         .attach(CORS)
@@ -42,4 +47,5 @@ fn rocket() -> _ {
         .mount("/supplier", methods::supplier::handlers::routes())  
         .mount("/store", methods::store::handlers::routes())
         .mount("/helpers", methods::helpers::handlers::routes())
+        .configure(figment)
 }
