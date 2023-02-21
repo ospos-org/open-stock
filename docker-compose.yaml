@@ -42,4 +42,4 @@ services:
     image: ghcr.io/bennjii/open-pos:latest
     restart: always
     ports: 
-      - "443:443"
+        - "3000:3000"
