@@ -25,8 +25,7 @@ jobs:
             context: .
             platforms: linux/amd64
             push: true
-            image_name: ${{ github.repository }}  # it will be lowercased internally
-            github_token: ${{ secrets.GITHUB_TOKEN }}
+            tags: ghcr.io/bennjii/open-stock:latest
 
   build-arm:
     runs-on: buildjet-4vcpu-ubuntu-2204-arm
@@ -46,5 +45,4 @@ jobs:
             context: .
             platforms: linux/arm64
             push: true
-            image_name: ${{ github.repository }}  # it will be lowercased internally
-            github_token: ${{ secrets.GITHUB_TOKEN }}
+            tags: ghcr.io/bennjii/open-stock:latest
