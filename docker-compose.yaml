@@ -1,4 +1,10 @@
-# Use root/example as user/password credentials
+# If you encounter any errors, publish them to: https://github.com/bennjii/open-stock/issues
+#
+# Please include:
+# - How you encountered the error
+# - The effect of the error
+# - Any associated media, i.e. screenshots or videos (If nessesary)
+
 version: '3.1'
 services:
   db:
@@ -6,6 +12,9 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
+      # Customise the following for your own purposes.
+      # It is not reccomended to use the default login information.
+      # Note: In a deployed environment, do NOT make the port 3306 public.
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: stock
       MYSQL_USER: user
@@ -13,8 +22,19 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./init:/docker-entrypoint-initdb.d
+      - datavolume:/var/lib/mysql
 
+  seed:
+    image: mysql:latest
+    volumes:
+      - ./init:/init
+    environment:
+        MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+    entrypoint: [ "bash", "-c", "sleep 10 && mysql --user=root --password=root --host=db --port=3306 stock < /init/01.sql && exit"]
+    depends_on:
+      - db
+
+  # Optional Tool: Allows you to inspect the database when accessing locally.
   adminer:
     image: adminer
     restart: always
@@ -22,6 +42,8 @@ services:
       - "8080:8080"
 
   open-stock:
+    # Note: If you are running ARM, you are in luck! We support the linux/arm64 platform.
+    # Please use the :latest-arm build variant for arm builds.
     image: ghcr.io/bennjii/open-stock:latest
     platform: "linux/amd64"
     restart: always
@@ -31,18 +53,30 @@ services:
       - "db:database"
     environment:
       - DATABASE_URL=mysql://root:root@database/stock
-      - ACCESS_ORIGIN=https://open-retail.bennjii.dev
+      # Set the following to whichever URL you host open-pos. This is passed into the CORS policy.
+      # Accessing open-stock from any other origin will result in an error message.
+      - ACCESS_ORIGIN=http://localhost:3000
+      # Change this to your own value, the current value is used only as an example key.
       - ROCKET_SECRET_KEY=e5c63abf90fb076d7037a32d8dc2951c4b402e7357ca84b0da8e03595f84b30f
+      # Set your prefered debug log levels.
       - RUST_BACKTRACE=1
       - RUST_LOG=debug
       - ROCKET_ADDRESS=0.0.0.0
+      # You may customise the port for open-stock to run on, note; this port must be handled correctly.
       - ROCKET_PORT=8000
 
   open-pos:
-    platform: "linux/amd64"
+    # Note: If you are running ARM, you are in luck! We support the linux/arm64 platform.
+    # Please use the :latest-arm build variant for arm builds.
     image: ghcr.io/bennjii/open-pos:latest
+    platform: "linux/amd64"
     restart: always
     ports:
         - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://open-retail.bennjii.dev/api
+        # You must change the following to whichever domain open-stock is hosted.
+        # An invalid host will result in failed reqs.
+        - NEXT_PUBLIC_API_URL=https://open-retail.bennjii.dev/api
+
+volumes:
+    datavolume:
