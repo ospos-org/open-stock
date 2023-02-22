@@ -45,4 +45,4 @@ services:
     ports:
         - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL="https://open-retail.bennjii.dev/api"
+      - NEXT_PUBLIC_API_URL=https://open-retail.bennjii.dev/api
