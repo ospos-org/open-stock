@@ -25,7 +25,7 @@ services:
     image: ghcr.io/bennjii/open-stock:latest
     platform: "linux/amd64"
     restart: always
-    ports: 
+    ports:
       - "8000:8000"
     links:
       - "db:database"
@@ -42,7 +42,7 @@ services:
     platform: "linux/amd64"
     image: ghcr.io/bennjii/open-pos:latest
     restart: always
-    ports: 
+    ports:
         - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://open-retail.bennjii.dev/api
+      - NEXT_PUBLIC_API_URL="https://open-retail.bennjii.dev/api"
