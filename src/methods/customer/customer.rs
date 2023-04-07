@@ -15,6 +15,7 @@ pub struct Customer {
     pub customer_notes: NoteList,
     pub balance: f32,
     pub special_pricing: String,
+    pub accepts_marketing: bool
 }
 
 #[derive(Serialize, Deserialize, Clone, FromQueryResult)]
@@ -25,7 +26,8 @@ pub struct CustomerWithTransactions {
     pub customer_notes: JsonValue,
     pub balance: f32,
     pub special_pricing: JsonValue,
-    pub transactions: String
+    pub transactions: String,
+    pub accepts_marketing: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -37,7 +39,8 @@ pub struct CustomerWithTransactionsOut {
     pub customer_notes: NoteList,
     pub balance: f32,
     pub special_pricing: String,
-    pub transactions: String
+    pub transactions: String,
+    pub accepts_marketing: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -47,6 +50,7 @@ pub struct CustomerInput {
     pub customer_notes: NoteList,
     pub special_pricing: String,
     pub balance: f32,
+    pub accepts_marketing: bool
 }
 
 impl Customer {
@@ -60,6 +64,7 @@ impl Customer {
             customer_notes: Set(json!(cust.customer_notes)),
             balance: Set(cust.balance),
             special_pricing: Set(json!(cust.special_pricing)),
+            accepts_marketing: Set(cust.accepts_marketing)
         };
 
         match Cust::insert(insert_crud).exec(db).await {
@@ -80,6 +85,7 @@ impl Customer {
                     customer_notes: serde_json::from_value::<NoteList>(c.customer_notes).unwrap(),
                     special_pricing: serde_json::from_value::<String>(c.special_pricing).unwrap(),
                     balance: c.balance, 
+                    accepts_marketing: c.accepts_marketing
                 })
             },
             None => Err(DbErr::RecordNotFound(format!("Unable to find customer record value"))),
@@ -120,7 +126,8 @@ impl Customer {
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
                 balance: c.balance,
-                transactions: c.transactions.clone()
+                transactions: c.transactions.clone(),
+                accepts_marketing: c.accepts_marketing.clone()
             }
         ).collect();
 
@@ -140,7 +147,8 @@ impl Customer {
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
-                balance: c.balance
+                balance: c.balance,
+                accepts_marketing: c.accepts_marketing.clone()
             }
         ).collect();
 
@@ -160,7 +168,8 @@ impl Customer {
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
-                balance: c.balance
+                balance: c.balance,
+                accepts_marketing: c.accepts_marketing.clone()
             }
         ).collect();
 
@@ -180,7 +189,8 @@ impl Customer {
                 contact: serde_json::from_value::<ContactInformation>(c.contact.clone()).unwrap(),
                 customer_notes: serde_json::from_value::<NoteList>(c.customer_notes.clone()).unwrap(),
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone()).unwrap(),
-                balance: c.balance
+                balance: c.balance,
+                accepts_marketing: c.accepts_marketing.clone()
             }
         ).collect();
 
@@ -219,6 +229,7 @@ impl Customer {
                     customer_notes: Set(json!(cust.customer_notes)),
                     special_pricing: Set(json!(cust.special_pricing)),
                     balance: Set(cust.balance),
+                    accepts_marketing: Set(cust.accepts_marketing)
                 }.update(db).await?;
         
                 Self::fetch_by_id(id, db).await
@@ -246,6 +257,7 @@ impl Customer {
                     customer_notes: Set(json!(customer.customer_notes)),
                     special_pricing: Set(json!(customer.special_pricing)),
                     balance: Set(customer.balance),
+                    accepts_marketing: Set(customer.accepts_marketing)
                 }.update(db).await?;
         
                 Self::fetch_by_id(id, db).await 
@@ -304,5 +316,6 @@ pub fn example_customer() -> CustomerInput {
         special_pricing: "".into(),
         customer_notes: vec![],
         balance: 0.0,
+        accepts_marketing: true
     }
 }

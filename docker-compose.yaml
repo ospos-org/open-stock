@@ -65,18 +65,18 @@ services:
       # You may customise the port for open-stock to run on, note; this port must be handled correctly.
       - ROCKET_PORT=8000
 
-  open-pos:
-    # Note: If you are running ARM, you are in luck! We support the linux/arm64 platform.
-    # Please use the :latest-arm build variant for arm builds.
-    image: ghcr.io/bennjii/open-pos:latest
-    platform: "linux/amd64"
-    restart: always
-    ports:
-        - "3000:3000"
-    environment:
-        # You must change the following to whichever domain open-stock is hosted.
-        # An invalid host will result in failed reqs.
-        - NEXT_PUBLIC_API_URL=https://open-retail.bennjii.dev/api
+  # open-pos:
+  #   # Note: If you are running ARM, you are in luck! We support the linux/arm64 platform.
+  #   # Please use the :latest-arm build variant for arm builds.
+  #   image: ghcr.io/bennjii/open-pos:latest
+  #   platform: "linux/amd64"
+  #   restart: always
+  #   ports:
+  #       - "3000:3000"
+  #   environment:
+  #       # You must change the following to whichever domain open-stock is hosted.
+  #       # An invalid host will result in failed reqs.
+  #       - NEXT_PUBLIC_API_URL=https://open-retail.bennjii.dev/api
 
 volumes:
     datavolume:
