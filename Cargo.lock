@@ -1816,6 +1816,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
+name = "open-stock"
+version = "0.1.0"
+dependencies = [
+ "alea",
+ "async-std",
+ "async-stream",
+ "async-trait",
+ "chrono",
+ "dotenv",
+ "futures 0.3.28",
+ "futures-cpupool",
+ "futures-util",
+ "geo",
+ "photon-geocoding",
+ "rand",
+ "reqwest",
+ "rocket",
+ "rust-argon2",
+ "sea-orm",
+ "sea-orm-rocket",
+ "serde",
+ "serde_json",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "openssl"
 version = "0.10.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3057,33 +3084,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbe866e1e51e8260c9eed836a042a5e7f6726bb2b411dffeaa712e19c388f23b"
 dependencies = [
  "loom",
-]
-
-[[package]]
-name = "stock"
-version = "0.1.0"
-dependencies = [
- "alea",
- "async-std",
- "async-stream",
- "async-trait",
- "chrono",
- "dotenv",
- "futures 0.3.28",
- "futures-cpupool",
- "futures-util",
- "geo",
- "photon-geocoding",
- "rand",
- "reqwest",
- "rocket",
- "rust-argon2",
- "sea-orm",
- "sea-orm-rocket",
- "serde",
- "serde_json",
- "tokio",
- "uuid",
 ]
 
 [[package]]
