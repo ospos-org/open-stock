@@ -6,6 +6,9 @@ pub mod methods;
 pub mod entities;
 pub mod pool;
 
+pub use methods::*;
+pub use entities::*;
+
 extern crate argon2;
 extern crate futures_cpupool;
 
