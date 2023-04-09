@@ -2,14 +2,14 @@ mod common;
 mod stml;
 mod payment;
 
-pub(crate) mod transaction;
-pub(crate) mod product;
-pub(crate) mod customer;
-pub(crate) mod employee;
-pub(crate) mod supplier;
-pub(crate) mod store;
-pub(crate) mod helpers;
-pub(crate) mod macros;
+pub mod transaction;
+pub mod product;
+pub mod customer;
+pub mod employee;
+pub mod supplier;
+pub mod store;
+pub mod helpers;
+pub mod macros;
 
 pub use self::supplier::*;
 pub use self::employee::*;
