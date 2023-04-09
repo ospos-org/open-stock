@@ -2,9 +2,9 @@ use pool::Db;
 use rocket::{*, fairing::{Fairing, Info, Kind}, http::Header};
 use sea_orm_rocket::Database;
 
-pub(crate) mod methods;
-pub(crate) mod entities;
-pub(crate) mod pool;
+pub mod methods;
+pub mod entities;
+pub mod pool;
 
 extern crate argon2;
 extern crate futures_cpupool;
