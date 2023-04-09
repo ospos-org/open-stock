@@ -3,6 +3,14 @@ use std::sync::Mutex;
 use std::thread;
 use std::sync::mpsc;
 
+pub mod methods;
+pub mod entities;
+pub mod pool;
+
+pub use self::methods::*;
+pub use self::entities::*;
+pub use self::pool::*;
+
 enum Message {NewJob(Job), Terminate,
     }
 pub struct ThreadPool{
