@@ -3,6 +3,7 @@ name = "stock"
 version = "0.1.0"
 edition = "2021"
 authors = ["bennjii"]
+license = "MIT"
 description = "An Inventory Management Database Interface Layer for MySQL"
 
 [dependencies]
