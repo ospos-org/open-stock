@@ -1,5 +1,4 @@
 use std::fmt::Display;
-
 use chrono::{DateTime, Utc, Days};
 use sea_orm::{DbConn, DbErr, EntityTrait, QuerySelect, ColumnTrait, Set, ActiveModelTrait, InsertResult};
 use serde::{Deserialize, Serialize};
@@ -35,6 +34,15 @@ pub struct VariantInformation {
     pub order_history: HistoryList,
     pub stock_information: StockInformation,
     pub barcode: String
+}
+
+impl Display for VariantInformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+            "\t{} ({:?}) ${}[R-:-M]${}", 
+            self.name, self.variant_code, self.retail_price, self.marginal_price 
+        )
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -213,7 +221,7 @@ impl Promotion {
 }
 
 /// Represents all sub-variant types; i.e. All 'White' variants, whether small, long-sleeve, ... it represents the sub-group of all which are 'White'.
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Variant {
     pub name: String,
     pub images: Vec<Url>,
