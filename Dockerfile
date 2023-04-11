@@ -19,7 +19,7 @@ RUN rm src/*.rs
 COPY ./src ./src
 
 # build for release
-RUN rm ./target/release/deps/open-stock *
+RUN rm ./target/release/deps/open-stock .
 RUN cargo build --release --locked
 
 # our final base
