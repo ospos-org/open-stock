@@ -97,7 +97,7 @@ impl Customer {
                 DbBackend::MySql,
                 &format!("SELECT Customer.*, GROUP_CONCAT(`Transactions`.`id`) as transactions
                     FROM Customer
-                    JOIN Transactions ON CAST(REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '\"', '') AS UNSIGNED) = Customer.id
+                    LEFT JOIN Transactions ON CAST(REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '\"', '') AS UNSIGNED) = Customer.id
                     WHERE LOWER(Customer.name) LIKE '%{}%' OR Customer.contact LIKE '%{}%' 
                     GROUP BY Customer.id
                     LIMIT 25",
