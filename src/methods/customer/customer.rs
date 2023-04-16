@@ -26,7 +26,7 @@ pub struct CustomerWithTransactions {
     pub customer_notes: JsonValue,
     pub balance: f32,
     pub special_pricing: JsonValue,
-    pub transactions: String,
+    pub transactions: Option<String>,
     pub accepts_marketing: bool
 }
 
@@ -39,7 +39,7 @@ pub struct CustomerWithTransactionsOut {
     pub customer_notes: NoteList,
     pub balance: f32,
     pub special_pricing: String,
-    pub transactions: String,
+    pub transactions: Option<String>,
     pub accepts_marketing: bool
 }
 
@@ -96,11 +96,11 @@ impl Customer {
         let as_str: Vec<CustomerWithTransactions> = CustomerWithTransactions::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
                 &format!("SELECT Customer.*, GROUP_CONCAT(`Transactions`.`id`) as transactions
-                    FROM Customer
-                    LEFT JOIN Transactions ON CAST(REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '\"', '') AS UNSIGNED) = Customer.id
-                    WHERE LOWER(Customer.name) LIKE '%{}%' OR Customer.contact LIKE '%{}%' 
-                    GROUP BY Customer.id
-                    LIMIT 25",
+                FROM Customer
+                LEFT JOIN Transactions ON (REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '\"', '')) = Customer.id
+                WHERE LOWER(Customer.name) LIKE '%{}%' OR Customer.contact LIKE '%{}%' 
+                GROUP BY Customer.id
+                LIMIT 25",
                 query, query),
                 vec![]
             ))
