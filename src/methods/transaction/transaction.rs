@@ -1,12 +1,14 @@
 use core::fmt;
 use std::{fmt::{Display}};
 
-use chrono::{Utc, DateTime, Days, Duration};
+use chrono::{Utc, DateTime, Days, Duration, NaiveDateTime};
 use sea_orm::{*, sea_query::{Expr, Func}};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use tokio::task::JoinError;
 use uuid::Uuid;
+
+use sea_orm::FromQueryResult;
 
 use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, Session, Price, PaymentStatus, PaymentProcessor, PaymentAction, TransitInformation, Product, VariantInformation, Stock}, entities::{transactions, sea_orm_active_enums::TransactionType}};
 use sea_orm::{DbConn};
@@ -58,6 +60,24 @@ pub struct Transaction {
 
     pub order_date: DateTime<Utc>,
     pub order_notes: NoteList,
+
+    pub salesperson: Id,
+    pub till: Id,
+}
+
+#[derive(Serialize, Deserialize, Clone, FromQueryResult)]
+pub struct DerivableTransaction {
+    pub id: Id,
+
+    pub customer: JsonValue,
+    pub transaction_type: TransactionType,
+
+    pub products: JsonValue,
+    pub order_total: f32,
+    pub payment: JsonValue,
+
+    pub order_date: NaiveDateTime,
+    pub order_notes: JsonValue,
 
     pub salesperson: Id,
     pub till: Id,
@@ -115,6 +135,29 @@ impl Transaction {
             Ok(res) => Ok(res),
             Err(err) => Err(err)
         }
+    }
+
+    pub async fn search(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
+        let as_str: Vec<DerivableTransaction> = DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
+                DbBackend::MySql,
+                &format!("SELECT * FROM Transaction WHERE JSON_EXTRACT(Transactions.customer, '$.products') LIKE '%{}%'",
+                query),
+                vec![]
+            ))
+            .all(db)
+            .await?;
+
+        let mapped = as_str.iter().map(|t| {
+            // Conditions are:
+            // 1. Must be distributed from the query location
+            // 2. Must be an actively queued job  
+            let products = serde_json::from_value::<OrderList>(t.products.clone()).unwrap();
+            let orders = products.iter().filter(|o| o.origin.code == query && o.status.status.is_queued());
+
+            orders.cloned().collect::<Vec<Order>>()
+        }).flat_map(|x| x).collect();
+
+        Ok(mapped)
     }
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Transaction, DbErr> {

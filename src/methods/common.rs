@@ -16,7 +16,7 @@ pub struct Name {
     pub last: String
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ContactInformation {
     pub name: String,
     pub mobile: MobileNumber,
@@ -25,7 +25,7 @@ pub struct ContactInformation {
     pub address: Address
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct MobileNumber {
     pub region_code: String,
     pub root: String
@@ -48,7 +48,7 @@ pub struct History<T> {
     pub timestamp: DateTime<Utc>
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Email {
     pub root: String,
     pub domain: String,
@@ -99,7 +99,7 @@ impl Display for Note {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Address {
     pub street: String,
     pub street2: String,

@@ -66,6 +66,19 @@ pub async fn get_by_product_sku(conn: Connection<'_, Db>, sku: &str, cookies: &C
     }
 }
 
+#[get("/deliverables/<store_id>")]
+pub async fn deliverables_search(conn: Connection<'_, Db>, store_id: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Transaction>>, Error> {
+    let db = conn.into_inner();
+ 
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchTransaction);
+
+    match Transaction::fetch_by_ref(store_id, db).await {
+        Ok(transaction) => Ok(Json(transaction)),
+        Err(reason) => Err(ErrorResponse::db_err(reason))
+    }
+}
+
 #[post("/<id>", data = "<input_data>")]
 async fn update(
     conn: Connection<'_, Db>,

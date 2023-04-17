@@ -54,7 +54,7 @@ pub struct OrderStatusAssignment {
     pub timestamp: DateTime<Utc>
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OrderStatus {
     /// Open Cart, Till Cart or Being Processed, the date represents the time it was placed.
     Queued(DateTime<Utc>),
@@ -91,6 +91,19 @@ impl Display for OrderStatus {
     }
 }
 
+impl OrderStatus {
+    pub fn is_queued(&self) -> bool {
+        match *self {
+            OrderStatus::Queued(_) => true,
+            OrderStatus::Transit(_) => false,
+            OrderStatus::Processing(_) => true,
+            OrderStatus::InStore(_) => false,
+            OrderStatus::Fulfilled(_) => false,
+            OrderStatus::Failed(_) => false,
+        }
+    }
+}
+
 impl Display for OrderStatusAssignment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let pdts: String = self.assigned_products
@@ -109,7 +122,7 @@ impl Display for OrderStatusAssignment {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TransitInformation {
     pub shipping_company: ContactInformation,
     pub query_url: Url,
