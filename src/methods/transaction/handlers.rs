@@ -4,7 +4,7 @@ use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 
-use crate::check_permissions;
+use crate::{check_permissions, Order};
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, QuantityAlterationIntent};
 use crate::pool::Db;
 use super::{Transaction, TransactionInput, TransactionInit};
@@ -67,13 +67,13 @@ pub async fn get_by_product_sku(conn: Connection<'_, Db>, sku: &str, cookies: &C
 }
 
 #[get("/deliverables/<store_id>")]
-pub async fn deliverables_search(conn: Connection<'_, Db>, store_id: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Transaction>>, Error> {
+pub async fn deliverables_search(conn: Connection<'_, Db>, store_id: &str, cookies: &CookieJar<'_>) -> Result<Json<Vec<Order>>, Error> {
     let db = conn.into_inner();
  
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_by_ref(store_id, db).await {
+    match Transaction::fetch_queued_jobs(store_id, db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason))
     }
