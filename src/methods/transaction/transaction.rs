@@ -30,6 +30,7 @@ pub struct QuantityAlterationIntent {
     pub variant_code: String,
     pub product_sku: String,
     pub transaction_store_code: String,
+    pub transaction_store_id: Option<String>,
     pub transaction_type: TransactionType,
     pub quantity_to_transact: f32
 }
@@ -152,7 +153,7 @@ impl Transaction {
             // 1. Must be distributed from the query location
             // 2. Must be an actively queued job  
             let products = serde_json::from_value::<OrderList>(t.products.clone()).unwrap();
-            let orders = products.iter().filter(|o| o.origin.code == query && o.status.status.is_queued());
+            let orders = products.iter().filter(|o| o.origin.store_code == query && o.status.status.is_queued());
 
             orders.cloned().collect::<Vec<Order>>()
         }).flat_map(|x| x).collect();
@@ -301,7 +302,7 @@ impl Transaction {
                         let variants: Vec<VariantInformation> = val.variants.iter_mut().map(| var | {
                             let stock_info: Vec<Stock> = if var.barcode == intent.variant_code {
                                  var.stock.iter_mut().map(| mut stock | {
-                                    if stock.store.code == intent.transaction_store_code {
+                                    if stock.store.store_code == intent.transaction_store_code {
                                         match intent.transaction_type {
                                             TransactionType::In => {
                                                 stock.quantity.quantity_sellable += intent.quantity_to_transact
@@ -414,7 +415,7 @@ impl Display for Transaction {
 
                 format!(
                     "-\t{} {} {} -> {} {} [-]{} \n{}\n\t{}\n", 
-                    f.reference, statuses, f.origin.code, f.destination.code, f.creation_date.format("%d/%m/%Y %H:%M"), f.discount.to_string(), pdts, notes
+                    f.reference, statuses, f.origin.store_code, f.destination.store_code, f.creation_date.format("%d/%m/%Y %H:%M"), f.discount.to_string(), pdts, notes
                 )
             }).collect();
 
@@ -476,12 +477,14 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
 
     let order = Order {
         destination: Location {
-            code: "001".into(),
+            store_code: "001".into(),
+            store_id: Some(format!("628f74d7-de00-4956-a5b6-2031e0c72128")),
             contact: torpedo7.clone()
         },
         order_type: crate::methods::OrderType::Shipment,
         origin: Location {
-            code: "002".into(),
+            store_code: "002".into(),
+            store_id: Some(format!("c4a1d88b-e8a0-4dcd-ade2-1eea82254816")),
             contact: torpedo7.clone()
         },
         products: vec![

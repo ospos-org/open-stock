@@ -25,7 +25,7 @@ OpenStock is a rust project utilizing [`rocket`](https://rocket.rs/) and [`sea-o
 > <mark>OpenStock is currently in Beta</mark>, so features may not yet be considered stable as many features are still considered experimental with the API formatting being largely subject to change. Thus, not ready for professional adoption as of yet.
 
 ## Getting Started
-OpenStock is available as a crate to be integrated in your project or project-space if you wish to utilize the type-system created by it. Accessable by:
+OpenStock is available as a crate to be integrated in your project or project-space if you wish to utilize the type-system created by it. Accessible by:
 
 ```
 cargo add open-stock

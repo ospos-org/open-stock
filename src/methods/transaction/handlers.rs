@@ -134,7 +134,8 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<TransactionInit>,
                 QuantityAlterationIntent {
                     variant_code: product.clone().product_code,
                     product_sku: product.clone().product_sku,
-                    transaction_store_code: order.clone().origin.code,
+                    transaction_store_code: order.clone().origin.store_code,
+                    transaction_store_id: order.clone().origin.store_id,
                     transaction_type: new_transaction.clone().transaction_type,
                     quantity_to_transact: product.clone().quantity
                 }
