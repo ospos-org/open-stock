@@ -11,7 +11,7 @@ use super::{Transaction, TransactionInput, TransactionInit};
 use crate::methods::employee::Action;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_all_saved, get_by_product_sku, create, update, generate, delete]
+    routes![get, get_by_name, get_all_saved, get_by_product_sku, create, update, generate, delete, deliverables_search]
 }
 
 #[get("/<id>")]

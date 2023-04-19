@@ -141,7 +141,7 @@ impl Transaction {
     pub async fn fetch_queued_jobs(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
         let as_str: Vec<DerivableTransaction> = DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
-                &format!("SELECT * FROM Transaction WHERE JSON_EXTRACT(Transactions.customer, '$.products') LIKE '%{}%'",
+                &format!("SELECT * FROM Transactions WHERE JSON_EXTRACT(Transactions.customer, '$.products') LIKE '%{}%'",
                 query),
                 vec![]
             ))
