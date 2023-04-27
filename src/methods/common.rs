@@ -113,7 +113,7 @@ pub struct Address {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Location {
     pub store_code: String,
-    pub store_id: Option<String>,
+    pub store_id: String,
 
     // Address is stored in the contact information.
     pub contact: ContactInformation

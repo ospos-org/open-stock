@@ -30,7 +30,7 @@ pub struct QuantityAlterationIntent {
     pub variant_code: String,
     pub product_sku: String,
     pub transaction_store_code: String,
-    pub transaction_store_id: Option<String>,
+    pub transaction_store_id: String,
     pub transaction_type: TransactionType,
     pub quantity_to_transact: f32
 }
@@ -141,19 +141,21 @@ impl Transaction {
     pub async fn fetch_queued_jobs(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
         let as_str: Vec<DerivableTransaction> = DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
-                &format!("SELECT * FROM Transactions WHERE JSON_EXTRACT(Transactions.customer, '$.products') LIKE '%{}%'",
+                &format!("SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%'",
                 query),
                 vec![]
             ))
             .all(db)
             .await?;
 
+        println!("{:?}", as_str.iter().map(|t| t.id.clone()).collect::<Vec<String>>());
+
         let mapped = as_str.iter().map(|t| {
             // Conditions are:
             // 1. Must be distributed from the query location
             // 2. Must be an actively queued job  
             let products = serde_json::from_value::<OrderList>(t.products.clone()).unwrap();
-            let orders = products.iter().filter(|o| o.origin.store_code == query && o.status.status.is_queued());
+            let orders = products.iter().filter(|o| o.origin.store_id == query && o.status.status.is_queued());
 
             orders.cloned().collect::<Vec<Order>>()
         }).flat_map(|x| x).collect();
@@ -478,13 +480,13 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
     let order = Order {
         destination: Location {
             store_code: "001".into(),
-            store_id: Some(format!("628f74d7-de00-4956-a5b6-2031e0c72128")),
+            store_id: format!("628f74d7-de00-4956-a5b6-2031e0c72128"),
             contact: torpedo7.clone()
         },
         order_type: crate::methods::OrderType::Shipment,
         origin: Location {
             store_code: "002".into(),
-            store_id: Some(format!("c4a1d88b-e8a0-4dcd-ade2-1eea82254816")),
+            store_id: format!("c4a1d88b-e8a0-4dcd-ade2-1eea82254816"),
             contact: torpedo7.clone()
         },
         products: vec![

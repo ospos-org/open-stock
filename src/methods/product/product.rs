@@ -425,7 +425,7 @@ pub type ProductPurchaseList = Vec<ProductPurchase>;
 fn example_products() -> Vec<Product> {
     let mt_wellington = Location {
         store_code: "001".into(),
-        store_id: Some(format!("628f74d7-de00-4956-a5b6-2031e0c72128")),
+        store_id: format!("628f74d7-de00-4956-a5b6-2031e0c72128"),
         contact: ContactInformation {
             name: "Torpedo7 Mt Wellington".into(),
             mobile: MobileNumber {
@@ -452,7 +452,7 @@ fn example_products() -> Vec<Product> {
 
     let westfield = Location {
         store_code: "002".into(),
-        store_id: Some(format!("c4a1d88b-e8a0-4dcd-ade2-1eea82254816")),
+        store_id: format!("c4a1d88b-e8a0-4dcd-ade2-1eea82254816"),
         contact: ContactInformation {
             name: "Torpedo7 Westfield".into(),
             mobile: MobileNumber {
@@ -479,7 +479,7 @@ fn example_products() -> Vec<Product> {
 
     let albany = Location {
         store_code: "003".into(),
-        store_id: Some(format!("a91509fa-2783-43ae-8c3c-5d5bc5cb6c95")),
+        store_id: format!("a91509fa-2783-43ae-8c3c-5d5bc5cb6c95"),
         contact: ContactInformation {
             name: "Torpedo7 Albany".into(),
             mobile: MobileNumber {

@@ -93,6 +93,8 @@ impl Display for OrderStatus {
 
 impl OrderStatus {
     pub fn is_queued(&self) -> bool {
+        println!("Considering: {}", self);
+
         match *self {
             OrderStatus::Queued(_) => true,
             OrderStatus::Transit(_) => false,

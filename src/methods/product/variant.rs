@@ -88,6 +88,10 @@ pub enum PromotionGet {
     /// *Represents all products* <br /> <br />
     /// A general match-any clause to refer to any product, i.e. Buy 1 get any other product $5 off.
     Any((f32, DiscountValue)),
+    /// `AnyOther((quantity, discount))` <br />
+    /// *Represents all products other than the original* <br /> <br />
+    /// A general match-any clause to refer to any **other** product, i.e. Buy 1 get any other product half price
+    AnyOther((f32, DiscountValue)),
     /// `Category(category, (quantity, discount))` <br />
     /// *Represents all products within a category* <br /> <br />
     /// Matches any product within a category, the category is referenced in a products `TagList`. I.e. Buy any 1 product, get any t-shirt 20% off. 

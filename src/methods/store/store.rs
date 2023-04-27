@@ -1,6 +1,5 @@
 use sea_orm::{DbConn, DbErr, EntityTrait, ColumnTrait, QuerySelect, Set, ActiveModelTrait, InsertResult, RuntimeErr};
 use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 
 use crate::entities::prelude::Store as StoreEntity;
 use crate::entities::store;
