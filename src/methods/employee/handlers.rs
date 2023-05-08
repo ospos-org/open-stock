@@ -244,7 +244,7 @@ pub async fn create(conn: Connection<'_, Db>, input_data: Json<EmployeeInput>, c
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateEmployee);
 
-    match Employee::insert(new_transaction, db).await {
+    match Employee::insert(new_transaction, db, None).await {
         Ok(data) => {
             match Employee::fetch_by_id(&data.last_insert_id, db).await {
                 Ok(res) => {

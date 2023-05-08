@@ -48,7 +48,7 @@ pub struct EmployeeAuth {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EmployeeInput {
     pub name: Name,
-    pub rid: String,
+    pub rid: i32,
     pub contact: ContactInformation,
     pub password: String,
     pub clock_history: Vec<History<Attendance>>,
@@ -82,44 +82,18 @@ impl Display for Employee {
 use argon2::{self, Config};
 
 impl Employee {
-    pub async fn insert(empl: EmployeeInput, db: &DbConn) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
-        
+    pub async fn insert(empl: EmployeeInput, db: &DbConn, static_rid: Option<i32>) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
-        let rid = alea::i32_in_range(0, 9999);
+        let mut rid = alea::i32_in_range(0, 9999);
 
-//        let hasher = argon2::password_hash::PasswordHash::new(s);
+        if static_rid.is_some() {
+            rid = static_rid.unwrap();
+        }
 
-//        let psw = argon2::password_hash::PasswordHasher::hash_password(empl.password, "\
-//                secret key that you should really store in a .env file \
-//                instead of in code, but this is just an example\
-//            ");
         let password = empl.password;
         let salt = b"randomsalt";
         let config = Config::default();
         let hash = argon2::hash_encoded(password.as_bytes(), salt, &config).unwrap();
-
-//        let mut hasher = Hasher::default();
-//        hasher
-//            .configure_backend(Backend::C) // Default is `Backend::C`
-//            .configure_cpu_pool(CpuPool::new(8))
-//            .configure_hash_len(16) // Default is `32`
-//            .configure_iterations(124) // Default is `192`
-//            .configure_lanes(8) // Default is number of logical cores on your machine
-//            .configure_memory_size(4096) // Default is `4096`
-//            .configure_password_clearing(false) // Default is `false`
-//            .configure_secret_key_clearing(false) // Default is `false`
-//            .configure_threads(8) // Default is number of logical cores on your machine
-//            .configure_variant(Variant::Argon2id) // Default is `Variant::Argon2id`
-//            .configure_version(Version::_0x13); // Default is `Version::_0x13`
-//
-//        let hash = hasher
-//            .with_password(empl.password)
-//            .with_secret_key("\
-//                secret key that you should really store in a .env file \
-//                instead of in code, but this is just an example\
-//            ")
-//            .hash()
-//            .unwrap();
 
         let insert_crud = employee::ActiveModel {
             id: Set(id),
@@ -305,7 +279,7 @@ impl Employee {
         let empl = example_employee();
         
         // Insert & Fetch Transaction
-        match Employee::insert(empl, db).await {
+        match Employee::insert(empl.clone(), db, Some(empl.rid)).await {
             Ok(data) => {
                 match Employee::fetch_by_id(&data.last_insert_id, db).await {
                     Ok(res) => {
@@ -342,7 +316,7 @@ impl ToString for TrackType {
 pub fn example_employee() -> EmployeeInput {
     EmployeeInput {
         password: "1232".to_string(),
-        rid: "1111".to_string(),
+        rid: 1232,
         name: Name {
             first: "Carl".to_string(),
             middle: "".to_string(),

@@ -58,6 +58,8 @@ services:
       - ACCESS_ORIGIN=http://localhost:3000
       # Change this to your own value, the current value is used only as an example key.
       - ROCKET_SECRET_KEY=e5c63abf90fb076d7037a32d8dc2951c4b402e7357ca84b0da8e03595f84b30f
+      # Change this to 1 to enable demo.
+      - DEMO=0
       # Set your prefered debug log levels.
       - RUST_BACKTRACE=1
       - RUST_LOG=debug
