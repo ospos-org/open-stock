@@ -265,4 +265,6 @@ pub enum Error {
     Unauthorized(Json<ErrorResponse>),
     #[response(status = 500, content_type = "json")]
     DbError(Json<ErrorResponse>),
+    #[response(status = 500, content_type = "text")]
+    DemoDisabled(String)
 }

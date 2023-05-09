@@ -1,3 +1,5 @@
+use std::env;
+
 use chrono::Utc;
 use geo::{point};
 use rocket::{routes, http::{CookieJar}, serde::json::{Json}, post, get};
@@ -26,6 +28,19 @@ pub struct All {
 /// This route does not require authentication, but is not enabled in release mode.
 #[post("/generate")]
 pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Error> {
+    let _ = match env::var("DEMO") {
+        Ok(url) => {
+            match url.as_str() {
+                "0" => return Err(Error::DemoDisabled(format!("OpenStock is not in DEMO mode."))),
+                "1" => true,
+                _ => return Err(Error::DemoDisabled(format!("OpenStock is not in DEMO mode.")))
+            }
+        },
+        Err(_) => {
+            return Err(Error::DemoDisabled(format!("OpenStock is not in DEMO mode.")))
+        },
+    };
+
     let db = conn.into_inner();
 
     let employee = Employee::generate(db).await.unwrap();
