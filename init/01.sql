@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `Customer` (
   `customer_notes` json NOT NULL,
   `balance` FLOAT NOT NULL,
   `special_pricing` json NOT NULL,
-  `accepts_marketing` boolean DEFAULT false,
+  `accepts_marketing` boolean DEFAULT 0,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
