@@ -3,7 +3,7 @@ use std::{env, time::Duration};
 use async_trait::async_trait;
 use chrono::{Utc, Duration as ChronoDuration};
 use dotenv::dotenv;
-use sea_orm::{EntityTrait, DbConn, QuerySelect, ColumnTrait};
+use sea_orm::{EntityTrait, DbConn, QuerySelect, ColumnTrait, ConnectOptions};
 use sea_orm_rocket::{rocket::figment::Figment, Database};
 use rocket::tokio;
 use crate::entities::{session, transactions};
@@ -35,7 +35,12 @@ impl sea_orm_rocket::Pool for RocketDbPool {
 
         println!("Database URL: {}", database_url);
 
-        let conn = sea_orm::Database::connect(database_url).await?;
+        let mut options = ConnectOptions::new(database_url);
+        options.idle_timeout(Duration::new(3600, 0));
+        options.min_connections(0);
+
+        let conn = sea_orm::Database::connect(options)
+            .await?;
 
         let c2 = conn.clone();
         tokio::spawn(async move {
