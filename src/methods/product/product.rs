@@ -1,11 +1,12 @@
 use std::{fmt::Display};
 
 use chrono::{Utc, DateTime};
+use crate::History;
 use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, Condition, QueryFilter, sea_query::{Expr, Func}, Statement};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
-use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity}, entities::{sea_orm_active_enums::TransactionType, products}};
+use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity}, entities::{sea_orm_active_enums::TransactionType, products}, Note};
 use super::{VariantCategoryList, VariantIdTag, VariantCategory, Variant, StockInformation, VariantInformation, Promotion, PromotionGet, PromotionBuy};
 use crate::entities::prelude::Products;
 use crate::entities::prelude::Promotion as Promotions;
@@ -393,8 +394,30 @@ pub struct ProductPurchase {
     pub product_cost: f32,
     pub quantity: f32,
 
-    pub transaction_type: TransactionType
+    pub transaction_type: TransactionType,
+
+    // Order fulfillment statistics
+    pub product_fulfillment_status: FulfillmentStatus,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FulfillmentStatus {
+    pub pick_status: PickStatus,
+    pub pick_history: Vec<History<PickStatus>>,
+    pub last_updated: DateTime<Utc>,
+    pub notes: Vec<Note>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum PickStatus {
+    Pending, 
+    Picked, 
+    Failed, 
+    Uncertain, 
+    Processing, 
+    Other(String)
+}
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProductExchange {

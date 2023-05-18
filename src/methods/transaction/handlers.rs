@@ -4,14 +4,14 @@ use rocket::{routes, post};
 use rocket::serde::json::Json;
 use sea_orm_rocket::{Connection};
 
-use crate::{check_permissions, Order};
+use crate::{check_permissions, Order, PickStatus};
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, QuantityAlterationIntent};
 use crate::pool::Db;
 use super::{Transaction, TransactionInput, TransactionInit};
 use crate::methods::employee::Action;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_by_name, get_all_saved, get_by_product_sku, create, update, generate, delete, deliverables_search]
+    routes![get, get_by_name, get_all_saved, get_by_product_sku, create, update, generate, delete, deliverables_search, update_product_status]
 }
 
 #[get("/<id>")]
@@ -93,6 +93,37 @@ async fn update(
     check_permissions!(session.clone(), Action::ModifyTransaction);
 
     match Transaction::update(input_data, id, db).await {
+        Ok(res) => {
+            Ok(Json(res))
+        },
+        Err(_) => Err(ErrorResponse::input_error()),
+    }
+}
+
+#[post("/status/<id>/product/<refer>/<pid>", data = "<status>")]
+async fn update_product_status(
+    conn: Connection<'_, Db>,
+    id: &str,
+    refer: &str,
+    pid: &str,
+    status: &str,
+    cookies: &CookieJar<'_>
+) -> Result<Json<Transaction>, Error> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::ModifyTransaction);
+
+    let product_status: PickStatus = match status {
+        "picked" => PickStatus::Picked,
+        "pending" => PickStatus::Pending,
+        "failed" => PickStatus::Failed,
+        "uncertain" => PickStatus::Uncertain,
+        "processing" => PickStatus::Processing,
+        _ => return Err(ErrorResponse::input_error())
+    };
+
+    match Transaction::update_product_status(id, refer, pid, product_status, db).await {
         Ok(res) => {
             Ok(Json(res))
         },
