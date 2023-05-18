@@ -397,7 +397,17 @@ pub struct ProductPurchase {
     pub transaction_type: TransactionType,
 
     // Order fulfillment statistics
+    #[serde(default = "default_fulfillment")]
     pub product_fulfillment_status: FulfillmentStatus,
+}
+
+fn default_fulfillment() -> FulfillmentStatus {
+    FulfillmentStatus { 
+        pick_status: PickStatus::Pending, 
+        pick_history: vec![], 
+        last_updated: Utc::now(), 
+        notes: vec![]
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
