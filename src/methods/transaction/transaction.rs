@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use sea_orm::FromQueryResult;
 
-use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, Session, Price, PaymentStatus, PaymentProcessor, PaymentAction, TransitInformation, Product, VariantInformation, Stock}, entities::{transactions, sea_orm_active_enums::TransactionType}, PickStatus};
+use crate::{methods::{OrderList, NoteList, Payment, Id, ContactInformation, MobileNumber, Email, Address, Order, Location, ProductPurchase, DiscountValue, OrderStatus, Note, OrderStatusAssignment, History, Session, Price, PaymentStatus, PaymentProcessor, PaymentAction, TransitInformation, Product, VariantInformation, Stock}, entities::{transactions, sea_orm_active_enums::TransactionType}, PickStatus, ProductInstance};
 use sea_orm::{DbConn};
 use crate::entities::prelude::Transactions;
 
@@ -290,20 +290,26 @@ impl Transaction {
         Self::fetch_by_id(id, db).await
     }
 
-    pub async fn update_product_status(id: &str, refer: &str, pid: &str, status: PickStatus, db: &DbConn) -> Result<Transaction, DbErr> {
+    pub async fn update_product_status(id: &str, refer: &str, pid: &str, iid: &str, status: PickStatus, db: &DbConn) -> Result<Transaction, DbErr> {
         let mut transaction = Transaction::fetch_by_id(id, db).await?;
 
         let new_orders = transaction.clone().products.into_iter().map(|mut v| {
             if v.reference == refer {
                 let new_products = v.products.into_iter().map(|mut p| {
                     if p.id == pid {
-                        p.product_fulfillment_status.pick_history.push(History { 
-                            item: p.product_fulfillment_status.pick_status, 
-                            reason: format!("Standard Update Bump"), 
-                            timestamp: p.product_fulfillment_status.last_updated 
-                        });
-                        p.product_fulfillment_status.last_updated = Utc::now();
-                        p.product_fulfillment_status.pick_status = status.clone();
+                        p.instances = p.instances.into_iter().map(| mut i | {
+                            if i.id == iid {
+                                i.fulfillment_status.pick_history.push(History { 
+                                    item: i.fulfillment_status.pick_status, 
+                                    reason: format!("Standard Update Bump"), 
+                                    timestamp: i.fulfillment_status.last_updated 
+                                });
+                                i.fulfillment_status.last_updated = Utc::now();
+                                i.fulfillment_status.pick_status = status.clone();
+                            }
+                            
+                            i
+                        }).collect::<Vec<ProductInstance>>();
                     }
     
                     p
@@ -547,12 +553,18 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 product_cost: 399.99, 
                 quantity: 1.0,
                 transaction_type: TransactionType::Out,
-                product_fulfillment_status: crate::FulfillmentStatus {
-                    pick_status: PickStatus::Pending,
-                    pick_history: vec![],
-                    last_updated: Utc::now(),
-                    notes: vec![]
-                }
+                instances: vec![
+                    ProductInstance {
+                        id: format!("def"),
+                        fulfillment_status: crate::FulfillmentStatus {
+                            pick_status: PickStatus::Pending,
+                            pick_history: vec![],
+                            last_updated: Utc::now(),
+                            notes: vec![]
+                        }
+                    }
+                ]
+                
             },
             ProductPurchase { 
                 product_name: format!("Torpedo7 Kids Voyager II Paddle Vest"), 
@@ -564,12 +576,17 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 product_cost: 139.99, 
                 quantity: 1.0,
                 transaction_type: TransactionType::Out,
-                product_fulfillment_status: crate::FulfillmentStatus {
-                    pick_status: PickStatus::Pending,
-                    pick_history: vec![],
-                    last_updated: Utc::now(),
-                    notes: vec![]
-                }
+                instances: vec![
+                    ProductInstance {
+                        id: format!("def"),
+                        fulfillment_status: crate::FulfillmentStatus {
+                            pick_status: PickStatus::Pending,
+                            pick_history: vec![],
+                            last_updated: Utc::now(),
+                            notes: vec![]
+                        }
+                    }
+                ]
             }
         ],
         previous_failed_fulfillment_attempts: vec![],

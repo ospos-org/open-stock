@@ -100,12 +100,13 @@ async fn update(
     }
 }
 
-#[post("/status/<id>/product/<refer>/<pid>", data = "<status>")]
+#[post("/status/<id>/product/<refer>/<pid>/<iid>", data = "<status>")]
 async fn update_product_status(
     conn: Connection<'_, Db>,
     id: &str,
     refer: &str,
     pid: &str,
+    iid: &str,
     status: &str,
     cookies: &CookieJar<'_>
 ) -> Result<Json<Transaction>, Error> {
@@ -123,7 +124,7 @@ async fn update_product_status(
         _ => return Err(ErrorResponse::input_error())
     };
 
-    match Transaction::update_product_status(id, refer, pid, product_status, db).await {
+    match Transaction::update_product_status(id, refer, pid, iid, product_status, db).await {
         Ok(res) => {
             Ok(Json(res))
         },

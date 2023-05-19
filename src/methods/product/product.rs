@@ -3,7 +3,7 @@ use std::{fmt::Display};
 use chrono::{Utc, DateTime};
 use crate::History;
 use sea_orm::{DbConn, DbErr, EntityTrait, Set, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, Condition, QueryFilter, sea_query::{Expr, Func}, Statement};
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, Deserializer, de::{Visitor, MapAccess}};
 use serde_json::json;
 
 use crate::{methods::{Url, TagList, DiscountValue, Location, ContactInformation, Stock, MobileNumber, Email, Address, Quantity}, entities::{sea_orm_active_enums::TransactionType, products}, Note};
@@ -378,7 +378,7 @@ impl Product {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ProductPurchase {
     // Is the barcode of the product.
     pub product_code: ProductCode,
@@ -395,10 +395,155 @@ pub struct ProductPurchase {
     pub quantity: f32,
 
     pub transaction_type: TransactionType,
+    pub instances: Vec<ProductInstance>
+}
 
-    // Order fulfillment statistics
+
+impl<'de> Deserialize<'de> for ProductPurchase {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct ProductVisitor;
+
+        impl<'de> Visitor<'de> for ProductVisitor {
+            type Value = ProductPurchase;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct Product")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                let mut id = None;
+
+                let mut product_code = None;
+                let mut product_sku = None;
+                let mut discount = None;
+                
+                let mut product_name = None;
+                let mut product_variant_name = None;
+
+                let mut product_cost = None;
+                let mut transaction_type = None;
+                let mut quantity = None;
+                let mut instances = None;
+                
+                // pub transaction_type: TransactionType,
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        "id" => {
+                            if id.is_some() {
+                                return Err(serde::de::Error::duplicate_field("id"));
+                            }
+                            id = Some(map.next_value()?);
+                        },
+                        "product_code" => {
+                            if product_code.is_some() {
+                                return Err(serde::de::Error::duplicate_field("product_code"));
+                            }
+                            product_code = Some(map.next_value()?);
+                        },
+                        "product_sku" => {
+                            if product_sku.is_some() {
+                                return Err(serde::de::Error::duplicate_field("product_sku"));
+                            }
+                            product_sku = Some(map.next_value()?);
+                        },
+                        "discount" => {
+                            if discount.is_some() {
+                                return Err(serde::de::Error::duplicate_field("discount"));
+                            }
+                            discount = Some(map.next_value()?);
+                        },
+                        "product_name" => {
+                            if product_name.is_some() {
+                                return Err(serde::de::Error::duplicate_field("product_name"));
+                            }
+                            product_name = Some(map.next_value()?);
+                        },
+                        "product_variant_name" => {
+                            if product_variant_name.is_some() {
+                                return Err(serde::de::Error::duplicate_field("product_variant_name"));
+                            }
+                            product_variant_name = Some(map.next_value()?);
+                        },
+                        "product_cost" => {
+                            if product_cost.is_some() {
+                                return Err(serde::de::Error::duplicate_field("product_cost"));
+                            }
+                            product_cost = Some(map.next_value()?);
+                        },
+                        "transaction_type" => {
+                            if transaction_type.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transaction_type"));
+                            }
+                            transaction_type = Some(map.next_value()?); 
+                        },
+                        "quantity" => {
+                            if quantity.is_some() {
+                                return Err(serde::de::Error::duplicate_field("quantity"));
+                            }
+                            quantity = Some(map.next_value()?);
+                        },
+                        "instances" => {
+                            if instances.is_some() {
+                                return Err(serde::de::Error::duplicate_field("instances"));
+                            }
+                            instances = Some(map.next_value()?);
+                        },
+                        _ => return Err(serde::de::Error::unknown_field(key, &["id", "quantity", "instances"])),
+                    }
+                }
+
+                let id = id.ok_or_else(|| serde::de::Error::missing_field("id"))?;
+
+                let product_code = product_code.ok_or_else(|| serde::de::Error::missing_field("product_code"))?;
+                let product_sku = product_sku.ok_or_else(|| serde::de::Error::missing_field("product_sku"))?;
+                let discount = discount.ok_or_else(|| serde::de::Error::missing_field("discount"))?;
+
+                let product_name = product_name.ok_or_else(|| serde::de::Error::missing_field("product_name"))?;
+                let product_variant_name = product_variant_name.ok_or_else(|| serde::de::Error::missing_field("product_variant_name"))?;
+                let product_cost = product_cost.ok_or_else(|| serde::de::Error::missing_field("product_cost"))?;
+                
+                let transaction_type = transaction_type.ok_or_else(|| serde::de::Error::missing_field("transaction_type"))?;
+                let quantity = quantity.ok_or_else(|| serde::de::Error::missing_field("quantity"))?;
+                let mut instances = instances.unwrap_or_else(Vec::new);
+
+                while instances.len() < quantity as usize {
+                    instances.push(ProductInstance{
+                        id: format!("{}-{}", id, instances.len() + 1),
+                        fulfillment_status: default_fulfillment(),
+                    });
+                }
+                Ok(
+                    ProductPurchase { 
+                        id, 
+                        product_code,
+                        product_sku,
+                        discount,
+                        product_name,
+                        product_variant_name,
+                        transaction_type,
+                        product_cost,
+                        quantity, 
+                        instances 
+                    }
+                )
+            }
+        }
+
+        deserializer.deserialize_map(ProductVisitor)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductInstance {
+    pub id: String,
     #[serde(default = "default_fulfillment")]
-    pub product_fulfillment_status: FulfillmentStatus,
+    pub fulfillment_status: FulfillmentStatus
 }
 
 fn default_fulfillment() -> FulfillmentStatus {
