@@ -12,14 +12,15 @@ COPY ./Cargo.toml ./Cargo.toml
 # this build step will cache your dependencies
 RUN apt-get -y update
 RUN apt-get install -y libclang-dev libopencv-dev
-RUN cargo build --release --locked
+# --locked
+RUN cargo build --release
 RUN rm src/*.rs
 
 # 4. Now that the dependency is built, copy your source code
 COPY ./src ./src
 
 # build for release
-# RUN rm ./target/release/deps/stock*
+# RUN rm ./target/release/deps/stock* .        
 RUN cargo build --release --locked
 
 # our final base
