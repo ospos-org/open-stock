@@ -455,7 +455,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                             if discount.is_some() {
                                 return Err(serde::de::Error::duplicate_field("discount"));
                             }
-                            discount = Some(serde_json::from_str::<DiscountValue>(map.next_value()?).unwrap());
+                            discount = Some(map.next_value::<DiscountValue>()?);
                         },
                         "product_name" => {
                             if product_name.is_some() {
@@ -479,7 +479,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                             if transaction_type.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transaction_type"));
                             }
-                            transaction_type = Some(serde_json::from_str::<TransactionType>(map.next_value()?).unwrap()); 
+                            transaction_type = Some(map.next_value::<TransactionType>()?); 
                         },
                         "quantity" => {
                             if quantity.is_some() {
