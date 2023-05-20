@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
 
 use chrono::{Utc, DateTime};
 use crate::History;
@@ -429,7 +429,6 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 let mut product_cost = None;
                 let mut transaction_type = None;
                 let mut quantity = None;
-                let mut instances = None;
                 
                 // pub transaction_type: TransactionType,
                 while let Some(key) = map.next_key()? {
@@ -456,7 +455,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                             if discount.is_some() {
                                 return Err(serde::de::Error::duplicate_field("discount"));
                             }
-                            discount = Some(DiscountValue::from_str(map.next_value()?).unwrap());
+                            discount = Some(serde_json::from_str::<DiscountValue>(map.next_value()?).unwrap());
                         },
                         "product_name" => {
                             if product_name.is_some() {
@@ -480,19 +479,13 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                             if transaction_type.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transaction_type"));
                             }
-                            transaction_type = Some(map.next_value()?); 
+                            transaction_type = Some(serde_json::from_str::<TransactionType>(map.next_value()?).unwrap()); 
                         },
                         "quantity" => {
                             if quantity.is_some() {
                                 return Err(serde::de::Error::duplicate_field("quantity"));
                             }
                             quantity = Some(map.next_value()?);
-                        },
-                        "instances" => {
-                            if instances.is_some() {
-                                return Err(serde::de::Error::duplicate_field("instances"));
-                            }
-                            instances = Some(map.next_value()?);
                         },
                         _ => return Err(serde::de::Error::unknown_field(key, &["id", "quantity", "instances"])),
                     }
@@ -510,7 +503,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 
                 let transaction_type = transaction_type.ok_or_else(|| serde::de::Error::missing_field("transaction_type"))?;
                 let quantity = quantity.ok_or_else(|| serde::de::Error::missing_field("quantity"))?;
-                let mut instances = instances.unwrap_or_else(Vec::new);
+                let mut instances = Vec::new();
 
                 while instances.len() < quantity as usize {
                     instances.push(ProductInstance{

@@ -44,7 +44,7 @@ services:
   open-stock:
     # Note: If you are running ARM, you are in luck! We support the linux/arm64 platform.
     # Please use the :latest-arm build variant for arm builds.
-    image: bennjii/open-stock:latest # ghcr.io/bennjii/open-stock:latest-arm 
+    image: ghcr.io/bennjii/open-stock:latest-arm # bennjii/open-stock:latest 
     platform: "linux/arm64"
     restart: always
     ports:
