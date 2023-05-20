@@ -431,7 +431,9 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 let mut quantity = None;
                 
                 // pub transaction_type: TransactionType,
-                while let Some(key) = map.next_key()? {
+                while let Some(key_s) = map.next_key::<String>()? {
+                    let key = key_s.as_str();
+
                     match key {
                         "id" => {
                             if id.is_some() {
