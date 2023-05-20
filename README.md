@@ -31,7 +31,7 @@ OpenStock is available as a crate to be integrated in your project or project-sp
 cargo add open-stock
 ```
 
-However, for a default setup the API can be hosted yourself by performing the following:
+However, for a default setup, the API can be hosted yourself by performing the following:
 
 1. Create an empty directory
 2. In the directory, create a `docker-compose.yaml` (template file [here](./docker-compose.yaml)).
@@ -46,7 +46,7 @@ It is recommended to add a database viewer such as adminer for development to mo
 Please note:
 1. `open-pos` is not required, but is a free POS system provided with the `open-stock` standard. You are free to use and/or modify it as necessary.
 
-2. If you are launching the service from an ARM system, use `bennjii/open-stock:latest-arm` and `ghcr.io/bennjii/open-pos:latest-arm` for native performance.
+2. If you are launching the service from an ARM system, use `ghcr.io/bennjii/open-stock:latest-arm` and `ghcr.io/bennjii/open-pos:latest-arm` for native performance.
 
 3. If using `open-pos`, The `NEXT_PUBLIC_API_URL` environment URL refers to where the `open-stock` API is hosted. This is required for CORS, and is a required field. This can be a domain or IP.
 
