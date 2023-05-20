@@ -160,6 +160,8 @@ impl Transaction {
             orders.cloned().collect::<Vec<Order>>()
         }).flat_map(|x| x).collect();
 
+        println!("{:?}", mapped);
+
         Ok(mapped)
     }
 

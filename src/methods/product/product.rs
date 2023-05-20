@@ -1,4 +1,4 @@
-use std::{fmt::Display};
+use std::{fmt::Display, str::FromStr};
 
 use chrono::{Utc, DateTime};
 use crate::History;
@@ -381,14 +381,14 @@ impl Product {
 #[derive(Debug, Clone, Serialize)]
 pub struct ProductPurchase {
     // Is the barcode of the product.
+    pub id: String,
+
     pub product_code: ProductCode,
     pub product_sku: String,
     pub discount: DiscountValue,
 
     pub product_name: String,
     pub product_variant_name: String,
-    
-    pub id: String,
 
     // Cost before discount, discount will be applied on the product cost.
     pub product_cost: f32,
@@ -456,7 +456,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                             if discount.is_some() {
                                 return Err(serde::de::Error::duplicate_field("discount"));
                             }
-                            discount = Some(map.next_value()?);
+                            discount = Some(DiscountValue::from_str(map.next_value()?).unwrap());
                         },
                         "product_name" => {
                             if product_name.is_some() {
