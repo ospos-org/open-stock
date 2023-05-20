@@ -429,6 +429,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 let mut product_cost = None;
                 let mut transaction_type = None;
                 let mut quantity = None;
+                let mut instances = None;
                 
                 // pub transaction_type: TransactionType,
                 while let Some(key_s) = map.next_key::<String>()? {
@@ -489,6 +490,12 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                             }
                             quantity = Some(map.next_value()?);
                         },
+                        "instances" => {
+                            if instances.is_some() {
+                                return Err(serde::de::Error::duplicate_field("quantity"));
+                            }
+                            instances = Some(map.next_value()?);
+                        },
                         _ => return Err(serde::de::Error::unknown_field(key, &["id", "quantity", "instances"])),
                     }
                 }
@@ -505,7 +512,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 
                 let transaction_type = transaction_type.ok_or_else(|| serde::de::Error::missing_field("transaction_type"))?;
                 let quantity = quantity.ok_or_else(|| serde::de::Error::missing_field("quantity"))?;
-                let mut instances = Vec::new();
+                let mut instances = instances.unwrap_or_else(Vec::new);
 
                 while instances.len() < quantity as usize {
                     instances.push(ProductInstance{
