@@ -160,8 +160,6 @@ impl Transaction {
             orders.cloned().collect::<Vec<Order>>()
         }).flat_map(|x| x).collect();
 
-        println!("{:?}", mapped);
-
         Ok(mapped)
     }
 
@@ -555,6 +553,11 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 product_cost: 399.99, 
                 quantity: 1.0,
                 transaction_type: TransactionType::Out,
+                tags: vec![
+                    "Tee".into(),
+                    "Cotton".into(),
+                    "Organic".into()
+                ], 
                 instances: vec![
                     ProductInstance {
                         id: format!("def"),
@@ -578,6 +581,11 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 product_cost: 139.99, 
                 quantity: 1.0,
                 transaction_type: TransactionType::Out,
+                tags: vec![
+                    "Tee".into(),
+                    "Cotton".into(),
+                    "Organic".into()
+                ], 
                 instances: vec![
                     ProductInstance {
                         id: format!("def"),

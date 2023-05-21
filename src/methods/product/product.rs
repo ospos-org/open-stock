@@ -393,6 +393,7 @@ pub struct ProductPurchase {
     // Cost before discount, discount will be applied on the product cost.
     pub product_cost: f32,
     pub quantity: f32,
+    pub tags: TagList,
 
     pub transaction_type: TransactionType,
     pub instances: Vec<ProductInstance>
@@ -425,6 +426,8 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 
                 let mut product_name = None;
                 let mut product_variant_name = None;
+                
+                let mut tags = None;
 
                 let mut product_cost = None;
                 let mut transaction_type = None;
@@ -459,6 +462,12 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                                 return Err(serde::de::Error::duplicate_field("discount"));
                             }
                             discount = Some(map.next_value::<DiscountValue>()?);
+                        },
+                        "tags" => {
+                            if tags.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tags"));
+                            }
+                            tags = Some(map.next_value::<TagList>()?);
                         },
                         "product_name" => {
                             if product_name.is_some() {
@@ -512,6 +521,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 
                 let transaction_type = transaction_type.ok_or_else(|| serde::de::Error::missing_field("transaction_type"))?;
                 let quantity = quantity.ok_or_else(|| serde::de::Error::missing_field("quantity"))?;
+                let tags = tags.ok_or_else(|| serde::de::Error::missing_field("tags"))?;
                 let mut instances = instances.unwrap_or_else(Vec::new);
 
                 while instances.len() < quantity as usize {
@@ -530,6 +540,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                         product_variant_name,
                         transaction_type,
                         product_cost,
+                        tags,
                         quantity, 
                         instances 
                     }

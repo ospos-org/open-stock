@@ -100,10 +100,9 @@ async fn update(
     }
 }
 
-#[post("/status/<id>/product/<refer>/<pid>/<iid>", data = "<status>")]
+#[post("/status/product/<refer>/<pid>/<iid>", data = "<status>")]
 async fn update_product_status(
     conn: Connection<'_, Db>,
-    id: &str,
     refer: &str,
     pid: &str,
     iid: &str,
@@ -111,6 +110,9 @@ async fn update_product_status(
     cookies: &CookieJar<'_>
 ) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
+
+    let tsn = Transaction::fetch_by_ref(refer, db).await.unwrap();
+    let id = tsn.get(0).unwrap().id.as_str();
 
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyTransaction);
