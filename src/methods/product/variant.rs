@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use serde_json::json;
 use uuid::Uuid;
+use crate::ProductIdentification;
 use crate::entities::promotion;
 use crate::methods::{StockList, HistoryList, Url, DiscountValue, Id};
 use crate::entities::prelude::Promotion as Promotions;
@@ -21,19 +22,52 @@ pub struct VariantCategory {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
+/// #### Information for a Variant.
+/// This includes its name, identification, stock information and quantities, prices, etc.
 pub struct VariantInformation {
-    pub name: String,
-    pub stock: StockList,
-    pub images: Vec<Url>,
-    pub retail_price: f32,
-    pub marginal_price: f32,
     pub id: String,
+
+    /// The variant name
+    pub name: String,
+
+    /// The variants stock locations and quantities
+    pub stock: StockList,
+
+    /// The variants stock information, such as group, volume, sales stream, etc.
+    pub stock_information: StockInformation,
+
+    /// Images specific to the variant, should take priority over product images.
+    pub images: Vec<Url>,
+
+    /// Price for the good to be sold at
+    pub retail_price: f32,
+
+    /// Imported/Cost price of the good to compare with
+    pub marginal_price: f32,
+
+    /// Minimum quantity purchasable
+    pub buy_min: f64,
+
+    /// Maximum quantity purchasable
+    pub buy_max: f64,
+
+    /// The discount given if in a loyalty program
     pub loyalty_discount: DiscountValue,
+
     /// The group codes for all sub-variants; i.e. is White, Short Sleeve and Small.
     pub variant_code: VariantIdTag,
+
+    /// <deprecated> Variant-associated order history 
     pub order_history: HistoryList,
-    pub stock_information: StockInformation,
-    pub barcode: String
+
+    /// Barcode for product / primary identification method
+    pub barcode: String,
+
+    /// Further identification methods, such as isbn, sku, ...
+    pub identification: ProductIdentification,
+    
+    // If `stock_tracking` is false, the product will never be considered 'out of stock'.
+    pub stock_tracking: bool
 }
 
 impl Display for VariantInformation {
@@ -240,8 +274,26 @@ pub struct StockInformation {
     pub sales_group: String,
     pub value_stream: String,
 
+    /// At this stock level (or below), it should be indicated that the stock level is 'low'.
+    pub min_stock_before_alert: f64,
+
+    /// Will treat product when at this quantity as 'out of stock'
+    pub min_stock_level: f64,
+
+    /// The publisher/author/creator/manufacturer of the good or service
     pub brand: String,
-    pub unit: String,
+
+    /// Individual shipment packing unit - used to show identification of multi-part shipments
+    pub colli: String,
+
+    pub size_x: f64,
+    pub size_y: f64,
+    pub size_z: f64,
+
+    pub size_x_unit: String,
+    pub size_y_unit: String,
+    pub size_z_unit: String,
+    pub size_override_unit: String,
 
     /// Non-required field which outlines the tax code of the product if necessary.
     pub tax_code: String,
@@ -259,10 +311,13 @@ pub struct StockInformation {
     /// 
     /// By setting `back_order` to `true`, it allows for the purchase of the product on the promise it will be delivered to the customer or collected from the store at a later date. **This must be made clear and known to the customer.**
     pub back_order: bool,
+
     /// A product which is no longer source-able. Once the product's inventory is consumed it is indicated to never be replenished.
     pub discontinued: bool,
+
     /// A `non_diminishing` product is often a service rather than a product, i.e. freight. It is **not removed** from inventory upon consumption, rather attached.
     pub non_diminishing: bool,
+
     /// A non-shippable good is one which cannot be dispatched between stores or sent to a customers home, this might be a fragile product, service, oversized good or edge case.
     pub shippable: bool
 }
@@ -270,7 +325,7 @@ pub struct StockInformation {
 impl Display for Variant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,
-            "\t{} ({}) ${}", 
+            "\t{} ({}) (MP: ${})", 
             self.name, self.variant_code, self.marginal_price 
         )
     }

@@ -17,6 +17,10 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub description: String,
     pub specifications: Json,
+    pub identification: Json,
+    pub visible: Json,
+    pub name_long: String,
+    pub description_long: String
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -13,10 +13,28 @@ use crate::entities::prelude::Promotion as Promotions;
 use futures::future::join_all;
 
 #[derive(Deserialize, Serialize, Clone)]
+pub enum ProductVisibility {
+    AlwaysShown,
+    AlwaysHidden,
+    ShowWhenInStock
+}
+
+#[derive(Deserialize, Serialize, Clone, Default)]
+pub struct ProductIdentification {
+    pub sku: String,
+    pub ean: String,
+    pub hs_code: String,
+    pub article_code: String,
+    pub isbn: String
+}
+
+#[derive(Deserialize, Serialize, Clone)]
 /// A product, containing a list of `Vec<Variant>`, an identifiable `sku` along with identifying information such as `tags`, `description` and `specifications`.
 /// > Stock-relevant information about a product is kept under each variant, thus allowing for modularity of different variants and a fine-grained control over your inventory. 
 pub struct Product {
     pub name: String,
+    pub name_long: String,
+
     pub company: String,
 
     pub variant_groups: VariantCategoryList,
@@ -24,10 +42,15 @@ pub struct Product {
     pub variants: Vec<VariantInformation>, 
 
     pub sku: String,
+    pub identification: ProductIdentification,
+
     pub images: Vec<Url>,
     pub tags: TagList,
     pub description: String,
+    pub description_long: String,
+
     pub specifications: Vec<(String, String)>,
+    pub visible: ProductVisibility,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -69,6 +92,10 @@ impl Product {
             tags: Set(json!(pdt.tags)),
             description: Set(pdt.description),
             specifications: Set(json!(pdt.specifications)),
+            identification: Set(json!(pdt.identification)),
+            visible: Set(json!(pdt.visible)),
+            name_long: Set(pdt.name_long),
+            description_long: Set(pdt.description_long),
         };
 
         match Products::insert(insert_crud).exec(db).await {
@@ -91,7 +118,11 @@ impl Product {
             images: serde_json::from_value::<Vec<Url>>(p.images).unwrap(), 
             tags: serde_json::from_value::<TagList>(p.tags).unwrap(), 
             description: p.description, 
-            specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap() 
+            specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap(),
+            identification: serde_json::from_value::<ProductIdentification>(p.identification).unwrap(),
+            visible: serde_json::from_value::<ProductVisibility>(p.visible).unwrap(),
+            name_long: p.name_long,
+            description_long: p.description_long, 
         })
     }
 
@@ -108,7 +139,11 @@ impl Product {
             images: serde_json::from_value::<Vec<Url>>(p.images).unwrap(), 
             tags: serde_json::from_value::<TagList>(p.tags).unwrap(), 
             description: p.description, 
-            specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap() 
+            specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications).unwrap(),
+            identification: serde_json::from_value::<ProductIdentification>(p.identification).unwrap(),
+            visible: serde_json::from_value::<ProductVisibility>(p.visible).unwrap(),
+            name_long: p.name_long,
+            description_long: p.description_long
         };
 
         let promos = Promotions::find()
@@ -170,7 +205,11 @@ impl Product {
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
                 tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
                 description: p.description.clone(), 
-                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap(),
+                identification: serde_json::from_value::<ProductIdentification>(p.identification.clone()).unwrap(),
+                visible: serde_json::from_value::<ProductVisibility>(p.visible.clone()).unwrap(),
+                name_long: p.name_long.clone(),
+                description_long: p.description_long.clone(), 
             }
         ).collect();
 
@@ -201,7 +240,11 @@ impl Product {
                     images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
                     tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
                     description: p.description.clone(), 
-                    specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+                    specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap(),
+                    identification: serde_json::from_value::<ProductIdentification>(p.identification.clone()).unwrap(),
+                    visible: serde_json::from_value::<ProductVisibility>(p.visible.clone()).unwrap(),
+                    name_long: p.name_long.clone(),
+                    description_long: p.description_long.clone() 
                 },
                 promotions: vec![]
             }
@@ -274,7 +317,11 @@ impl Product {
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
                 tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
                 description: p.description.clone(), 
-                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap(),
+                identification: serde_json::from_value::<ProductIdentification>(p.identification.clone()).unwrap(),
+                visible: serde_json::from_value::<ProductVisibility>(p.visible.clone()).unwrap(),
+                name_long: p.name_long.clone(),
+                description_long: p.description_long.clone()
             }
         ).collect();
 
@@ -297,7 +344,11 @@ impl Product {
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
                 tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
                 description: p.description.clone(), 
-                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap(),
+                identification: serde_json::from_value::<ProductIdentification>(p.identification.clone()).unwrap(),
+                visible: serde_json::from_value::<ProductVisibility>(p.visible.clone()).unwrap(),
+                name_long: p.name_long.clone(),
+                description_long: p.description_long.clone()
             }
         ).collect();
 
@@ -315,6 +366,10 @@ impl Product {
             tags: Set(json!(pdt.tags)),
             description: Set(pdt.description),
             specifications: Set(json!(pdt.specifications)),
+            identification: Set(json!(pdt.identification)),
+            visible: Set(json!(pdt.visible)),
+            name_long: Set(pdt.name_long),
+            description_long: Set(pdt.description_long)
         }.update(db).await?;
 
         Self::fetch_by_id(id, db).await
@@ -333,7 +388,11 @@ impl Product {
                 images: serde_json::from_value::<Vec<Url>>(p.images.clone()).unwrap(), 
                 tags: serde_json::from_value::<TagList>(p.tags.clone()).unwrap(), 
                 description: p.description.clone(), 
-                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap() 
+                specifications: serde_json::from_value::<Vec<(String, String)>>(p.specifications.clone()).unwrap(),
+                identification: serde_json::from_value::<ProductIdentification>(p.identification.clone()).unwrap(),
+                visible: serde_json::from_value::<ProductVisibility>(p.visible.clone()).unwrap(),
+                name_long: p.name_long.clone(),
+                description_long: p.description_long.clone()
             }
         ).collect();
         
@@ -352,6 +411,10 @@ impl Product {
                 tags: Set(json!(pdt.tags)),
                 description: Set(pdt.description),
                 specifications: Set(json!(pdt.specifications)),
+                identification: Set(json!(pdt.identification)),
+                visible: Set(json!(pdt.visible)),
+                name_long: Set(pdt.name_long),
+                description_long: Set(pdt.description_long)
             }
         });
 
@@ -699,6 +762,10 @@ fn example_products() -> Vec<Product> {
         Product { 
             name: "Explore Graphic Tee".into(), 
             company: "Torpedo7".into(), 
+            identification: ProductIdentification::default(),
+            visible: ProductVisibility::ShowWhenInStock,
+            name_long: format!(""),
+            description_long: format!(""),
             variant_groups: vec![
                 VariantCategory { 
                     category: "Colour".into(), 
@@ -795,7 +862,11 @@ fn example_products() -> Vec<Product> {
             variants: vec![
                 VariantInformation { 
                     id: "SM-BLK-ITM".to_string(),
-                    name: "Small Black".into(), 
+                    name: "Small Black".into(),
+                    buy_min: 1.0,
+                    buy_max: -1.0,
+                    identification: ProductIdentification::default(),
+                    stock_tracking: true,
                     stock: vec![
                         Stock { 
                             store: mt_wellington.clone(), 
@@ -838,7 +909,6 @@ fn example_products() -> Vec<Product> {
                         sales_group: "RANDOM".into(), 
                         value_stream: "RANDOM".into(), 
                         brand: "SELLER_GROUP".into(), 
-                        unit: "".into(), 
                         tax_code: "GSL".into(), 
                         weight: "5.6".into(), 
                         volume: "0.123".into(), 
@@ -846,13 +916,27 @@ fn example_products() -> Vec<Product> {
                         back_order: false, 
                         discontinued: false, 
                         non_diminishing: false,
-                        shippable: true
+                        shippable: true,
+                        min_stock_before_alert: 2.0,
+                        min_stock_level: 0.0,
+                        colli: format!(""),
+                        size_x: 0.0,
+                        size_y: 0.0,
+                        size_z: 0.0,
+                        size_x_unit: format!("m"),
+                        size_y_unit: format!("m"),
+                        size_z_unit: format!("m"),
+                        size_override_unit: format!("m")
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
                 VariantInformation { 
                     id: "M-BLK-ITM".to_string(),
                     name: "Medium Black".into(), 
+                    buy_min: 1.0,
+                    buy_max: -1.0,
+                    identification: ProductIdentification::default(),
+                    stock_tracking: true,
                     stock: vec![
                         Stock { 
                             store: mt_wellington.clone(), 
@@ -895,7 +979,6 @@ fn example_products() -> Vec<Product> {
                         sales_group: "RANDOM".into(), 
                         value_stream: "RANDOM".into(), 
                         brand: "SELLER_GROUP".into(), 
-                        unit: "".into(), 
                         tax_code: "GSL".into(), 
                         weight: "5.6".into(), 
                         volume: "0.123".into(), 
@@ -903,13 +986,27 @@ fn example_products() -> Vec<Product> {
                         back_order: false, 
                         discontinued: false, 
                         non_diminishing: false,
-                        shippable: true
+                        shippable: true,
+                        min_stock_before_alert: 2.0,
+                        min_stock_level: 0.0,
+                        colli: format!(""),
+                        size_x: 0.0,
+                        size_y: 0.0,
+                        size_z: 0.0,
+                        size_x_unit: format!("m"),
+                        size_y_unit: format!("m"),
+                        size_z_unit: format!("m"),
+                        size_override_unit: format!("m")
                     },
                     loyalty_discount: DiscountValue::Absolute(25)
                 },
                 VariantInformation { 
                     id: "LG-WHT-ITM".to_string(),
-                    name: "Large White".into(), 
+                    name: "Large White".into(),
+                    buy_min: 1.0,
+                    buy_max: -1.0,
+                    identification: ProductIdentification::default(),
+                    stock_tracking: true,
                     stock: vec![
                         Stock { 
                             store: mt_wellington.clone(), 
@@ -952,7 +1049,6 @@ fn example_products() -> Vec<Product> {
                         sales_group: "RANDOM".into(), 
                         value_stream: "RANDOM".into(), 
                         brand: "SELLER_GROUP".into(), 
-                        unit: "".into(), 
                         tax_code: "GSL".into(), 
                         weight: "5.6".into(), 
                         volume: "0.123".into(), 
@@ -960,7 +1056,17 @@ fn example_products() -> Vec<Product> {
                         back_order: false, 
                         discontinued: false, 
                         non_diminishing: false,
-                        shippable: true
+                        shippable: true,
+                        min_stock_before_alert: 2.0,
+                        min_stock_level: 0.0,
+                        colli: format!(""),
+                        size_x: 0.0,
+                        size_y: 0.0,
+                        size_z: 0.0,
+                        size_x_unit: format!("m"),
+                        size_y_unit: format!("m"),
+                        size_z_unit: format!("m"),
+                        size_override_unit: format!("m")
                     },
                     loyalty_discount: DiscountValue::Absolute(5)
                 },
@@ -984,6 +1090,10 @@ fn example_products() -> Vec<Product> {
         Product { 
             name: "Nippers Kids Kayak & Paddle".into(), 
             company: "Torpedo7".into(), 
+            identification: ProductIdentification::default(),
+            visible: ProductVisibility::ShowWhenInStock,
+            name_long: format!(""),
+            description_long: format!(""), 
             variant_groups: vec![
                 VariantCategory { 
                     category: "Colour".into(), 
@@ -1027,6 +1137,10 @@ fn example_products() -> Vec<Product> {
                 VariantInformation { 
                     id: "1.83-BEACHES".to_string(),
                     name: "1.83m Beaches".into(), 
+                    buy_min: 1.0,
+                    buy_max: -1.0,
+                    identification: ProductIdentification::default(),
+                    stock_tracking: true,
                     stock: vec![
                         Stock { 
                             store: mt_wellington.clone(), 
@@ -1069,7 +1183,6 @@ fn example_products() -> Vec<Product> {
                         sales_group: "RANDOM".into(), 
                         value_stream: "RANDOM".into(), 
                         brand: "SELLER_GROUP".into(), 
-                        unit: "".into(), 
                         tax_code: "GSL".into(), 
                         weight: "5.6".into(), 
                         volume: "0.123".into(), 
@@ -1077,13 +1190,27 @@ fn example_products() -> Vec<Product> {
                         back_order: false, 
                         discontinued: false, 
                         non_diminishing: false, 
-                        shippable: true
+                        shippable: true,
+                        min_stock_before_alert: 2.0,
+                        min_stock_level: 0.0,
+                        colli: format!(""),
+                        size_x: 0.0,
+                        size_y: 0.0,
+                        size_z: 0.0,
+                        size_x_unit: format!("m"),
+                        size_y_unit: format!("m"),
+                        size_z_unit: format!("m"),
+                        size_override_unit: format!("m")
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
                 VariantInformation { 
                     id: "1.83-TROPICS".to_string(),
-                    name: "1.83m Tropics".into(), 
+                    name: "1.83m Tropics".into(),
+                    buy_min: 1.0,
+                    buy_max: -1.0,
+                    identification: ProductIdentification::default(),
+                    stock_tracking: true,
                     stock: vec![
                         Stock { 
                             store: mt_wellington.clone(), 
@@ -1126,7 +1253,6 @@ fn example_products() -> Vec<Product> {
                         sales_group: "RANDOM".into(), 
                         value_stream: "RANDOM".into(), 
                         brand: "SELLER_GROUP".into(), 
-                        unit: "".into(), 
                         tax_code: "GSL".into(), 
                         weight: "5.6".into(), 
                         volume: "0.123".into(), 
@@ -1134,7 +1260,17 @@ fn example_products() -> Vec<Product> {
                         back_order: false, 
                         discontinued: false, 
                         non_diminishing: false,
-                        shippable: true
+                        shippable: true,
+                        min_stock_before_alert: 2.0,
+                        min_stock_level: 0.0,
+                        colli: format!(""),
+                        size_x: 0.0,
+                        size_y: 0.0,
+                        size_z: 0.0,
+                        size_x_unit: format!("m"),
+                        size_y_unit: format!("m"),
+                        size_z_unit: format!("m"),
+                        size_override_unit: format!("m")
                     },
                     loyalty_discount: DiscountValue::Absolute(25)
                 },
@@ -1160,7 +1296,11 @@ fn example_products() -> Vec<Product> {
         },
         Product { 
             name: "Kids Voyager II Paddle Vest".into(), 
-            company: "Torpedo7".into(), 
+            company: "Torpedo7".into(),
+            identification: ProductIdentification::default(),
+            visible: ProductVisibility::ShowWhenInStock,
+            name_long: format!(""),
+            description_long: format!(""), 
             variant_groups: vec![
                 VariantCategory { 
                     category: "Colour".into(), 
@@ -1212,7 +1352,11 @@ fn example_products() -> Vec<Product> {
             variants: vec![
                 VariantInformation { 
                     id: "S-RED".to_string(),
-                    name: "Small Red (4-6y)".into(), 
+                    name: "Small Red (4-6y)".into(),
+                    buy_min: 1.0,
+                    buy_max: -1.0,
+                    identification: ProductIdentification::default(),
+                    stock_tracking: true,
                     stock: vec![
                         Stock { 
                             store: mt_wellington.clone(), 
@@ -1255,7 +1399,6 @@ fn example_products() -> Vec<Product> {
                         sales_group: "RANDOM".into(), 
                         value_stream: "RANDOM".into(), 
                         brand: "SELLER_GROUP".into(), 
-                        unit: "".into(), 
                         tax_code: "GSL".into(), 
                         weight: "5.6".into(), 
                         volume: "0.123".into(), 
@@ -1263,13 +1406,27 @@ fn example_products() -> Vec<Product> {
                         back_order: false, 
                         discontinued: false, 
                         non_diminishing: false,
-                        shippable: true
+                        shippable: true,
+                        min_stock_before_alert: 2.0,
+                        min_stock_level: 0.0,
+                        colli: format!(""),
+                        size_x: 0.0,
+                        size_y: 0.0,
+                        size_z: 0.0,
+                        size_x_unit: format!("m"),
+                        size_y_unit: format!("m"),
+                        size_z_unit: format!("m"),
+                        size_override_unit: format!("m")
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
                 VariantInformation { 
                     id: "M-RED".to_string(),
                     name: "Medium Red (8-10y)".into(), 
+                    buy_min: 1.0,
+                    buy_max: -1.0,
+                    identification: ProductIdentification::default(),
+                    stock_tracking: true,
                     stock: vec![
                         Stock { 
                             store: mt_wellington.clone(), 
@@ -1312,7 +1469,6 @@ fn example_products() -> Vec<Product> {
                         sales_group: "RANDOM".into(), 
                         value_stream: "RANDOM".into(), 
                         brand: "SELLER_GROUP".into(), 
-                        unit: "".into(), 
                         tax_code: "GSL".into(), 
                         weight: "5.6".into(), 
                         volume: "0.123".into(), 
@@ -1320,13 +1476,27 @@ fn example_products() -> Vec<Product> {
                         back_order: false, 
                         discontinued: false, 
                         non_diminishing: false,
-                        shippable: true
+                        shippable: true,
+                        min_stock_before_alert: 2.0,
+                        min_stock_level: 0.0,
+                        colli: format!(""),
+                        size_x: 0.0,
+                        size_y: 0.0,
+                        size_z: 0.0,
+                        size_x_unit: format!("m"),
+                        size_y_unit: format!("m"),
+                        size_z_unit: format!("m"),
+                        size_override_unit: format!("m")
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
                 VariantInformation { 
                     id: "L-RED".to_string(),
-                    name: "Large Red (12-14y)".into(), 
+                    name: "Large Red (12-14y)".into(),
+                    buy_min: 1.0,
+                    buy_max: -1.0,
+                    identification: ProductIdentification::default(),
+                    stock_tracking: true,
                     stock: vec![
                         Stock { 
                             store: mt_wellington.clone(), 
@@ -1369,7 +1539,6 @@ fn example_products() -> Vec<Product> {
                         sales_group: "RANDOM".into(), 
                         value_stream: "RANDOM".into(), 
                         brand: "SELLER_GROUP".into(), 
-                        unit: "".into(), 
                         tax_code: "GSL".into(), 
                         weight: "5.6".into(), 
                         volume: "0.123".into(), 
@@ -1377,7 +1546,17 @@ fn example_products() -> Vec<Product> {
                         back_order: false, 
                         discontinued: false, 
                         non_diminishing: false,
-                        shippable: true
+                        shippable: true,
+                        min_stock_before_alert: 2.0,
+                        min_stock_level: 0.0,
+                        colli: format!(""),
+                        size_x: 0.0,
+                        size_y: 0.0,
+                        size_z: 0.0,
+                        size_x_unit: format!("m"),
+                        size_y_unit: format!("m"),
+                        size_z_unit: format!("m"),
+                        size_override_unit: format!("m")
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },

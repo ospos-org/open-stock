@@ -389,36 +389,45 @@ impl Transaction {
                             }else {
                                 var.stock.clone()
                             };
+
+                            var.stock = stock_info;
+                            var.clone()
                             
-                            VariantInformation {
-                                name: var.name.clone(),
-                                stock: stock_info,
-                                images: var.images.clone(),
-                                retail_price: var.retail_price,
-                                marginal_price: var.marginal_price,
-                                id: var.id.clone(),
-                                loyalty_discount: var.loyalty_discount.clone(),
-                                variant_code: var.variant_code.clone(),
-                                order_history: var.order_history.clone(),
-                                stock_information: var.stock_information.clone(),
-                                barcode: var.barcode.clone(),
-                            }
+                            // VariantInformation {
+                            //     name: var.name.clone(),
+                            //     stock: stock_info,
+                            //     images: var.images.clone(),
+                            //     retail_price: var.retail_price,
+                            //     marginal_price: var.marginal_price,
+                            //     id: var.id.clone(),
+                            //     loyalty_discount: var.loyalty_discount.clone(),
+                            //     variant_code: var.variant_code.clone(),
+                            //     order_history: var.order_history.clone(),
+                            //     stock_information: var.stock_information.clone(),
+                            //     barcode: var.barcode.clone(),
+                            // }
                         }).collect::<Vec<VariantInformation>>();
 
-                        let product = Product {
-                            name: val.name,
-                            company: val.company,
-                            variant_groups: val.variant_groups,
-                            variants: variants,
-                            sku: val.sku,
-                            images: val.images,
-                            tags: val.tags,
-                            description: val.description,
-                            specifications: val.specifications,
-                        };
+                        // let product = Product {
+                        //     name: val.name,
+                        //     company: val.company,
+                        //     variant_groups: val.variant_groups,
+                        //     variants: variants,
+                        //     sku: val.sku,
+                        //     images: val.images,
+                        //     tags: val.tags,
+                        //     description: val.description,
+                        //     specifications: val.specifications,
+                        //     name_long: val.name_long,
+                        //     identification: todo!(),
+                        //     description_long: todo!(),
+                        //     visible: todo!(),
+                        // };
+
+                        val.variants = variants;
 
                         // Possible chance for an alternate client to have a modification during this time-frame, try implementing a queued solution.
-                        match Product::update(product, &intent.product_sku, &db_).await {
+                        match Product::update(val, &intent.product_sku, &db_).await {
                             Ok(val) => Ok(val),
                             Err(_) => Err(DbErr::Custom(format!(""))),
                         }
