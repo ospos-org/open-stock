@@ -1,13 +1,21 @@
-use std::{fmt::{Display, self}};
+use std::fmt::{self, Display};
 
 use chrono::Utc;
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, QuerySelect, ColumnTrait, InsertResult, ActiveModelTrait, RuntimeErr};
-use serde::{Serialize, Deserialize};
-use serde_json::{json};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QuerySelect,
+    RuntimeErr, Set,
+};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
-use crate::{methods::{Id, Name, ContactInformation, History, MobileNumber, Email, Address, convert_addr_to_geo}, entities::employee};
 use crate::entities::prelude::Employee as Epl;
+use crate::{
+    entities::employee,
+    methods::{
+        convert_addr_to_geo, Address, ContactInformation, Email, History, Id, MobileNumber, Name,
+    },
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Employee {
@@ -17,32 +25,55 @@ pub struct Employee {
     pub auth: EmployeeAuth,
     pub contact: ContactInformation,
     pub clock_history: Vec<History<Attendance>>,
-    pub level: Vec<Access<Action>>
+    pub level: Vec<Access<Action>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Access<T> {
     pub action: T,
-    pub authority: i32
+    pub authority: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Action {
-    CreateCustomer, DeleteCustomer, ModifyCustomer, FetchCustomer,
-    CreateEmployee, DeleteEmployee, ModifyEmployee, FetchEmployee,
-    CreateTransaction, DeleteTransaction, ModifyTransaction, FetchTransaction,
-    CreateProduct, DeleteProduct, ModifyProduct, CreateStockAdjustmentIntent, ClearStockAdjustmentIntent, FetchProduct,
-    CreateStore, DeleteStore, ModifyStore, FetchStore,
-    CreateSupplier, DeleteSupplier, ModifySupplier, FetchSupplier,
-    
-    AccessAdminPanel, SuperUserDo, GenerateTemplateContent, FetchGeoLocation
+    CreateCustomer,
+    DeleteCustomer,
+    ModifyCustomer,
+    FetchCustomer,
+    CreateEmployee,
+    DeleteEmployee,
+    ModifyEmployee,
+    FetchEmployee,
+    CreateTransaction,
+    DeleteTransaction,
+    ModifyTransaction,
+    FetchTransaction,
+    CreateProduct,
+    DeleteProduct,
+    ModifyProduct,
+    CreateStockAdjustmentIntent,
+    ClearStockAdjustmentIntent,
+    FetchProduct,
+    CreateStore,
+    DeleteStore,
+    ModifyStore,
+    FetchStore,
+    CreateSupplier,
+    DeleteSupplier,
+    ModifySupplier,
+    FetchSupplier,
+
+    AccessAdminPanel,
+    SuperUserDo,
+    GenerateTemplateContent,
+    FetchGeoLocation,
 }
 
 /// Stores a password hash, signed as a key using the users login ID.
 /// Upon logging in using a client portal, the pre-sign object is signed using the provided ID - if the hash matches that which is given, authentication can be approved.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EmployeeAuth {
-    pub hash: String
+    pub hash: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -52,28 +83,39 @@ pub struct EmployeeInput {
     pub contact: ContactInformation,
     pub password: String,
     pub clock_history: Vec<History<Attendance>>,
-    pub level: Vec<Access<Action>>
+    pub level: Vec<Access<Action>>,
 }
 
 impl Display for Employee {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let clock_history: String = self.clock_history.iter()
-            .map(|f| 
+        let clock_history: String = self
+            .clock_history
+            .iter()
+            .map(|f| {
                 format!(
-                    "{}: {} ({})\n", 
-                    f.timestamp.format("%d/%m/%Y %H:%M"), 
-                    f.item.track_type.to_string(), 
+                    "{}: {} ({})\n",
+                    f.timestamp.format("%d/%m/%Y %H:%M"),
+                    f.item.track_type.to_string(),
                     f.item.till
                 )
-            ).collect();
+            })
+            .collect();
 
         write!(
-            f, 
+            f,
             "{} {} ({:?})\n{}\n({}) {} {}\n\n[Clock History]\n{}
-            ", 
-            self.name.first, self.name.last, self.level, 
-            self.id, 
-            self.contact.mobile.region_code, self.contact.mobile.root, self.contact.email.full,
+            ",
+            self.name.first,
+            self.name.last,
+            self.level,
+            self.id,
+            self.contact.mobile.number,
+            if self.contact.mobile.valid {
+                "VALID"
+            } else {
+                "INVALID"
+            },
+            self.contact.email.full,
             clock_history
         )
     }
@@ -82,7 +124,11 @@ impl Display for Employee {
 use argon2::{self, Config};
 
 impl Employee {
-    pub async fn insert(empl: EmployeeInput, db: &DbConn, static_rid: Option<i32>) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
+    pub async fn insert(
+        empl: EmployeeInput,
+        db: &DbConn,
+        static_rid: Option<i32>,
+    ) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
         let mut rid = alea::i32_in_range(0, 9999);
 
@@ -99,9 +145,7 @@ impl Employee {
             id: Set(id),
             rid: Set(format!("{:0>#4}", rid)),
             name: Set(json!(empl.name)),
-            auth: Set(json!(EmployeeAuth {
-                hash: hash
-            })),
+            auth: Set(json!(EmployeeAuth { hash: hash })),
             contact: Set(json!(empl.contact)),
             clock_history: Set(json!(empl.clock_history)),
             level: Set(json!(empl.level)),
@@ -109,7 +153,7 @@ impl Employee {
 
         match Epl::insert(insert_crud).exec(db).await {
             Ok(res) => Ok(res),
-            Err(err) => Err(err)
+            Err(err) => Err(err),
         }
     }
 
@@ -130,36 +174,35 @@ impl Employee {
 
             if is_valid && valid_user.is_none() {
                 valid_user = Some(employee);
-            }else if is_valid {
+            } else if is_valid {
                 println!("User with same rid and password exists. Unsure which one to pass - insufficient information.")
             }
         }
 
         if valid_user.is_some() {
             Ok(valid_user.unwrap())
-        }else {
-            Err(DbErr::Query(RuntimeErr::Internal("Unable to locate user. No user exists.".to_string())))
+        } else {
+            Err(DbErr::Query(RuntimeErr::Internal(
+                "Unable to locate user. No user exists.".to_string(),
+            )))
         }
     }
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Employee, DbErr> {
         let empl = Epl::find_by_id(id.to_string()).one(db).await?;
-        
+
         match empl {
-            Some(e) => {
-                Ok(Employee { 
-                    id: e.id,
-                    rid: e.rid,
-                    name: serde_json::from_value::<Name>(e.name).unwrap(),
-                    auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
-                    contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(), 
-                    clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history).unwrap(), 
-                    level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
-                })
-            },
-            None => {
-                Err(DbErr::RecordNotFound(id.to_string()))
-            },
+            Some(e) => Ok(Employee {
+                id: e.id,
+                rid: e.rid,
+                name: serde_json::from_value::<Name>(e.name).unwrap(),
+                auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
+                contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(),
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history)
+                    .unwrap(),
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
+            }),
+            None => Err(DbErr::RecordNotFound(id.to_string())),
         }
     }
 
@@ -170,17 +213,21 @@ impl Employee {
             .all(db)
             .await?;
 
-        let mapped = res.iter().map(|e|
-            Employee {
+        let mapped = res
+            .iter()
+            .map(|e| Employee {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(),
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
-            }
-        ).collect();
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
+                    e.clock_history.clone(),
+                )
+                .unwrap(),
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
+            })
+            .collect();
 
         Ok(mapped)
     }
@@ -189,40 +236,53 @@ impl Employee {
         let res = employee::Entity::find()
             .having(employee::Column::Name.contains(name))
             .limit(25)
-            .all(db).await?;
-            
-        let mapped = res.iter().map(|e| 
-            Employee { 
+            .all(db)
+            .await?;
+
+        let mapped = res
+            .iter()
+            .map(|e| Employee {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
-                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
-            }
-        ).collect();
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
+                    e.clock_history.clone(),
+                )
+                .unwrap(),
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
+            })
+            .collect();
 
         Ok(mapped)
     }
 
-    pub async fn fetch_by_name_exact(name: serde_json::Value, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
+    pub async fn fetch_by_name_exact(
+        name: serde_json::Value,
+        db: &DbConn,
+    ) -> Result<Vec<Employee>, DbErr> {
         let res = employee::Entity::find()
             .having(employee::Column::Name.eq(name))
             .limit(25)
-            .all(db).await?;
-            
-        let mapped = res.iter().map(|e| 
-            Employee { 
+            .all(db)
+            .await?;
+
+        let mapped = res
+            .iter()
+            .map(|e| Employee {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
-                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
-            }
-        ).collect();
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
+                    e.clock_history.clone(),
+                )
+                .unwrap(),
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
+            })
+            .collect();
 
         Ok(mapped)
     }
@@ -231,25 +291,36 @@ impl Employee {
         let res = employee::Entity::find()
             .having(employee::Column::Level.eq(level))
             .limit(25)
-            .all(db).await?;
-            
-        let mapped = res.iter().map(|e| 
-            Employee { 
+            .all(db)
+            .await?;
+
+        let mapped = res
+            .iter()
+            .map(|e| Employee {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
-                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
+                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap()
-            }
-        ).collect();
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
+                    e.clock_history.clone(),
+                )
+                .unwrap(),
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
+            })
+            .collect();
 
         Ok(mapped)
     }
 
     pub async fn update(empl: Employee, id: &str, db: &DbConn) -> Result<Employee, DbErr> {
-        let addr = convert_addr_to_geo(&format!("{} {} {} {}", empl.contact.address.street, empl.contact.address.street2, empl.contact.address.po_code, empl.contact.address.city));
+        let addr = convert_addr_to_geo(&format!(
+            "{} {} {} {}",
+            empl.contact.address.street,
+            empl.contact.address.street2,
+            empl.contact.address.po_code,
+            empl.contact.address.city
+        ));
 
         match addr {
             Ok(ad) => {
@@ -264,29 +335,27 @@ impl Employee {
                     contact: Set(json!(new_contact)),
                     clock_history: Set(json!(empl.clock_history)),
                     level: Set(json!(empl.level)),
-                }.update(db).await?;
-        
+                }
+                .update(db)
+                .await?;
+
                 Self::fetch_by_id(id, db).await
             }
-            Err(_) => {
-                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())))
-            }
+            Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
+                "Invalid address format".to_string(),
+            ))),
         }
     }
 
     pub async fn generate(db: &DbConn) -> Result<Employee, DbErr> {
         // Create Transaction
         let empl = example_employee();
-        
+
         // Insert & Fetch Transaction
         match Employee::insert(empl.clone(), db, Some(empl.rid)).await {
-            Ok(data) => {
-                match Employee::fetch_by_id(&data.last_insert_id, db).await {
-                    Ok(res) => {
-                        Ok(res)
-                    },  
-                    Err(e) => Err(e)
-                }
+            Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, db).await {
+                Ok(res) => Ok(res),
+                Err(e) => Err(e),
             },
             Err(e) => Err(e),
         }
@@ -296,12 +365,13 @@ impl Employee {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Attendance {
     pub track_type: TrackType,
-    pub till: Id
+    pub till: Id,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum TrackType {
-    In, Out
+    In,
+    Out,
 }
 
 impl ToString for TrackType {
@@ -320,7 +390,7 @@ pub fn example_employee() -> EmployeeInput {
         name: Name {
             first: "Carl".to_string(),
             middle: "".to_string(),
-            last: "Kennith".to_string()
+            last: "Kennith".to_string(),
         },
         contact: ContactInformation {
             name: "Carl Kennith".into(),
@@ -334,88 +404,144 @@ pub fn example_employee() -> EmployeeInput {
                 country: "New Zealand".into(),
                 po_code: "100".into(),
                 lat: -36.915500,
-                lon: 174.838740
+                lon: 174.838740,
             },
         },
         clock_history: vec![
-            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "6".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "1".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "3".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "4".to_string() }, reason: "Left Early".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: TrackType::In, till: "4".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
-            History::<Attendance> { item: Attendance { track_type: TrackType::Out, till: "5".to_string() }, reason: "".to_string(), timestamp: Utc::now() },
+            History::<Attendance> {
+                item: Attendance {
+                    track_type: TrackType::In,
+                    till: "5".to_string(),
+                },
+                reason: "".to_string(),
+                timestamp: Utc::now(),
+            },
+            History::<Attendance> {
+                item: Attendance {
+                    track_type: TrackType::Out,
+                    till: "6".to_string(),
+                },
+                reason: "".to_string(),
+                timestamp: Utc::now(),
+            },
+            History::<Attendance> {
+                item: Attendance {
+                    track_type: TrackType::In,
+                    till: "1".to_string(),
+                },
+                reason: "".to_string(),
+                timestamp: Utc::now(),
+            },
+            History::<Attendance> {
+                item: Attendance {
+                    track_type: TrackType::Out,
+                    till: "3".to_string(),
+                },
+                reason: "".to_string(),
+                timestamp: Utc::now(),
+            },
+            History::<Attendance> {
+                item: Attendance {
+                    track_type: TrackType::In,
+                    till: "4".to_string(),
+                },
+                reason: "".to_string(),
+                timestamp: Utc::now(),
+            },
+            History::<Attendance> {
+                item: Attendance {
+                    track_type: TrackType::Out,
+                    till: "4".to_string(),
+                },
+                reason: "Left Early".to_string(),
+                timestamp: Utc::now(),
+            },
+            History::<Attendance> {
+                item: Attendance {
+                    track_type: TrackType::In,
+                    till: "4".to_string(),
+                },
+                reason: "".to_string(),
+                timestamp: Utc::now(),
+            },
+            History::<Attendance> {
+                item: Attendance {
+                    track_type: TrackType::Out,
+                    till: "5".to_string(),
+                },
+                reason: "".to_string(),
+                timestamp: Utc::now(),
+            },
         ],
         level: vec![
             Access {
                 action: Action::FetchProduct,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::FetchCustomer,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::FetchEmployee,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::FetchTransaction,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::FetchStore,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::ModifyProduct,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::ModifyCustomer,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::ModifyEmployee,
-                authority: 0
+                authority: 0,
             },
             Access {
                 action: Action::DeleteTransaction,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::ModifyTransaction,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::ModifyStore,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::CreateProduct,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::CreateCustomer,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::CreateEmployee,
-                authority: 0
+                authority: 0,
             },
             Access {
                 action: Action::CreateTransaction,
-                authority: 1
+                authority: 1,
             },
             Access {
                 action: Action::CreateStore,
-                authority: 0
+                authority: 0,
             },
             Access {
                 action: Action::FetchGeoLocation,
-                authority: 1
-            }
-        ]
+                authority: 1,
+            },
+        ],
     }
 }

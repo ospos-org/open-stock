@@ -1,6 +1,6 @@
 [package]
 name = "open-stock"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["bennjii"]
 license = "MIT"
@@ -27,25 +27,21 @@ rocket = { version = "0.5.0-rc.3", features = [
   "json", "secrets", "tls"
 ] }
 rust-argon2 = "1.0"
-# argon2rs = { version = "0.2.5", features = ["simd"] }
-# argonautica = { version = "0.2", features = ["simd"] }
 futures-cpupool = "0.1.8"
 rand = "0.8.5"
 photon-geocoding = { version = "1.1.0" }
 geo = "0.23.1"
 tokio = "1.22.0"
-# rocket_contrib = "0.4.11"
 alea = "0.2"
+regex = "1.5.4"
+lazy_static = "1.4.0"
 
 [dev-dependencies]
 tokio = { version = "1.22.0", features = ["rt"] }
 reqwest = "0.11.13"
 
 [features]
-# default = ["sqlx-postgres", "sqlx-sqlite"]
 sqlx-mysql = ["sea-orm/sqlx-mysql"]
-# sqlx-postgres = ["sea-orm/sqlx-postgres"]
-# sqlx-sqlite = ["sea-orm/sqlx-sqlite"]
 
 [profile.release]
 strip = false

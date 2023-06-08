@@ -1,5 +1,5 @@
 # Rust as the base image
-FROM rust:1.68.1 as build
+FROM rust:1.70.0 as build
 
 # 1. Create a new empty shell project
 RUN USER=root cargo new --bin open-stock
@@ -20,11 +20,11 @@ RUN rm src/*.rs
 COPY ./src ./src
 
 # build for release
-# RUN rm ./target/release/deps/stock* .        
+# RUN rm ./target/release/deps/stock* .
 RUN cargo build --release --locked
 
 # our final base
-FROM rust:1.68.1
+FROM rust:1.70.0
 
 # copy the build artifact from the build stage
 COPY --from=build /open-stock/target/release/open-stock .

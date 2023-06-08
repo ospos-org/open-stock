@@ -1,19 +1,24 @@
 use std::fmt::Display;
 
-use crate::{methods::{stml::Order, EmployeeAuth, Attendance, Access, Action}, entities};
-use chrono::{Utc, DateTime};
-use rocket::{http::{CookieJar}, serde::json::Json, Responder};
-use sea_orm::{DatabaseConnection, DbErr, EntityTrait, QuerySelect, ColumnTrait};
-use serde::{Serialize, Deserialize};
-use crate::entities::session::Entity as SessionEntity;
+use super::{Employee as EmployeeObj, ProductExchange};
 use crate::entities::employee::Entity as Employee;
-use super::{ProductExchange, Employee as EmployeeObj};
+use crate::entities::session::Entity as SessionEntity;
+use crate::{
+    entities,
+    methods::{stml::Order, Access, Action, Attendance, EmployeeAuth},
+};
+use chrono::{DateTime, Utc};
+use lazy_static::lazy_static;
+use regex::Regex;
+use rocket::{http::CookieJar, serde::json::Json, Responder};
+use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QuerySelect};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Name {
     pub first: String,
     pub middle: String,
-    pub last: String
+    pub last: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -22,18 +27,52 @@ pub struct ContactInformation {
     pub mobile: MobileNumber,
     pub email: Email,
     pub landline: String,
-    pub address: Address
+    pub address: Address,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct MobileNumber {
-    pub region_code: String,
-    pub root: String
+    pub number: String,
+    pub valid: bool,
+}
+
+/// Performs
+/// ```regex
+/// ^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$
+/// ```
+pub fn verify_phone_number_with_country_code(ph: &str) -> bool {
+    // prevent re-compilation of regex
+    lazy_static! {
+        static ref RE: Regex =
+            Regex::new(r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$").unwrap();
+    }
+
+    RE.is_match(ph)
+}
+
+/// Performs:
+/// ```regex
+/// ^1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$
+/// ```
+pub fn verify_phone_number_without_country_code(ph: &str) -> bool {
+    // prevent re-compilation of regex
+    lazy_static! {
+        static ref RE: Regex =
+            Regex::new(r"^1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$").unwrap();
+    }
+
+    RE.is_match(ph)
 }
 
 impl MobileNumber {
     pub fn from(number: String) -> Self {
-        MobileNumber { region_code: "+64".into(), root: number }
+        let valid = if number.starts_with("+") {
+            verify_phone_number_with_country_code(number.as_str())
+        } else {
+            verify_phone_number_without_country_code(number.as_str())
+        };
+
+        MobileNumber { number, valid }
     }
 }
 
@@ -45,14 +84,14 @@ pub type HistoryList = Vec<History<ProductExchange>>;
 pub struct History<T> {
     pub item: T,
     pub reason: String,
-    pub timestamp: DateTime<Utc>
+    pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Email {
     pub root: String,
     pub domain: String,
-    pub full: String
+    pub full: String,
 }
 
 impl Email {
@@ -61,23 +100,19 @@ impl Email {
         let col = split.collect::<Vec<&str>>();
 
         let root = match col.get(0) {
-            Some(root) => {
-                *root
-            },
+            Some(root) => *root,
             None => "",
         };
 
         let domain = match col.get(1) {
-            Some(domain) => {
-                *domain
-            },
+            Some(domain) => *domain,
             None => "",
         };
 
         Email {
             root: root.into(),
             domain: domain.into(),
-            full: email
+            full: email,
         }
     }
 }
@@ -86,15 +121,16 @@ impl Email {
 pub struct Note {
     pub message: String,
     pub author: String,
-    pub timestamp: DateTime<Utc>
+    pub timestamp: DateTime<Utc>,
 }
 
 impl Display for Note {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
-            f, 
+            f,
             "{}: {}",
-            self.timestamp.format("%d/%m/%Y %H:%M"), self.message
+            self.timestamp.format("%d/%m/%Y %H:%M"),
+            self.message
         )
     }
 }
@@ -107,7 +143,7 @@ pub struct Address {
     pub country: String,
     pub po_code: String,
     pub lat: f64,
-    pub lon: f64
+    pub lon: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,7 +152,7 @@ pub struct Location {
     pub store_id: String,
 
     // Address is stored in the contact information.
-    pub contact: ContactInformation
+    pub contact: ContactInformation,
 }
 
 pub type Url = String;
@@ -143,85 +179,95 @@ pub struct Session {
 
 impl Session {
     pub fn has_permission(self, permission: Action) -> bool {
-        let action = match self.employee.level.into_iter().find(| x | x.action == permission) {
+        let action = match self
+            .employee
+            .level
+            .into_iter()
+            .find(|x| x.action == permission)
+        {
             Some(e) => e,
-            None => Access { action: permission, authority: 0 }
+            None => Access {
+                action: permission,
+                authority: 0,
+            },
         };
-        
+
         if action.action == Action::GenerateTemplateContent {
             true
-        }else {
+        } else {
             action.authority >= 1
-        } 
+        }
     }
 }
 
 pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
-    match cookies.get("key")
-        .map(|crumb| format!("{}", crumb.value())) {
-            Some(val) => {
-                Some(val)
-            }
-            None => {
-                None
-            }
-        }
+    match cookies.get("key").map(|crumb| format!("{}", crumb.value())) {
+        Some(val) => Some(val),
+        None => None,
+    }
 }
 
 pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Session, DbErr> {
     let session = SessionEntity::find()
         .having(entities::session::Column::Key.eq(key.clone()))
         .find_also_related(Employee)
-        .one(db).await?;
-    
+        .one(db)
+        .await?;
+
     match session {
-        Some((val, empl)) => {
-            match empl {
-                Some(e) => {
-                    Ok(Session {
-                        id: val.id,
-                        key: val.key,
-                        employee: EmployeeObj { 
-                            id: e.id.clone(),
-                            rid: e.rid.clone(),
-                            name: serde_json::from_value::<Name>(e.name.clone()).unwrap(), 
-                            auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                            contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(), 
-                            clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history.clone()).unwrap(), 
-                            level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap() 
-                        },
-                        expiry: DateTime::from_utc(val.expiry, Utc)
-                    })
+        Some((val, empl)) => match empl {
+            Some(e) => Ok(Session {
+                id: val.id,
+                key: val.key,
+                employee: EmployeeObj {
+                    id: e.id.clone(),
+                    rid: e.rid.clone(),
+                    name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
+                    auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
+                    contact: serde_json::from_value::<ContactInformation>(e.contact.clone())
+                        .unwrap(),
+                    clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
+                        e.clock_history.clone(),
+                    )
+                    .unwrap(),
+                    level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
                 },
-                None => {
-                    Err(DbErr::RecordNotFound(format!("Record {} does not exist.", key)))
-                },
-            }
+                expiry: DateTime::from_utc(val.expiry, Utc),
+            }),
+            None => Err(DbErr::RecordNotFound(format!(
+                "Record {} does not exist.",
+                key
+            ))),
         },
-        None => Err(DbErr::RecordNotFound(format!("Record {} does not exist.", key))),
+        None => Err(DbErr::RecordNotFound(format!(
+            "Record {} does not exist.",
+            key
+        ))),
     }
 }
 
-pub async fn _handle_cookie(db: &DatabaseConnection, cookies: &CookieJar<'_>) -> Result<Session, DbErr> {
+pub async fn _handle_cookie(
+    db: &DatabaseConnection,
+    cookies: &CookieJar<'_>,
+) -> Result<Session, DbErr> {
     match get_key_cookie(cookies) {
-        Some(val) => {
-            verify_cookie(val, db).await
-        },
+        Some(val) => verify_cookie(val, db).await,
         None => Err(DbErr::Custom(format!("Cookies not set."))),
     }
 }
 
-pub async fn cookie_status_wrapper(db: &DatabaseConnection, cookies: &CookieJar<'_>) -> Result<Session, Error> {
+pub async fn cookie_status_wrapper(
+    db: &DatabaseConnection,
+    cookies: &CookieJar<'_>,
+) -> Result<Session, Error> {
     match get_key_cookie(cookies) {
-        Some(val) => {
-            match verify_cookie(val, db).await {
-                Ok(v) => {
-                    Ok(v)
-                },
-                Err(err) => {
-                    println!("[err]: {}", err);
-                    Err(ErrorResponse::custom_unauthorized("Unable to validate cookie, user does not have valid session."))
-                },
+        Some(val) => match verify_cookie(val, db).await {
+            Ok(v) => Ok(v),
+            Err(err) => {
+                println!("[err]: {}", err);
+                Err(ErrorResponse::custom_unauthorized(
+                    "Unable to validate cookie, user does not have valid session.",
+                ))
             }
         },
         None => Err(ErrorResponse::create_error("Unable to fetch user cookie.")),
@@ -230,28 +276,38 @@ pub async fn cookie_status_wrapper(db: &DatabaseConnection, cookies: &CookieJar<
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ErrorResponse {
-    message: String
+    message: String,
 }
 
 impl ErrorResponse {
     pub fn create_error(message: &str) -> Error {
-        Error::StandardError(Json(ErrorResponse { message: message.to_string() }))
+        Error::StandardError(Json(ErrorResponse {
+            message: message.to_string(),
+        }))
     }
 
     pub fn input_error() -> Error {
-        Error::InputError(Json(ErrorResponse { message: "Unable to update fields due to malformed inputs".to_string() }))
+        Error::InputError(Json(ErrorResponse {
+            message: "Unable to update fields due to malformed inputs".to_string(),
+        }))
     }
 
     pub fn unauthorized(action: Action) -> Error {
-        Error::Unauthorized(Json(ErrorResponse { message: format!("User lacks {:?} permission.", action) }))
+        Error::Unauthorized(Json(ErrorResponse {
+            message: format!("User lacks {:?} permission.", action),
+        }))
     }
 
     pub fn custom_unauthorized(message: &str) -> Error {
-        Error::Unauthorized(Json(ErrorResponse { message: message.to_string() }))
+        Error::Unauthorized(Json(ErrorResponse {
+            message: message.to_string(),
+        }))
     }
 
     pub fn db_err(message: sea_orm::DbErr) -> Error {
-        Error::DbError(Json(ErrorResponse { message: format!("SQL error, reason: {}", message) }))
+        Error::DbError(Json(ErrorResponse {
+            message: format!("SQL error, reason: {}", message),
+        }))
     }
 }
 
@@ -266,5 +322,5 @@ pub enum Error {
     #[response(status = 500, content_type = "json")]
     DbError(Json<ErrorResponse>),
     #[response(status = 500, content_type = "text")]
-    DemoDisabled(String)
+    DemoDisabled(String),
 }

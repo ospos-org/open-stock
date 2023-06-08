@@ -1,11 +1,19 @@
 use std::fmt::Display;
 
-use crate::{methods::{Name, ContactInformation, MobileNumber, Email, Address, Transaction, convert_addr_to_geo}, entities::{supplier}};
-use sea_orm::{DbConn, DbErr, Set, EntityTrait, ColumnTrait, QuerySelect, InsertResult, ActiveModelTrait, RuntimeErr};
-use serde::{Serialize, Deserialize};
+use crate::entities::prelude::Supplier as Suppl;
+use crate::{
+    entities::supplier,
+    methods::{
+        convert_addr_to_geo, Address, ContactInformation, Email, MobileNumber, Name, Transaction,
+    },
+};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QuerySelect,
+    RuntimeErr, Set,
+};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
-use crate::entities::prelude::Supplier as Suppl;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Supplier {
@@ -23,7 +31,10 @@ pub struct SupplierInput {
 }
 
 impl Supplier {
-    pub async fn insert(suppl: SupplierInput, db: &DbConn) -> Result<InsertResult<supplier::ActiveModel>, DbErr> {
+    pub async fn insert(
+        suppl: SupplierInput,
+        db: &DbConn,
+    ) -> Result<InsertResult<supplier::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
 
         let insert_crud = supplier::ActiveModel {
@@ -35,7 +46,7 @@ impl Supplier {
 
         match Suppl::insert(insert_crud).exec(db).await {
             Ok(res) => Ok(res),
-            Err(err) => Err(err)
+            Err(err) => Err(err),
         }
     }
 
@@ -43,11 +54,12 @@ impl Supplier {
         let suppl = Suppl::find_by_id(id.to_string()).one(db).await?;
         let s = suppl.unwrap();
 
-        Ok(Supplier { 
-            id: s.id, 
-            name: serde_json::from_value::<Name>(s.name).unwrap(), 
+        Ok(Supplier {
+            id: s.id,
+            name: serde_json::from_value::<Name>(s.name).unwrap(),
             contact: serde_json::from_value::<ContactInformation>(s.contact).unwrap(),
-            transaction_history: serde_json::from_value::<Vec<Transaction>>(s.transaction_history).unwrap(),
+            transaction_history: serde_json::from_value::<Vec<Transaction>>(s.transaction_history)
+                .unwrap(),
         })
     }
 
@@ -55,16 +67,21 @@ impl Supplier {
         let res = supplier::Entity::find()
             .having(supplier::Column::Name.contains(name))
             .limit(25)
-            .all(db).await?;
-            
-        let mapped = res.iter().map(|s| 
-            Supplier { 
-                id: s.id.clone(), 
-                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(), 
+            .all(db)
+            .await?;
+
+        let mapped = res
+            .iter()
+            .map(|s| Supplier {
+                id: s.id.clone(),
+                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(s.contact.clone()).unwrap(),
-                transaction_history: serde_json::from_value::<Vec<Transaction>>(s.transaction_history.clone()).unwrap(),
-            }
-        ).collect();
+                transaction_history: serde_json::from_value::<Vec<Transaction>>(
+                    s.transaction_history.clone(),
+                )
+                .unwrap(),
+            })
+            .collect();
 
         Ok(mapped)
     }
@@ -73,16 +90,21 @@ impl Supplier {
         let res = supplier::Entity::find()
             .having(supplier::Column::Contact.contains(phone))
             .limit(25)
-            .all(db).await?;
-            
-        let mapped = res.iter().map(|s| 
-            Supplier { 
-                id: s.id.clone(), 
-                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(), 
+            .all(db)
+            .await?;
+
+        let mapped = res
+            .iter()
+            .map(|s| Supplier {
+                id: s.id.clone(),
+                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(s.contact.clone()).unwrap(),
-                transaction_history: serde_json::from_value::<Vec<Transaction>>(s.transaction_history.clone()).unwrap(),
-            }
-        ).collect();
+                transaction_history: serde_json::from_value::<Vec<Transaction>>(
+                    s.transaction_history.clone(),
+                )
+                .unwrap(),
+            })
+            .collect();
 
         Ok(mapped)
     }
@@ -91,16 +113,21 @@ impl Supplier {
         let res = supplier::Entity::find()
             .having(supplier::Column::Contact.contains(addr))
             .limit(25)
-            .all(db).await?;
-            
-        let mapped = res.iter().map(|s| 
-            Supplier { 
-                id: s.id.clone(), 
-                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(), 
+            .all(db)
+            .await?;
+
+        let mapped = res
+            .iter()
+            .map(|s| Supplier {
+                id: s.id.clone(),
+                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(s.contact.clone()).unwrap(),
-                transaction_history: serde_json::from_value::<Vec<Transaction>>(s.transaction_history.clone()).unwrap(),
-            }
-        ).collect();
+                transaction_history: serde_json::from_value::<Vec<Transaction>>(
+                    s.transaction_history.clone(),
+                )
+                .unwrap(),
+            })
+            .collect();
 
         Ok(mapped)
     }
@@ -111,17 +138,19 @@ impl Supplier {
         // Insert & Fetch Customer
         let r = Supplier::insert(cust, &db).await.unwrap();
         match Supplier::fetch_by_id(&r.last_insert_id, &db).await {
-            Ok(cust) => {
-                Ok(cust)
-            }
-            Err(e) => {
-                Err(e)
-            }
+            Ok(cust) => Ok(cust),
+            Err(e) => Err(e),
         }
     }
 
     pub async fn update(suppl: SupplierInput, id: &str, db: &DbConn) -> Result<Supplier, DbErr> {
-        let addr = convert_addr_to_geo(&format!("{} {} {} {}", suppl.contact.address.street, suppl.contact.address.street2, suppl.contact.address.po_code, suppl.contact.address.city));
+        let addr = convert_addr_to_geo(&format!(
+            "{} {} {} {}",
+            suppl.contact.address.street,
+            suppl.contact.address.street2,
+            suppl.contact.address.po_code,
+            suppl.contact.address.city
+        ));
 
         match addr {
             Ok(ad) => {
@@ -133,35 +162,47 @@ impl Supplier {
                     name: Set(json!(suppl.name)),
                     contact: Set(json!(new_contact)),
                     transaction_history: Set(json!(suppl.transaction_history)),
-                }.update(db).await?;
-        
+                }
+                .update(db)
+                .await?;
+
                 Self::fetch_by_id(id, db).await
             }
-            Err(_) => {
-                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())))
-            }
+            Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
+                "Invalid address format".to_string(),
+            ))),
         }
     }
 }
 
 impl Display for Supplier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let order_history: String = self.transaction_history.iter()
-            .map(|f| 
+        let order_history: String = self
+            .transaction_history
+            .iter()
+            .map(|f| {
                 format!(
-                    "{}: {:?}\n", 
-                    f.order_date.format("%d/%m/%Y %H:%M"), 
-                    f.transaction_type, 
+                    "{}: {:?}\n",
+                    f.order_date.format("%d/%m/%Y %H:%M"),
+                    f.transaction_type,
                 )
-            ).collect();
+            })
+            .collect();
 
         write!(
-            f, 
+            f,
             "{} {} \n{}\n({}) {} {}\n\n[Clock History]\n{}\n
-            ", 
-            self.name.first, self.name.last,
-            self.id, 
-            self.contact.mobile.region_code, self.contact.mobile.root, self.contact.email.full,
+            ",
+            self.name.first,
+            self.name.last,
+            self.id,
+            self.contact.mobile.number,
+            if self.contact.mobile.valid {
+                "VALID"
+            } else {
+                "ELSE"
+            },
+            self.contact.email.full,
             order_history,
         )
     }
@@ -180,13 +221,17 @@ pub fn example_supplier() -> SupplierInput {
             country: "New Zealand".into(),
             po_code: "1060".into(),
             lat: -36.915501,
-            lon: 174.838745
-        }
+            lon: 174.838745,
+        },
     };
 
     SupplierInput {
-        name: Name { first: "".into(), middle: "".into(), last: "".into() },
+        name: Name {
+            first: "".into(),
+            middle: "".into(),
+            last: "".into(),
+        },
         contact: customer.clone(),
-        transaction_history: vec![]
+        transaction_history: vec![],
     }
 }
