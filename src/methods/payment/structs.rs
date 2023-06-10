@@ -56,7 +56,7 @@ impl PaymentProcessor {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Processable {
     /// CardDetails() (CardTransaction)
-    CardDetails(CardDetails),
+    CardDetails(Box<CardDetails>),
     /// Anonymous(Origin: String)
     Anonymous(String),
 }

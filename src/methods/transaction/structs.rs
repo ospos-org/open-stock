@@ -176,7 +176,7 @@ impl Transaction {
 
         let mapped = as_str
             .iter()
-            .map(|t| {
+            .flat_map(|t| {
                 // Conditions are:
                 // 1. Must be distributed from the query location
                 // 2. Must be an actively queued job
@@ -187,7 +187,6 @@ impl Transaction {
 
                 orders.cloned().collect::<Vec<Order>>()
             })
-            .flat_map(|x| x)
             .collect();
 
         Ok(mapped)
@@ -219,7 +218,7 @@ impl Transaction {
                 Expr::expr(Func::lower(Expr::col(
                     transactions::Column::TransactionType,
                 )))
-                .like(format!("%saved%")),
+                .like("%saved%".to_string()),
             )
             .limit(25)
             .all(db)
@@ -376,7 +375,7 @@ impl Transaction {
                                         if i.id == iid {
                                             i.fulfillment_status.pick_history.push(History {
                                                 item: i.fulfillment_status.pick_status,
-                                                reason: format!("Standard Update Bump"),
+                                                reason: "Standard Update Bump".to_string(),
                                                 timestamp: i.fulfillment_status.last_updated,
                                             });
                                             i.fulfillment_status.last_updated = Utc::now();
@@ -527,10 +526,10 @@ impl Transaction {
                             // Possible chance for an alternate client to have a modification during this time-frame, try implementing a queued solution.
                             match Product::update(val, &intent.product_sku, &db_).await {
                                 Ok(val) => Ok(val),
-                                Err(_) => Err(DbErr::Custom(format!(""))),
+                                Err(_) => Err(DbErr::Custom(String::new())),
                             }
                         }
-                        Err(_) => Err(DbErr::Custom(format!(""))),
+                        Err(_) => Err(DbErr::Custom(String::new())),
                     }
                     .unwrap()
                 })
@@ -542,12 +541,12 @@ impl Transaction {
     }
 
     pub async fn delete(id: &str, db: &DbConn) -> Result<DeleteResult, DbErr> {
-        Ok(Transactions::delete(transactions::ActiveModel {
+        Transactions::delete(transactions::ActiveModel {
             id: Set(id.to_string()),
             ..Default::default()
         })
         .exec(db)
-        .await?)
+        .await
     }
 }
 
@@ -642,19 +641,19 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
     let order = Order {
         destination: Location {
             store_code: "001".into(),
-            store_id: format!("628f74d7-de00-4956-a5b6-2031e0c72128"),
+            store_id: "628f74d7-de00-4956-a5b6-2031e0c72128".to_string(),
             contact: torpedo7.clone(),
         },
         order_type: crate::methods::OrderType::Shipment,
         origin: Location {
             store_code: "002".into(),
-            store_id: format!("c4a1d88b-e8a0-4dcd-ade2-1eea82254816"),
+            store_id: "c4a1d88b-e8a0-4dcd-ade2-1eea82254816".to_string(),
             contact: torpedo7.clone(),
         },
         products: vec![
             ProductPurchase {
-                product_name: format!("Torpedo7 Nippers Kids Kayak & Paddle"),
-                product_variant_name: format!("1.83m Beaches"),
+                product_name: "Torpedo7 Nippers Kids Kayak & Paddle".to_string(),
+                product_variant_name: "1.83m Beaches".to_string(),
                 id: "PDT-KAYAK-PURCHASE-ID-1".to_string(),
                 product_sku: "".into(),
                 product_code: "54897443288214".into(),
@@ -664,7 +663,7 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 transaction_type: TransactionType::Out,
                 tags: vec!["Tee".into(), "Cotton".into(), "Organic".into()],
                 instances: vec![ProductInstance {
-                    id: format!("def"),
+                    id: "def".to_string(),
                     fulfillment_status: crate::FulfillmentStatus {
                         pick_status: PickStatus::Pending,
                         pick_history: vec![],
@@ -674,8 +673,8 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 }],
             },
             ProductPurchase {
-                product_name: format!("Torpedo7 Kids Voyager II Paddle Vest"),
-                product_variant_name: format!("Small Red (4-6y)"),
+                product_name: "Torpedo7 Kids Voyager II Paddle Vest".to_string(),
+                product_variant_name: "Small Red (4-6y)".to_string(),
                 id: "PDT-LIFEJACKET-PURCHASE-ID-1".to_string(),
                 product_sku: "".into(),
                 product_code: "51891265958214".into(),
@@ -685,7 +684,7 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 transaction_type: TransactionType::Out,
                 tags: vec!["Tee".into(), "Cotton".into(), "Organic".into()],
                 instances: vec![ProductInstance {
-                    id: format!("def"),
+                    id: "def".to_string(),
                     fulfillment_status: crate::FulfillmentStatus {
                         pick_status: PickStatus::Pending,
                         pick_history: vec![],
@@ -741,12 +740,12 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
             },
             History::<OrderStatusAssignment> {
                 item: OrderStatusAssignment {
-                    status: OrderStatus::Transit(TransitInformation {
-                        shipping_company: torpedo7.clone(),
+                    status: OrderStatus::Transit(Box::new(TransitInformation {
+                        shipping_company: torpedo7,
                         query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
                         tracking_code: "1523123".into(),
                         assigned_products: vec!["132522-22".to_string()],
-                    }),
+                    })),
                     timestamp: Utc::now().checked_add_signed(Duration::hours(2)).unwrap(),
                     assigned_products: vec!["132522-22".to_string()],
                 },
@@ -768,7 +767,7 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
         discount: DiscountValue::Absolute(0),
     };
 
-    let transaction = TransactionInit {
+    TransactionInit {
         customer: TransactionCustomer {
             customer_id: customer_id.into(),
             customer_type: CustomerType::Individual,
@@ -788,8 +787,8 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
                 quantity: 0.10,
                 currency: "NZD".to_string(),
             },
-            status: PaymentStatus::Unfulfilled(format!(
-                "Unable to fulfil payment requirements - insufficient funds."
+            status: PaymentStatus::Unfulfilled(String::from(
+                "Unable to fulfil payment requirements - insufficient funds.",
             )),
             processor: PaymentProcessor {
                 location: "001".to_string(),
@@ -809,7 +808,5 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
         }],
         // order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
         till: "...".into(),
-    };
-
-    transaction
+    }
 }

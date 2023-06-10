@@ -145,7 +145,7 @@ impl Employee {
             id: Set(id),
             rid: Set(format!("{:0>#4}", rid)),
             name: Set(json!(empl.name)),
-            auth: Set(json!(EmployeeAuth { hash: hash })),
+            auth: Set(json!(EmployeeAuth { hash })),
             contact: Set(json!(empl.contact)),
             clock_history: Set(json!(empl.clock_history)),
             level: Set(json!(empl.level)),
@@ -200,7 +200,7 @@ impl Employee {
                 contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(),
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history)
                     .unwrap(),
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level).unwrap(),
             }),
             None => Err(DbErr::RecordNotFound(id.to_string())),
         }

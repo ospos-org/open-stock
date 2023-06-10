@@ -1,5 +1,5 @@
-mod payment;
 mod discount;
+mod structs;
 
 pub use discount::*;
-pub use payment::*;
+pub use structs::*;

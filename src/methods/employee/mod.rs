@@ -1,5 +1,5 @@
-mod employee;
 pub(crate) mod handlers;
+mod structs;
 
 pub use handlers::*;
-pub use employee::*;
+pub use structs::*;

@@ -98,9 +98,9 @@ impl Customer {
                 balance: c.balance,
                 accepts_marketing: c.accepts_marketing,
             }),
-            None => Err(DbErr::RecordNotFound(format!(
-                "Unable to find customer record value"
-            ))),
+            None => Err(DbErr::RecordNotFound(
+                "Unable to find customer record value".to_string(),
+            )),
         }
     }
 
@@ -134,7 +134,7 @@ impl Customer {
                     .unwrap(),
                 balance: c.balance,
                 transactions: c.transactions.clone(),
-                accepts_marketing: c.accepts_marketing.clone(),
+                accepts_marketing: c.accepts_marketing,
             })
             .collect();
 
@@ -162,7 +162,7 @@ impl Customer {
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone())
                     .unwrap(),
                 balance: c.balance,
-                accepts_marketing: c.accepts_marketing.clone(),
+                accepts_marketing: c.accepts_marketing,
             })
             .collect();
 
@@ -187,7 +187,7 @@ impl Customer {
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone())
                     .unwrap(),
                 balance: c.balance,
-                accepts_marketing: c.accepts_marketing.clone(),
+                accepts_marketing: c.accepts_marketing,
             })
             .collect();
 
@@ -212,7 +212,7 @@ impl Customer {
                 special_pricing: serde_json::from_value::<String>(c.special_pricing.clone())
                     .unwrap(),
                 balance: c.balance,
-                accepts_marketing: c.accepts_marketing.clone(),
+                accepts_marketing: c.accepts_marketing,
             })
             .collect();
 
@@ -223,8 +223,8 @@ impl Customer {
     pub async fn generate(db: &DbConn) -> Result<Customer, DbErr> {
         let cust = example_customer();
         // Insert & Fetch Customer
-        let r = Customer::insert(cust, &db).await.unwrap();
-        match Customer::fetch_by_id(&r.last_insert_id, &db).await {
+        let r = Customer::insert(cust, db).await.unwrap();
+        match Customer::fetch_by_id(&r.last_insert_id, db).await {
             Ok(cust) => Ok(cust),
             Err(e) => Err(e),
         }
@@ -353,7 +353,7 @@ pub fn example_customer() -> CustomerInput {
 
     CustomerInput {
         name: "Carl Kennith".into(),
-        contact: customer.clone(),
+        contact: customer,
         special_pricing: "".into(),
         customer_notes: vec![],
         balance: 0.0,

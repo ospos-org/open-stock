@@ -149,7 +149,7 @@ impl Store {
 fn example_stores() -> Vec<Store> {
     vec![
         Store {
-            id: format!("628f74d7-de00-4956-a5b6-2031e0c72128"),
+            id: "628f74d7-de00-4956-a5b6-2031e0c72128".to_string(),
             name: "Mt Wellington".to_string(),
             contact: ContactInformation {
                 name: "Torpedo7 Mt Wellington".into(),
@@ -176,7 +176,7 @@ fn example_stores() -> Vec<Store> {
             code: "001".to_string(),
         },
         Store {
-            id: format!("c4a1d88b-e8a0-4dcd-ade2-1eea82254816"),
+            id: "c4a1d88b-e8a0-4dcd-ade2-1eea82254816".to_string(),
             name: "Westfield".to_string(),
             contact: ContactInformation {
                 name: "Torpedo7 Westfield".into(),
@@ -203,7 +203,7 @@ fn example_stores() -> Vec<Store> {
             code: "002".to_string(),
         },
         Store {
-            id: format!("a91509fa-2783-43ae-8c3c-5d5bc5cb6c95"),
+            id: "a91509fa-2783-43ae-8c3c-5d5bc5cb6c95".to_string(),
             name: "Albany".to_string(),
             contact: ContactInformation {
                 name: "Torpedo7 Albany".into(),

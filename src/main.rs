@@ -1,13 +1,19 @@
+#![allow(ambiguous_glob_reexports)]
+
 use pool::Db;
-use rocket::{*, fairing::{Fairing, Info, Kind}, http::Header};
+use rocket::{
+    fairing::{Fairing, Info, Kind},
+    http::Header,
+    *,
+};
 use sea_orm_rocket::Database;
 
-pub mod methods;
 pub mod entities;
+pub mod methods;
 pub mod pool;
 
-pub use methods::*;
 pub use entities::*;
+pub use methods::*;
 
 extern crate argon2;
 extern crate futures_cpupool;
@@ -19,7 +25,7 @@ impl Fairing for CORS {
     fn info(&self) -> Info {
         Info {
             name: "Add CORS headers to responses",
-            kind: Kind::Response
+            kind: Kind::Response,
         }
     }
 
@@ -27,7 +33,10 @@ impl Fairing for CORS {
         let access_origin = dotenv::var("ACCESS_ORIGIN").unwrap();
 
         response.set_header(Header::new("Access-Control-Allow-Origin", access_origin));
-        response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
+        response.set_header(Header::new(
+            "Access-Control-Allow-Methods",
+            "POST, GET, PATCH, OPTIONS",
+        ));
         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
     }

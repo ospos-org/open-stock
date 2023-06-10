@@ -1,7 +1,7 @@
-mod product;
+pub(crate) mod handlers;
+mod structs;
 mod variant;
-pub(crate) mod handlers; 
 
 pub use handlers::*;
-pub use product::*;
+pub use structs::*;
 pub use variant::*;

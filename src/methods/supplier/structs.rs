@@ -136,8 +136,8 @@ impl Supplier {
     pub async fn generate(db: &DbConn) -> Result<Supplier, DbErr> {
         let cust = example_supplier();
         // Insert & Fetch Customer
-        let r = Supplier::insert(cust, &db).await.unwrap();
-        match Supplier::fetch_by_id(&r.last_insert_id, &db).await {
+        let r = Supplier::insert(cust, db).await.unwrap();
+        match Supplier::fetch_by_id(&r.last_insert_id, db).await {
             Ok(cust) => Ok(cust),
             Err(e) => Err(e),
         }
@@ -231,7 +231,7 @@ pub fn example_supplier() -> SupplierInput {
             middle: "".into(),
             last: "".into(),
         },
-        contact: customer.clone(),
+        contact: customer,
         transaction_history: vec![],
     }
 }

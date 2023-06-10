@@ -1,8 +1,11 @@
 use std::fmt::Display;
 
-use chrono::{Utc, DateTime};
-use serde::{Serialize, Deserialize};
-use crate::methods::{Location, ProductPurchaseList, NoteList, ContactInformation, Url, DiscountValue, Id, HistoryList, History, Store};
+use crate::methods::{
+    ContactInformation, DiscountValue, History, HistoryList, Id, Location, NoteList,
+    ProductPurchaseList, Store, Url,
+};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Order {
@@ -22,21 +25,24 @@ pub struct Order {
     pub order_notes: NoteList,
     pub reference: String,
     pub creation_date: DateTime<Utc>,
-    
+
     pub discount: DiscountValue,
-    pub order_type: OrderType
+    pub order_type: OrderType,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OrderType {
-    Direct, Shipment, Pickup, Quote
+    Direct,
+    Shipment,
+    Pickup,
+    Quote,
 }
 
 impl ToString for Order {
     fn to_string(&self) -> String {
         match serde_json::to_string(self) {
             Ok(s) => s,
-            Err(_) => "{}".to_string()
+            Err(_) => "{}".to_string(),
         }
     }
 }
@@ -44,14 +50,14 @@ impl ToString for Order {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderState {
     pub timestamp: DateTime<Utc>,
-    pub status: OrderStatus
+    pub status: OrderStatus,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderStatusAssignment {
     pub status: OrderStatus,
     pub assigned_products: Vec<Id>,
-    pub timestamp: DateTime<Utc>
+    pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -59,7 +65,7 @@ pub enum OrderStatus {
     /// Open Cart, Till Cart or Being Processed, the date represents the time it was placed.
     Queued(DateTime<Utc>),
     /// Delivery items: Contains a transit information docket - with assigned items and tracking information.
-    Transit(TransitInformation),
+    Transit(Box<TransitInformation>),
     /// Click-n-collect item or Delivery being processed with date when processing started.
     Processing(DateTime<Utc>),
     /// Click-n-collect item, date represents when it was readied-for-pickup.
@@ -67,7 +73,7 @@ pub enum OrderStatus {
     /// In-store purchase or Delivered Item, date represents when it was completed.
     Fulfilled(DateTime<Utc>),
     /// Was unable to fulfill, reason is given
-    Failed(String)
+    Failed(String),
 }
 
 impl Display for OrderStatus {
@@ -78,16 +84,10 @@ impl Display for OrderStatus {
             OrderStatus::Processing(_) => "PROCESSING",
             OrderStatus::InStore(_) => "IN-STORE",
             OrderStatus::Fulfilled(_) => "FULFILLED",
-            OrderStatus::Failed(_reason) => {
-                "FAILED:"
-            },
+            OrderStatus::Failed(_reason) => "FAILED:",
         };
 
-        write!(
-            f, 
-            "{}",
-            output
-        )
+        write!(f, "{}", output)
     }
 }
 
@@ -106,19 +106,13 @@ impl OrderStatus {
 
 impl Display for OrderStatusAssignment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let pdts: String = self.assigned_products
-        .iter()
-        .map(|p| 
-            format!(
-                "{}", p, 
-            )
-        ).collect();
+        let pdts: String = self
+            .assigned_products
+            .iter()
+            .map(|p| p.to_string())
+            .collect();
 
-        write!(
-            f,
-            "Status:{}\nItems:\n{}",
-            self.status, pdts
-        )
+        write!(f, "Status:{}\nItems:\n{}", self.status, pdts)
     }
 }
 
@@ -127,5 +121,5 @@ pub struct TransitInformation {
     pub shipping_company: ContactInformation,
     pub query_url: Url,
     pub tracking_code: String,
-    pub assigned_products: Vec<Id>
+    pub assigned_products: Vec<Id>,
 }

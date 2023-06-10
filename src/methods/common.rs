@@ -66,7 +66,7 @@ pub fn verify_phone_number_without_country_code(ph: &str) -> bool {
 
 impl MobileNumber {
     pub fn from(number: String) -> Self {
-        let valid = if number.starts_with("+") {
+        let valid = if number.starts_with('+') {
             verify_phone_number_with_country_code(number.as_str())
         } else {
             verify_phone_number_without_country_code(number.as_str())
@@ -96,10 +96,10 @@ pub struct Email {
 
 impl Email {
     pub fn from(email: String) -> Self {
-        let split = email.split("@");
+        let split = email.split('@');
         let col = split.collect::<Vec<&str>>();
 
-        let root = match col.get(0) {
+        let root = match col.first() {
             Some(root) => *root,
             None => "",
         };
@@ -201,10 +201,7 @@ impl Session {
 }
 
 pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
-    match cookies.get("key").map(|crumb| format!("{}", crumb.value())) {
-        Some(val) => Some(val),
-        None => None,
-    }
+    cookies.get("key").map(|crumb| crumb.value().to_string())
 }
 
 pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Session, DbErr> {
@@ -215,31 +212,24 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
         .await?;
 
     match session {
-        Some((val, empl)) => match empl {
-            Some(e) => Ok(Session {
-                id: val.id,
-                key: val.key,
-                employee: EmployeeObj {
-                    id: e.id.clone(),
-                    rid: e.rid.clone(),
-                    name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
-                    auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                    contact: serde_json::from_value::<ContactInformation>(e.contact.clone())
-                        .unwrap(),
-                    clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
-                        e.clock_history.clone(),
-                    )
-                    .unwrap(),
-                    level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
-                },
-                expiry: DateTime::from_utc(val.expiry, Utc),
-            }),
-            None => Err(DbErr::RecordNotFound(format!(
-                "Record {} does not exist.",
-                key
-            ))),
-        },
-        None => Err(DbErr::RecordNotFound(format!(
+        Some((val, Some(e))) => Ok(Session {
+            id: val.id,
+            key: val.key,
+            employee: EmployeeObj {
+                id: e.id.clone(),
+                rid: e.rid.clone(),
+                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
+                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
+                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
+                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
+                    e.clock_history.clone(),
+                )
+                .unwrap(),
+                level: serde_json::from_value::<Vec<Access<Action>>>(e.level).unwrap(),
+            },
+            expiry: DateTime::from_utc(val.expiry, Utc),
+        }),
+        Some((_, None)) | None => Err(DbErr::RecordNotFound(format!(
             "Record {} does not exist.",
             key
         ))),
@@ -252,7 +242,7 @@ pub async fn _handle_cookie(
 ) -> Result<Session, DbErr> {
     match get_key_cookie(cookies) {
         Some(val) => verify_cookie(val, db).await,
-        None => Err(DbErr::Custom(format!("Cookies not set."))),
+        None => Err(DbErr::Custom("Cookies not set.".to_string())),
     }
 }
 

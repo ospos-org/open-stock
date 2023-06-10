@@ -210,7 +210,7 @@ impl Product {
             .collect();
 
         Ok(ProductWPromotion {
-            product: product,
+            product,
             promotions: mapped,
         })
     }
@@ -594,7 +594,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 let mut product_cost = None;
                 let mut transaction_type = None;
                 let mut quantity = None;
-                let mut instances = None;
+                let mut instances: Option<Vec<ProductInstance>> = None;
 
                 // pub transaction_type: TransactionType,
                 while let Some(key_s) = map.next_key::<String>()? {
@@ -699,7 +699,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
                 let quantity =
                     quantity.ok_or_else(|| serde::de::Error::missing_field("quantity"))?;
                 let tags = tags.ok_or_else(|| serde::de::Error::missing_field("tags"))?;
-                let mut instances = instances.unwrap_or_else(Vec::new);
+                let mut instances = instances.unwrap_or_default();
 
                 while instances.len() < quantity as usize {
                     instances.push(ProductInstance {
@@ -797,7 +797,7 @@ pub type ProductPurchaseList = Vec<ProductPurchase>;
 fn example_products() -> Vec<Product> {
     let mt_wellington = Location {
         store_code: "001".into(),
-        store_id: format!("628f74d7-de00-4956-a5b6-2031e0c72128"),
+        store_id: "628f74d7-de00-4956-a5b6-2031e0c72128".to_string(),
         contact: ContactInformation {
             name: "Torpedo7 Mt Wellington".into(),
             mobile: MobileNumber {
@@ -824,7 +824,7 @@ fn example_products() -> Vec<Product> {
 
     let westfield = Location {
         store_code: "002".into(),
-        store_id: format!("c4a1d88b-e8a0-4dcd-ade2-1eea82254816"),
+        store_id: "c4a1d88b-e8a0-4dcd-ade2-1eea82254816".to_string(),
         contact: ContactInformation {
             name: "Torpedo7 Westfield".into(),
             mobile: MobileNumber {
@@ -851,7 +851,7 @@ fn example_products() -> Vec<Product> {
 
     let albany = Location {
         store_code: "003".into(),
-        store_id: format!("a91509fa-2783-43ae-8c3c-5d5bc5cb6c95"),
+        store_id: "a91509fa-2783-43ae-8c3c-5d5bc5cb6c95".to_string(),
         contact: ContactInformation {
             name: "Torpedo7 Albany".into(),
             mobile: MobileNumber {
@@ -882,8 +882,8 @@ fn example_products() -> Vec<Product> {
             company: "Torpedo7".into(),
             identification: ProductIdentification::default(),
             visible: ProductVisibility::ShowWhenInStock,
-            name_long: format!(""),
-            description_long: format!(""),
+            name_long: String::new(),
+            description_long: String::new(),
             variant_groups: vec![
                 VariantCategory {
                     category: "Colour".into(),
@@ -1037,14 +1037,14 @@ fn example_products() -> Vec<Product> {
                         shippable: true,
                         min_stock_before_alert: 2.0,
                         min_stock_level: 0.0,
-                        colli: format!(""),
+                        colli: String::new(),
                         size_x: 0.0,
                         size_y: 0.0,
                         size_z: 0.0,
-                        size_x_unit: format!("m"),
-                        size_y_unit: format!("m"),
-                        size_z_unit: format!("m"),
-                        size_override_unit: format!("m")
+                        size_x_unit: "m".to_string(),
+                        size_y_unit: "m".to_string(),
+                        size_z_unit: "m".to_string(),
+                        size_override_unit: "m".to_string()
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
@@ -1107,14 +1107,14 @@ fn example_products() -> Vec<Product> {
                         shippable: true,
                         min_stock_before_alert: 2.0,
                         min_stock_level: 0.0,
-                        colli: format!(""),
+                        colli: String::new(),
                         size_x: 0.0,
                         size_y: 0.0,
                         size_z: 0.0,
-                        size_x_unit: format!("m"),
-                        size_y_unit: format!("m"),
-                        size_z_unit: format!("m"),
-                        size_override_unit: format!("m")
+                        size_x_unit: "m".to_string(),
+                        size_y_unit: "m".to_string(),
+                        size_z_unit: "m".to_string(),
+                        size_override_unit: "m".to_string()
                     },
                     loyalty_discount: DiscountValue::Absolute(25)
                 },
@@ -1177,14 +1177,14 @@ fn example_products() -> Vec<Product> {
                         shippable: true,
                         min_stock_before_alert: 2.0,
                         min_stock_level: 0.0,
-                        colli: format!(""),
+                        colli: String::new(),
                         size_x: 0.0,
                         size_y: 0.0,
                         size_z: 0.0,
-                        size_x_unit: format!("m"),
-                        size_y_unit: format!("m"),
-                        size_z_unit: format!("m"),
-                        size_override_unit: format!("m")
+                        size_x_unit: "m".to_string(),
+                        size_y_unit: "m".to_string(),
+                        size_z_unit: "m".to_string(),
+                        size_override_unit: "m".to_string()
                     },
                     loyalty_discount: DiscountValue::Absolute(5)
                 },
@@ -1210,8 +1210,8 @@ fn example_products() -> Vec<Product> {
             company: "Torpedo7".into(),
             identification: ProductIdentification::default(),
             visible: ProductVisibility::ShowWhenInStock,
-            name_long: format!(""),
-            description_long: format!(""),
+            name_long: String::new(),
+            description_long: String::new(),
             variant_groups: vec![
                 VariantCategory {
                     category: "Colour".into(),
@@ -1311,14 +1311,14 @@ fn example_products() -> Vec<Product> {
                         shippable: true,
                         min_stock_before_alert: 2.0,
                         min_stock_level: 0.0,
-                        colli: format!(""),
+                        colli: String::new(),
                         size_x: 0.0,
                         size_y: 0.0,
                         size_z: 0.0,
-                        size_x_unit: format!("m"),
-                        size_y_unit: format!("m"),
-                        size_z_unit: format!("m"),
-                        size_override_unit: format!("m")
+                        size_x_unit: "m".to_string(),
+                        size_y_unit: "m".to_string(),
+                        size_z_unit: "m".to_string(),
+                        size_override_unit: "m".to_string()
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
@@ -1381,14 +1381,14 @@ fn example_products() -> Vec<Product> {
                         shippable: true,
                         min_stock_before_alert: 2.0,
                         min_stock_level: 0.0,
-                        colli: format!(""),
+                        colli: String::new(),
                         size_x: 0.0,
                         size_y: 0.0,
                         size_z: 0.0,
-                        size_x_unit: format!("m"),
-                        size_y_unit: format!("m"),
-                        size_z_unit: format!("m"),
-                        size_override_unit: format!("m")
+                        size_x_unit: "m".to_string(),
+                        size_y_unit: "m".to_string(),
+                        size_z_unit: "m".to_string(),
+                        size_override_unit: "m".to_string()
                     },
                     loyalty_discount: DiscountValue::Absolute(25)
                 },
@@ -1417,8 +1417,8 @@ fn example_products() -> Vec<Product> {
             company: "Torpedo7".into(),
             identification: ProductIdentification::default(),
             visible: ProductVisibility::ShowWhenInStock,
-            name_long: format!(""),
-            description_long: format!(""),
+            name_long: String::new(),
+            description_long: String::new(),
             variant_groups: vec![
                 VariantCategory {
                     category: "Colour".into(),
@@ -1527,14 +1527,14 @@ fn example_products() -> Vec<Product> {
                         shippable: true,
                         min_stock_before_alert: 2.0,
                         min_stock_level: 0.0,
-                        colli: format!(""),
+                        colli: String::new(),
                         size_x: 0.0,
                         size_y: 0.0,
                         size_z: 0.0,
-                        size_x_unit: format!("m"),
-                        size_y_unit: format!("m"),
-                        size_z_unit: format!("m"),
-                        size_override_unit: format!("m")
+                        size_x_unit: "m".to_string(),
+                        size_y_unit: "m".to_string(),
+                        size_z_unit: "m".to_string(),
+                        size_override_unit: "m".to_string()
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
@@ -1597,14 +1597,14 @@ fn example_products() -> Vec<Product> {
                         shippable: true,
                         min_stock_before_alert: 2.0,
                         min_stock_level: 0.0,
-                        colli: format!(""),
+                        colli: String::new(),
                         size_x: 0.0,
                         size_y: 0.0,
                         size_z: 0.0,
-                        size_x_unit: format!("m"),
-                        size_y_unit: format!("m"),
-                        size_z_unit: format!("m"),
-                        size_override_unit: format!("m")
+                        size_x_unit: "m".to_string(),
+                        size_y_unit: "m".to_string(),
+                        size_z_unit: "m".to_string(),
+                        size_override_unit: "m".to_string()
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
@@ -1617,7 +1617,7 @@ fn example_products() -> Vec<Product> {
                     stock_tracking: true,
                     stock: vec![
                         Stock {
-                            store: mt_wellington.clone(),
+                            store: mt_wellington,
                             quantity: Quantity {
                                 quantity_sellable: 4.0,
                                 quantity_on_order: 0.0,
@@ -1626,7 +1626,7 @@ fn example_products() -> Vec<Product> {
                             }
                         },
                         Stock {
-                            store: westfield.clone(),
+                            store: westfield,
                             quantity: Quantity {
                                 quantity_sellable: 1.0,
                                 quantity_on_order: 1.0,
@@ -1635,7 +1635,7 @@ fn example_products() -> Vec<Product> {
                             }
                         },
                         Stock {
-                            store: albany.clone(),
+                            store: albany,
                             quantity: Quantity {
                                 quantity_sellable: 0.0,
                                 quantity_on_order: 2.0,
@@ -1667,14 +1667,14 @@ fn example_products() -> Vec<Product> {
                         shippable: true,
                         min_stock_before_alert: 2.0,
                         min_stock_level: 0.0,
-                        colli: format!(""),
+                        colli: String::new(),
                         size_x: 0.0,
                         size_y: 0.0,
                         size_z: 0.0,
-                        size_x_unit: format!("m"),
-                        size_y_unit: format!("m"),
-                        size_z_unit: format!("m"),
-                        size_override_unit: format!("m")
+                        size_x_unit: "m".to_string(),
+                        size_y_unit: "m".to_string(),
+                        size_z_unit: "m".to_string(),
+                        size_override_unit: "m".to_string()
                     },
                     loyalty_discount: DiscountValue::Absolute(15)
                 },
