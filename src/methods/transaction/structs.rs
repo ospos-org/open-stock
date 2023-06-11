@@ -488,38 +488,8 @@ impl Transaction {
 
                                     var.stock = stock_info;
                                     var.clone()
-
-                                    // VariantInformation {
-                                    //     name: var.name.clone(),
-                                    //     stock: stock_info,
-                                    //     images: var.images.clone(),
-                                    //     retail_price: var.retail_price,
-                                    //     marginal_price: var.marginal_price,
-                                    //     id: var.id.clone(),
-                                    //     loyalty_discount: var.loyalty_discount.clone(),
-                                    //     variant_code: var.variant_code.clone(),
-                                    //     order_history: var.order_history.clone(),
-                                    //     stock_information: var.stock_information.clone(),
-                                    //     barcode: var.barcode.clone(),
-                                    // }
                                 })
                                 .collect::<Vec<VariantInformation>>();
-
-                            // let product = Product {
-                            //     name: val.name,
-                            //     company: val.company,
-                            //     variant_groups: val.variant_groups,
-                            //     variants: variants,
-                            //     sku: val.sku,
-                            //     images: val.images,
-                            //     tags: val.tags,
-                            //     description: val.description,
-                            //     specifications: val.specifications,
-                            //     name_long: val.name_long,
-                            //     identification: todo!(),
-                            //     description_long: todo!(),
-                            //     visible: todo!(),
-                            // };
 
                             val.variants = variants;
 
@@ -561,10 +531,12 @@ impl Display for Transaction {
                     .iter()
                     .map(|p| {
                         format!(
-                            "\t{}: ${} ({})  [-]{}\n",
+                            "\t{}: ${} ({}) {} {}  [-]{}\n",
                             p.quantity,
                             p.product_cost,
                             p.product_code,
+                            p.product_name,
+                            p.product_variant_name,
                             p.discount.to_string() // greatest_discount(p.discount.clone(), p.product_cost).to_string()
                         )
                     })
@@ -599,7 +571,18 @@ impl Display for Transaction {
         //         )
         //     }).collect();
 
-        write!(f, "Transaction ({}) {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {:?}\nNotes:\n{}\n{} on {}", self.id, self.order_date.format("%d/%m/%Y %H:%M"), products, self.order_total, self.payment, notes, self.salesperson, self.till)
+        write!(
+            f,
+            "Transaction ({}) {} {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {:?}\nNotes:\n{}\n{}",
+            self.id,
+            self.order_date.format("%d/%m/%Y %H:%M"),
+            self.till,
+            products,
+            self.order_total,
+            self.payment,
+            notes,
+            self.salesperson
+        )
     }
 }
 
