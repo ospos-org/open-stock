@@ -1,13 +1,17 @@
 CREATE TABLE IF NOT EXISTS `Products` (
   `sku` varchar(100) NOT NULL,
   `name` varchar(100) NOT NULL,
+  `name_long` varchar(100) NOT NULL,
   `company` text NOT NULL,
   `variants` json NOT NULL,
   `variant_groups` json NOT NULL,
   `images` json NOT NULL,
   `tags` json NOT NULL,
+  `identification` json NOT NULL,
   `description` text NOT NULL,
+  `description_long` text NOT NULL,
   `specifications` json NOT NULL,
+  `visible` json NOT NULL,
   PRIMARY KEY `sku` (`sku`),
   FULLTEXT indx(`name`,`company`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
