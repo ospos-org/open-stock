@@ -347,6 +347,42 @@ impl Transaction {
         Self::fetch_by_id(id, db).await
     }
 
+    pub async fn update_order_status(
+        id: &str,
+        refer: &str,
+        status: OrderStatus,
+        db: &DbConn,
+    ) -> Result<Transaction, DbErr> {
+        let mut transaction = Transaction::fetch_by_id(id, db).await?;
+
+        let new_orders = transaction
+            .clone()
+            .products
+            .into_iter()
+            .map(|mut v| {
+                if v.reference == refer {
+                    v.status_history.push(History {
+                        item: v.status.clone(),
+                        reason: "Supered Update".to_string(),
+                        timestamp: v.status.timestamp,
+                    });
+
+                    v.status = OrderStatusAssignment {
+                        status: status.clone(),
+                        assigned_products: v.products.iter().map(|el| el.id.clone()).collect(),
+                        timestamp: Utc::now(),
+                    };
+                }
+
+                v
+            })
+            .collect::<Vec<Order>>();
+
+        transaction.products = new_orders;
+
+        Self::update_value(transaction, id, db).await
+    }
+
     pub async fn update_product_status(
         id: &str,
         refer: &str,
