@@ -361,17 +361,19 @@ impl Transaction {
             .into_iter()
             .map(|mut v| {
                 if v.reference == refer {
-                    v.status_history.push(History {
-                        item: v.status.clone(),
-                        reason: "Supered Update".to_string(),
-                        timestamp: v.status.timestamp,
-                    });
-
-                    v.status = OrderStatusAssignment {
+                    let new_status = OrderStatusAssignment {
                         status: status.clone(),
                         assigned_products: v.products.iter().map(|el| el.id.clone()).collect(),
                         timestamp: Utc::now(),
                     };
+
+                    v.status = new_status.clone();
+
+                    v.status_history.push(History {
+                        item: new_status,
+                        reason: "Supered Update".to_string(),
+                        timestamp: v.status.timestamp,
+                    });
                 }
 
                 v
