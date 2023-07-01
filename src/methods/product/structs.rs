@@ -12,6 +12,7 @@ use serde::{
     Deserialize, Deserializer, Serialize,
 };
 use serde_json::json;
+use uuid::Uuid;
 
 use super::{
     Promotion, PromotionBuy, PromotionGet, StockInformation, Variant, VariantCategory,
@@ -703,7 +704,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
 
                 while instances.len() < quantity as usize {
                     instances.push(ProductInstance {
-                        id: format!("{}-{}", id, instances.len() + 1),
+                        id: format!("{}-{}-{}", id, instances.len() + 1, Uuid::new_v4()),
                         fulfillment_status: default_fulfillment(),
                     });
                 }
