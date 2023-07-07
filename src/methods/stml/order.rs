@@ -102,6 +102,17 @@ impl OrderStatus {
             OrderStatus::Failed(_) => false,
         }
     }
+
+    pub fn is_not_fulfilled_nor_failed(&self) -> bool {
+        match *self {
+            OrderStatus::Queued(_) => true,
+            OrderStatus::Transit(_) => true,
+            OrderStatus::Processing(_) => true,
+            OrderStatus::InStore(_) => false,
+            OrderStatus::Fulfilled(_) => false,
+            OrderStatus::Failed(_) => false,
+        }
+    }
 }
 
 impl Display for OrderStatusAssignment {

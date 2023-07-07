@@ -104,7 +104,23 @@ pub async fn deliverables_search(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_queued_jobs(store_id, db).await {
+    match Transaction::fetch_deliverable_jobs(store_id, db).await {
+        Ok(transaction) => Ok(Json(transaction)),
+        Err(reason) => Err(ErrorResponse::db_err(reason)),
+    }
+}
+
+#[get("/receivables/<store_id>")]
+pub async fn receivables_search(
+    conn: Connection<'_, Db>,
+    store_id: &str,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<Vec<Order>>, Error> {
+    let db = conn.into_inner();
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchTransaction);
+
+    match Transaction::fetch_receivable_jobs(store_id, db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }

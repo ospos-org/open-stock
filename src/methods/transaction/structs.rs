@@ -156,7 +156,7 @@ impl Transaction {
         }
     }
 
-    pub async fn fetch_queued_jobs(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
+    pub async fn fetch_deliverable_jobs(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
         let as_str: Vec<DerivableTransaction> =
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
@@ -169,11 +169,6 @@ impl Transaction {
             .all(db)
             .await?;
 
-        println!(
-            "{:?}",
-            as_str.iter().map(|t| t.id.clone()).collect::<Vec<String>>()
-        );
-
         let mapped = as_str
             .iter()
             .flat_map(|t| {
@@ -184,6 +179,37 @@ impl Transaction {
                 let orders = products
                     .iter()
                     .filter(|o| o.origin.store_id == query && o.status.status.is_queued());
+
+                orders.cloned().collect::<Vec<Order>>()
+            })
+            .collect();
+
+        Ok(mapped)
+    }
+
+    pub async fn fetch_receivable_jobs(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
+        let as_str: Vec<DerivableTransaction> =
+            DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
+                DbBackend::MySql,
+                &format!(
+                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%'",
+                    query
+                ),
+                vec![],
+            ))
+            .all(db)
+            .await?;
+
+        let mapped = as_str
+            .iter()
+            .flat_map(|t| {
+                // Conditions are:
+                // 1. Must be distributed from the query location
+                // 2. Must be an actively queued job
+                let products = serde_json::from_value::<OrderList>(t.products.clone()).unwrap();
+                let orders = products.iter().filter(|o| {
+                    o.destination.store_id == query && o.status.status.is_not_fulfilled_nor_failed()
+                });
 
                 orders.cloned().collect::<Vec<Order>>()
             })

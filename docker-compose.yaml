@@ -61,11 +61,66 @@ services:
     depends_on:
       - os-db
 
+# -- Kario --
+  # api:
+  #   container_name: karrio.api
+  #   image: karrio.docker.scarf.sh/karrio/server:2023.5
+  #   restart: unless-stopped
+  #   ports:
+  #     - 5002:5002
+  #   depends_on:
+  #     - db
+  #     - redis
+  #   environment:
+  #     <<: *karrio-variables
+  #     KARRIO_HTTP_PORT: 5002
+
+  # dashboard:
+  #   container_name: karrio.dashboard
+  #   image: karrio.docker.scarf.sh/karrio/dashboard:2023.5
+  #   ports:
+  #     - 3000:3003/tcp
+  #   depends_on:
+  #     - api
+  #   environment:
+  #     <<: *karrio-variables 
+  #     DASHBOARD_URL: http://localhost:3003
+  #     KARRIO_PUBLIC_URL: http://localhost:5002
+
+  # maildev:
+  #   container_name: karrio.mail
+  #   image: maildev/maildev
+  #   restart: on-failure
+  #   ports:
+  #     - "1080:1080"
+  #     - "1025:1025"
+
+  # db:
+  #   container_name: karrio.db
+  #   image: postgres
+  #   restart: unless-stopped
+  #   ports:
+  #     - 5432:5432
+  #   environment:
+  #     <<: *karrio-variables
+  #     PGDATA: /var/lib/postgresql/data/karrio
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+
+  # redis:
+  #   container_name: karrio.redis
+  #   image: redis
+  #   ports:
+  #     - 6379:6379
+  #   restart: unless-stopped
+  #   volumes:
+  #     - redis-data:/data
+
 # --- OpenStock & OpenPOS
   open-stock:
     # Note: If you are running ARM, you are in luck! We support the linux/arm64 platform.
     # Please use the :latest-arm build variant for arm builds.
-    image: ghcr.io/bennjii/open-stock:latest-arm # bennjii/open-stock:latest # 
+    image: bennjii/open-stock:latest # ghcr.io/bennjii/open-stock:latest-arm 
     platform: "linux/arm64"
     restart: always
     ports:
@@ -100,61 +155,6 @@ services:
   #       # You must change the following to whichever domain open-stock is hosted.
   #       # An invalid host will result in failed reqs.
   #       - NEXT_PUBLIC_API_URL=https://open-retail.bennjii.dev/api
-
-# -- Kario --
-  api:
-    container_name: karrio.api
-    image: karrio.docker.scarf.sh/karrio/server:2023.5
-    restart: unless-stopped
-    ports:
-      - 5002:5002
-    depends_on:
-      - db
-      - redis
-    environment:
-      <<: *karrio-variables
-      KARRIO_HTTP_PORT: 5002
-
-  dashboard:
-    container_name: karrio.dashboard
-    image: karrio.docker.scarf.sh/karrio/dashboard:2023.5
-    ports:
-      - 3000:3003/tcp
-    depends_on:
-      - api
-    environment:
-      <<: *karrio-variables 
-      DASHBOARD_URL: http://localhost:3003
-      KARRIO_PUBLIC_URL: http://localhost:5002
-
-  maildev:
-    container_name: karrio.mail
-    image: maildev/maildev
-    restart: on-failure
-    ports:
-      - "1080:1080"
-      - "1025:1025"
-
-  db:
-    container_name: karrio.db
-    image: postgres
-    restart: unless-stopped
-    ports:
-      - 5432:5432
-    environment:
-      <<: *karrio-variables
-      PGDATA: /var/lib/postgresql/data/karrio
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-
-  redis:
-    container_name: karrio.redis
-    image: redis
-    ports:
-      - 6379:6379
-    restart: unless-stopped
-    volumes:
-      - redis-data:/data
 
 volumes:
   datavolume:
