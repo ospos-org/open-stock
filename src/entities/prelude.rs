@@ -2,6 +2,7 @@
 
 pub use super::customer::Entity as Customer;
 pub use super::employee::Entity as Employee;
+pub use super::kiosk::Entity as Kiosk;
 pub use super::products::Entity as Products;
 pub use super::promotion::Entity as Promotion;
 pub use super::session::Entity as Session;

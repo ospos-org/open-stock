@@ -1,31 +1,38 @@
 // Kiosk
-// -> Get
-// -> Initialize
-// -> Edit All
-// -> Delete
-// -> Append Auth Log
-// -> Edit Preference (Lower Security Requirement)
-// -> Call from `auth_rid` to submit auth request
+// - [x] Get
+// - [ ] Initialize
+// - [ ] Edit All
+// - [ ] Delete
+// - [ ] Append Auth Log
+// - [ ] Edit Preference (Lower Security Requirement)
+// - [ ] Call from `auth_rid` to submit auth request
 
+use crate::methods::{Error, ErrorResponse};
+use crate::pool::Db;
 use crate::Kiosk;
+use rocket::get;
+use rocket::http::CookieJar;
+use rocket::serde::json::Json;
+use sea_orm_rocket::Connection;
 
-// #[get("/<id>")]
-// pub async fn get(
-//     conn: Connection<'_, Db>,
-//     id: &str,
-//     cookies: &CookieJar<'_>,
-// ) -> Result<Json<Kiosk>, Error> {
-//     let db = conn.into_inner();
+use crate::{
+    check_permissions,
+    methods::{cookie_status_wrapper, Action},
+};
 
-//     let session = cookie_status_wrapper(db, cookies).await?;
-//     check_permissions!(session.clone(), Action::FetchEmployee);
+#[get("/<id>")]
+pub async fn get(
+    conn: Connection<'_, Db>,
+    id: &str,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<Kiosk>, Error> {
+    let db = conn.into_inner();
 
-//     if session.employee.id == id {
-//         Ok(Json(session.employee))
-//     } else {
-//         match Employee::fetch_by_id(id, db).await {
-//             Ok(employee) => Ok(Json(employee)),
-//             Err(err) => Err(ErrorResponse::db_err(err)),
-//         }
-//     }
-// }
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchEmployee);
+
+    match Kiosk::fetch_by_id(id, db).await {
+        Ok(employee) => Ok(Json(employee)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
+}

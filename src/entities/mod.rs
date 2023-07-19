@@ -4,6 +4,7 @@ pub mod prelude;
 
 pub mod customer;
 pub mod employee;
+pub mod kiosk;
 pub mod products;
 pub mod promotion;
 pub mod sea_orm_active_enums;

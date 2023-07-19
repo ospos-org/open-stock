@@ -98,5 +98,6 @@ CREATE TABLE IF NOT EXISTS `Kiosk` (
   `preferences` json NOT NULL,
   `disabled` boolean NOT NULL,
   `last_online` datetime NOT NULL,
-  `login_history` json NOT NULL
+  `login_history` json NOT NULL,
+  PRIMARY KEY `id` (`id`)
 )
