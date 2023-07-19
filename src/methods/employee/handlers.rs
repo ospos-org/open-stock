@@ -287,14 +287,10 @@ pub async fn auth_rid(
                 Err(reason) => Err(ErrorResponse::db_err(reason)),
             }
         }
-        Err(reason) => {
-            Err(ErrorResponse::custom_unauthorized(&format!(
-                "Invalid password or id. Reason: {}",
-                reason
-            )))
-            //            println!("[dberr]: {}", reason);
-            //            Err(ErrorResponse::input_error())
-        }
+        Err(reason) => Err(ErrorResponse::custom_unauthorized(&format!(
+            "Invalid password or id. Reason: {}",
+            reason
+        ))),
     }
 }
 

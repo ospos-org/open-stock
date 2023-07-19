@@ -90,3 +90,13 @@ CREATE TABLE IF NOT EXISTS `Promotion` (
   `timestamp` datetime NOT NULL,
   PRIMARY KEY `id` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS `Kiosk` (
+  `id` varchar(100) NOT NULL,
+  `name` text NOT NULL,
+  `store_id` varchar(100) NOT NULL,
+  `preferences` json NOT NULL,
+  `disabled` boolean NOT NULL,
+  `last_online` datetime NOT NULL,
+  `login_history` json NOT NULL
+)

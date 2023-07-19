@@ -509,7 +509,7 @@ impl Transaction {
                                     {
                                         var.stock
                                             .iter_mut()
-                                            .map(|mut stock| {
+                                            .map(|stock| {
                                                 if stock.store.store_code
                                                     == intent.transaction_store_code
                                                 {

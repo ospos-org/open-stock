@@ -44,26 +44,11 @@ pub struct All {
 /// This route does not require authentication, but is not enabled in release mode.
 #[post("/generate")]
 pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Error> {
-    let _ = match env::var("DEMO") {
-        Ok(url) => match url.as_str() {
-            "0" => {
-                return Err(Error::DemoDisabled(
-                    "OpenStock is not in DEMO mode.".to_string(),
-                ))
-            }
-            "1" => true,
-            _ => {
-                return Err(Error::DemoDisabled(
-                    "OpenStock is not in DEMO mode.".to_string(),
-                ))
-            }
-        },
-        Err(_) => {
-            return Err(Error::DemoDisabled(
-                "OpenStock is not in DEMO mode.".to_string(),
-            ))
-        }
-    };
+    if env::var("DEMO").is_err() || env::var("DEMO").unwrap() == "0" {
+        return Err(Error::DemoDisabled(
+            "OpenStock is not in DEMO mode.".to_string(),
+        ));
+    }
 
     let db = conn.into_inner();
 
