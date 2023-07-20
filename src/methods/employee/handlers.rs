@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use crate::check_permissions;
 use crate::entities::session;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
 use crate::pool::Db;
+use crate::{check_permissions, AuthenticationLog, Kiosk};
 use chrono::{Duration as ChronoDuration, Utc};
 use rocket::get;
 use rocket::http::{Cookie, CookieJar, SameSite};
@@ -178,6 +178,7 @@ async fn update(
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Auth {
     pub pass: String,
+    pub kiosk_id: String,
 }
 
 #[post("/auth/<id>", data = "<input_data>")]
@@ -252,6 +253,16 @@ pub async fn auth_rid(
 
     match Employee::verify_with_rid(rid, &input.pass, db).await {
         Ok(data) => {
+            let _ = Kiosk::auth_log(
+                &input.kiosk_id,
+                AuthenticationLog {
+                    employee_id: data.id.to_string(),
+                    successful: true,
+                },
+                db,
+            )
+            .await;
+
             // User is authenticated, lets give them an API key to work with...
             let api_key = Uuid::new_v4().to_string();
             let session_id = Uuid::new_v4().to_string();
@@ -287,10 +298,22 @@ pub async fn auth_rid(
                 Err(reason) => Err(ErrorResponse::db_err(reason)),
             }
         }
-        Err(reason) => Err(ErrorResponse::custom_unauthorized(&format!(
-            "Invalid password or id. Reason: {}",
-            reason
-        ))),
+        Err(reason) => {
+            let _ = Kiosk::auth_log(
+                &input.kiosk_id,
+                AuthenticationLog {
+                    employee_id: rid.to_string(),
+                    successful: false,
+                },
+                db,
+            )
+            .await;
+
+            Err(ErrorResponse::custom_unauthorized(&format!(
+                "Invalid password or id. Reason: {}",
+                reason
+            )))
+        }
     }
 }
 

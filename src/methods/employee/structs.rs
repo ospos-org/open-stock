@@ -40,28 +40,40 @@ pub enum Action {
     DeleteCustomer,
     ModifyCustomer,
     FetchCustomer,
+
     CreateEmployee,
     DeleteEmployee,
     ModifyEmployee,
     FetchEmployee,
+
     CreateTransaction,
     DeleteTransaction,
     ModifyTransaction,
     FetchTransaction,
+
     CreateProduct,
     DeleteProduct,
     ModifyProduct,
+
     CreateStockAdjustmentIntent,
     ClearStockAdjustmentIntent,
+
     FetchProduct,
     CreateStore,
     DeleteStore,
     ModifyStore,
     FetchStore,
+
     CreateSupplier,
     DeleteSupplier,
     ModifySupplier,
     FetchSupplier,
+
+    CreateKiosk,
+    DeleteKiosk,
+    ModifyKiosk,
+    ModifyKioskPreferences,
+    FetchKiosk,
 
     AccessAdminPanel,
     SuperUserDo,

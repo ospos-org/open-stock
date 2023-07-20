@@ -2,7 +2,7 @@ use crate::entities::prelude::Kiosk as Ksk;
 use crate::History;
 use crate::{entities::kiosk::ActiveModel, entities::kiosk::Model};
 use chrono::{DateTime, Utc};
-use sea_orm::{DbConn, DbErr, DeleteResult, EntityTrait, InsertResult, Set};
+use sea_orm::{ActiveModelTrait, DbConn, DbErr, DeleteResult, EntityTrait, InsertResult, Set};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -14,8 +14,8 @@ pub struct KioskPreferences {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AuthenticationLog {
-    employee_id: String,
-    successful: bool,
+    pub employee_id: String,
+    pub successful: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -92,21 +92,20 @@ impl Kiosk {
         }
     }
 
-    pub async fn update(kiosk: Kiosk, db: &DbConn) -> Result<Model, DbErr> {
-        let insert_crud = ActiveModel {
-            id: Set(kiosk.id),
+    pub async fn update(kiosk: KioskInit, id: &str, db: &DbConn) -> Result<Kiosk, DbErr> {
+        ActiveModel {
+            id: Set(id.to_string()),
             name: Set(kiosk.name),
             store_id: Set(kiosk.store_id),
             preferences: Set(json!(kiosk.preferences)),
             disabled: Set(kiosk.disabled as i8),
             last_online: Set(kiosk.last_online.naive_utc()),
             login_history: Set(json!(kiosk.login_history)),
-        };
-
-        match Ksk::update(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
         }
+        .update(db)
+        .await?;
+
+        Self::fetch_by_id(id, db).await
     }
 
     pub async fn delete(id: &str, db: &DbConn) -> Result<DeleteResult, DbErr> {
@@ -143,10 +142,10 @@ impl Kiosk {
         id: &str,
         preferences: KioskPreferences,
         db: &DbConn,
-    ) -> Result<Model, DbErr> {
+    ) -> Result<Kiosk, DbErr> {
         let kiosk = Self::fetch_by_id(id, db).await?;
 
-        let insert_crud = ActiveModel {
+        ActiveModel {
             id: Set(kiosk.id),
             name: Set(kiosk.name),
             store_id: Set(kiosk.store_id),
@@ -154,18 +153,17 @@ impl Kiosk {
             disabled: Set(kiosk.disabled as i8),
             last_online: Set(kiosk.last_online.naive_utc()),
             login_history: Set(json!(kiosk.login_history)),
-        };
-
-        match Ksk::update(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
         }
+        .update(db)
+        .await?;
+
+        Self::fetch_by_id(id, db).await
     }
 
-    pub async fn update_online_to_now(id: &str, db: &DbConn) -> Result<Model, DbErr> {
+    pub async fn update_online_to_now(id: &str, db: &DbConn) -> Result<Kiosk, DbErr> {
         let kiosk = Self::fetch_by_id(id, db).await?;
 
-        let insert_crud = ActiveModel {
+        ActiveModel {
             id: Set(kiosk.id),
             name: Set(kiosk.name),
             store_id: Set(kiosk.store_id),
@@ -173,11 +171,10 @@ impl Kiosk {
             disabled: Set(kiosk.disabled as i8),
             last_online: Set(Utc::now().naive_utc()),
             login_history: Set(json!(kiosk.login_history)),
-        };
-
-        match Ksk::update(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
         }
+        .update(db)
+        .await?;
+
+        Self::fetch_by_id(id, db).await
     }
 }
