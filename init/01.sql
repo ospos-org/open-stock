@@ -98,6 +98,13 @@ CREATE TABLE IF NOT EXISTS `Kiosk` (
   `preferences` json NOT NULL,
   `disabled` boolean NOT NULL,
   `last_online` datetime NOT NULL,
-  `login_history` json NOT NULL,
   PRIMARY KEY `id` (`id`)
-)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS `AuthRecord` (
+  `id` varchar(100) NOT NULL,
+  `kiosk_id` varchar(100) NOT NULL,
+  `attempt` json NOT NULL,
+  `timestamp` datetime NOT NULL,
+  PRIMARY KEY `id` (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;

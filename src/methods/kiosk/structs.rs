@@ -1,8 +1,5 @@
-use std::vec;
-
 use crate::entities::prelude::Kiosk as Ksk;
-use crate::History;
-use crate::{entities::kiosk::ActiveModel, entities::kiosk::Model};
+use crate::{entities::authrecord::ActiveModel as AuthRecord, entities::kiosk::ActiveModel};
 use chrono::{DateTime, Utc};
 use sea_orm::{ActiveModelTrait, DbConn, DbErr, DeleteResult, EntityTrait, InsertResult, Set};
 use serde::{Deserialize, Serialize};
@@ -14,7 +11,7 @@ pub struct KioskPreferences {
     printer_id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AuthenticationLog {
     pub employee_id: String,
     pub successful: bool,
@@ -39,9 +36,6 @@ pub struct Kiosk {
 
     // The timestamp for the kiosk's last time online.
     last_online: DateTime<Utc>,
-
-    // A list of all login attempts to the kiosk
-    login_history: Vec<History<AuthenticationLog>>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -51,7 +45,6 @@ pub struct KioskInit {
     preferences: KioskPreferences,
     disabled: bool,
     last_online: DateTime<Utc>,
-    login_history: Vec<History<AuthenticationLog>>,
 }
 
 impl Kiosk {
@@ -76,10 +69,6 @@ impl Kiosk {
                 preferences: serde_json::from_value::<KioskPreferences>(k.preferences).unwrap(),
                 disabled: k.disabled != 0,
                 last_online: DateTime::from_utc(k.last_online, Utc),
-                login_history: serde_json::from_value::<Vec<History<AuthenticationLog>>>(
-                    k.login_history,
-                )
-                .unwrap(),
             }),
             None => Err(DbErr::RecordNotFound(id.to_string())),
         }
@@ -102,7 +91,6 @@ impl Kiosk {
             preferences: Set(json!(kiosk.preferences)),
             disabled: Set(kiosk.disabled as i8),
             last_online: Set(kiosk.last_online.naive_utc()),
-            login_history: Set(json!(kiosk.login_history)),
         };
 
         match Ksk::insert(insert_crud).exec(db).await {
@@ -119,7 +107,6 @@ impl Kiosk {
             preferences: Set(json!(kiosk.preferences)),
             disabled: Set(kiosk.disabled as i8),
             last_online: Set(kiosk.last_online.naive_utc()),
-            login_history: Set(json!(kiosk.login_history)),
         }
         .update(db)
         .await?;
@@ -134,27 +121,21 @@ impl Kiosk {
         }
     }
 
-    pub async fn auth_log(id: &str, log: AuthenticationLog, db: &DbConn) -> Result<Model, DbErr> {
-        let mut kiosk = Self::fetch_by_id(id, db).await?;
+    pub async fn auth_log(
+        id: &str,
+        log: AuthenticationLog,
+        db: &DbConn,
+    ) -> Result<crate::entities::authrecord::Model, DbErr> {
+        let kiosk = Self::fetch_by_id(id, db).await?;
 
-        let insert_crud = ActiveModel {
-            id: Set(kiosk.id),
-            name: Set(kiosk.name),
-            store_id: Set(kiosk.store_id),
-            preferences: Set(json!(kiosk.preferences)),
-            disabled: Set(kiosk.disabled as i8),
-            last_online: Set(kiosk.last_online.naive_utc()),
-            login_history: Set(json!(kiosk.login_history.push(History {
-                item: log,
-                reason: "Auth Log".to_string(),
-                timestamp: Utc::now()
-            }))),
-        };
-
-        match Ksk::update(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
+        AuthRecord {
+            id: Set(Uuid::new_v4().to_string()),
+            kiosk_id: Set(kiosk.id),
+            timestamp: Set(Utc::now().naive_utc()),
+            attempt: Set(json!(log)),
         }
+        .insert(db)
+        .await
     }
 
     pub async fn update_preferences(
@@ -171,7 +152,6 @@ impl Kiosk {
             preferences: Set(json!(preferences)),
             disabled: Set(kiosk.disabled as i8),
             last_online: Set(kiosk.last_online.naive_utc()),
-            login_history: Set(json!(kiosk.login_history)),
         }
         .update(db)
         .await?;
@@ -189,7 +169,6 @@ impl Kiosk {
             preferences: Set(json!(kiosk.preferences)),
             disabled: Set(kiosk.disabled as i8),
             last_online: Set(Utc::now().naive_utc()),
-            login_history: Set(json!(kiosk.login_history)),
         }
         .update(db)
         .await?;
@@ -207,6 +186,5 @@ pub fn example_kiosk() -> KioskInit {
         },
         disabled: false,
         last_online: Utc::now(),
-        login_history: vec![],
     }
 }

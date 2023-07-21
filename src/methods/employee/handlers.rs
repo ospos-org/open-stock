@@ -253,7 +253,7 @@ pub async fn auth_rid(
 
     match Employee::verify_with_rid(rid, &input.pass, db).await {
         Ok(data) => {
-            let _ = Kiosk::auth_log(
+            Kiosk::auth_log(
                 &input.kiosk_id,
                 AuthenticationLog {
                     employee_id: data.id.to_string(),
@@ -261,7 +261,8 @@ pub async fn auth_rid(
                 },
                 db,
             )
-            .await;
+            .await
+            .map_err(ErrorResponse::db_err)?;
 
             // User is authenticated, lets give them an API key to work with...
             let api_key = Uuid::new_v4().to_string();
@@ -299,7 +300,7 @@ pub async fn auth_rid(
             }
         }
         Err(reason) => {
-            let _ = Kiosk::auth_log(
+            Kiosk::auth_log(
                 &input.kiosk_id,
                 AuthenticationLog {
                     employee_id: rid.to_string(),
@@ -307,7 +308,8 @@ pub async fn auth_rid(
                 },
                 db,
             )
-            .await;
+            .await
+            .map_err(ErrorResponse::db_err)?;
 
             Err(ErrorResponse::custom_unauthorized(&format!(
                 "Invalid password or id. Reason: {}",

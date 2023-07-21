@@ -2,6 +2,7 @@
 
 pub mod prelude;
 
+pub mod authrecord;
 pub mod customer;
 pub mod employee;
 pub mod kiosk;
