@@ -14,6 +14,7 @@ use crate::{
         Promotion, Session, Store, Transaction,
     },
     pool::Db,
+    Kiosk,
 };
 use geo::VincentyDistance;
 use photon_geocoding::{
@@ -39,6 +40,7 @@ pub struct All {
     customer: Customer,
     transaction: Transaction,
     promotions: Vec<Promotion>,
+    kiosk: Kiosk,
 }
 
 /// This route does not require authentication, but is not enabled in release mode.
@@ -56,6 +58,9 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
     let stores = Store::generate(db).await.unwrap();
     let products = Product::generate(db).await.unwrap();
     let customer = Customer::generate(db).await.unwrap();
+    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", db)
+        .await
+        .unwrap();
     let transaction = Transaction::generate(
         db,
         &customer.id,
@@ -77,6 +82,7 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
         customer,
         transaction,
         promotions,
+        kiosk,
     }))
 }
 

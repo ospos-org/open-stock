@@ -1,3 +1,5 @@
+use std::vec;
+
 use crate::entities::prelude::Kiosk as Ksk;
 use crate::History;
 use crate::{entities::kiosk::ActiveModel, entities::kiosk::Model};
@@ -53,6 +55,16 @@ pub struct KioskInit {
 }
 
 impl Kiosk {
+    pub async fn generate(id: &str, db: &DbConn) -> Result<Kiosk, DbErr> {
+        let ksk: KioskInit = example_kiosk();
+        // Insert & Fetch Customer
+        let result = Kiosk::insert(ksk, db, Some(id)).await.unwrap();
+        match Kiosk::fetch_by_id(&result.last_insert_id, db).await {
+            Ok(kiosk) => Ok(kiosk),
+            Err(e) => Err(e),
+        }
+    }
+
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Kiosk, DbErr> {
         let kiosk = Ksk::find_by_id(id.to_string()).one(db).await?;
 
@@ -73,8 +85,15 @@ impl Kiosk {
         }
     }
 
-    pub async fn insert(kiosk: KioskInit, db: &DbConn) -> Result<InsertResult<ActiveModel>, DbErr> {
-        let id = Uuid::new_v4().to_string();
+    pub async fn insert(
+        kiosk: KioskInit,
+        db: &DbConn,
+        id: Option<&str>,
+    ) -> Result<InsertResult<ActiveModel>, DbErr> {
+        let id = match id {
+            Some(id) => id.to_string(),
+            None => Uuid::new_v4().to_string(),
+        };
 
         let insert_crud = ActiveModel {
             id: Set(id),
@@ -176,5 +195,18 @@ impl Kiosk {
         .await?;
 
         Self::fetch_by_id(id, db).await
+    }
+}
+
+pub fn example_kiosk() -> KioskInit {
+    KioskInit {
+        name: "Front Counter".to_string(),
+        store_id: "c4a1d88b-e8a0-4dcd-ade2-1eea82254816".to_string(),
+        preferences: KioskPreferences {
+            printer_id: "none".to_string(),
+        },
+        disabled: false,
+        last_online: Utc::now(),
+        login_history: vec![],
     }
 }

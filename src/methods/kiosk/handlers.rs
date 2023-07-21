@@ -1,24 +1,27 @@
-// Kiosk
-// - [x] Get
-// - [x] Initialize
-// - [x] Edit All
-// - [x] Delete
-// - [x] Append Auth Log
-// - [x] Edit Preference (Lower Security Requirement)
-// - [ ] Call from `auth_rid` to submit auth request
-
 use crate::methods::{Error, ErrorResponse};
 use crate::pool::Db;
 use crate::{AuthenticationLog, Kiosk, KioskInit, KioskPreferences};
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
-use rocket::{get, post};
+use rocket::{get, post, routes};
 use sea_orm_rocket::Connection;
 
 use crate::{
     check_permissions,
     methods::{cookie_status_wrapper, Action},
 };
+
+pub fn routes() -> Vec<rocket::Route> {
+    routes![
+        get,
+        initialize,
+        update,
+        update_preferences,
+        update_online_status,
+        delete,
+        auth_log
+    ]
+}
 
 #[get("/<id>")]
 pub async fn get(
@@ -49,7 +52,7 @@ pub async fn initialize(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
 
-    match Kiosk::insert(input_data, db).await {
+    match Kiosk::insert(input_data, db, None).await {
         Ok(kiosk) => match Kiosk::fetch_by_id(&kiosk.last_insert_id, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => Err(ErrorResponse::db_err(reason)),
