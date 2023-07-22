@@ -31,6 +31,8 @@ pub struct Order {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+#[serde(rename_all = "lowercase")]
 pub enum OrderType {
     Direct,
     Shipment,
@@ -61,6 +63,8 @@ pub struct OrderStatusAssignment {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type", content = "value")]
+#[serde(rename_all = "lowercase")]
 pub enum OrderStatus {
     /// Open Cart, Till Cart or Being Processed, the date represents the time it was placed.
     Queued(DateTime<Utc>),
