@@ -31,7 +31,6 @@ pub struct Order {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
 pub enum OrderType {
     Direct,
