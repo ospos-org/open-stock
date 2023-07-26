@@ -53,6 +53,7 @@ fn rocket() -> _ {
         .mount("/api/customer", methods::customer::handlers::routes())
         .mount("/api/employee", methods::employee::handlers::routes())
         .mount("/api/transaction", methods::transaction::handlers::routes())
+        .mount("/api/ingress", methods::ingress::handlers::routes())
         .mount("/api/supplier", methods::supplier::handlers::routes())
         .mount("/api/store", methods::store::handlers::routes())
         .mount("/api/helpers", methods::helpers::handlers::routes())

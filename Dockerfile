@@ -18,6 +18,7 @@ RUN rm src/*.rs
 
 # 4. Now that the dependency is built, copy your source code
 COPY ./src ./src
+COPY ./Rocket.toml ./
 
 # build for release
 # RUN rm ./target/release/deps/stock* .
@@ -28,6 +29,7 @@ FROM rust:1.70.0
 
 # copy the build artifact from the build stage
 COPY --from=build /open-stock/target/release/open-stock .
+COPY --from=build /open-stock/Rocket.toml .
 
 EXPOSE 8000
 
