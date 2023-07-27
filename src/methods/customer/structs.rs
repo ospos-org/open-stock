@@ -85,6 +85,26 @@ impl Customer {
         }
     }
 
+    pub async fn insert_raw(
+        cust: Customer,
+        db: &DbConn,
+    ) -> Result<InsertResult<customer::ActiveModel>, DbErr> {
+        let insert_crud = customer::ActiveModel {
+            id: Set(cust.id),
+            name: Set(cust.name),
+            contact: Set(json!(cust.contact)),
+            customer_notes: Set(json!(cust.customer_notes)),
+            balance: Set(cust.balance),
+            special_pricing: Set(json!(cust.special_pricing)),
+            accepts_marketing: Set(cust.accepts_marketing),
+        };
+
+        match Cust::insert(insert_crud).exec(db).await {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err),
+        }
+    }
+
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Customer, DbErr> {
         let cust = Cust::find_by_id(id.to_string()).one(db).await?;
 

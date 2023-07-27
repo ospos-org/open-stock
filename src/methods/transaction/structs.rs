@@ -156,6 +156,29 @@ impl Transaction {
         }
     }
 
+    pub async fn insert_raw(
+        tsn: Transaction,
+        db: &DbConn,
+    ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
+        let insert_crud = transactions::ActiveModel {
+            id: Set(tsn.id),
+            customer: Set(json!(tsn.customer)),
+            transaction_type: Set(tsn.transaction_type),
+            products: Set(json!(tsn.products)),
+            order_total: Set(tsn.order_total),
+            payment: Set(json!(tsn.payment)),
+            order_date: Set(tsn.order_date.naive_utc()),
+            order_notes: Set(json!(tsn.order_notes)),
+            salesperson: Set(tsn.salesperson),
+            till: Set(tsn.till),
+        };
+
+        match Transactions::insert(insert_crud).exec(db).await {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err),
+        }
+    }
+
     pub async fn fetch_deliverable_jobs(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
         let as_str: Vec<DerivableTransaction> =
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(

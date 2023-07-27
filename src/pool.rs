@@ -1,12 +1,16 @@
-use std::{env, time::Duration};
+use std::{env, fs, sync::Arc, time::Duration};
 
-use crate::entities::{session, transactions};
+use crate::{
+    entities::{session, transactions},
+    Customer, Product, Transaction,
+};
 use async_trait::async_trait;
 use chrono::{Duration as ChronoDuration, Utc};
 use dotenv::dotenv;
 use rocket::tokio;
 use sea_orm::{ColumnTrait, ConnectOptions, DbConn, EntityTrait, QuerySelect};
 use sea_orm_rocket::{rocket::figment::Figment, Database};
+use tokio::sync::Mutex;
 
 #[derive(Database, Debug)]
 #[database("stock")]
@@ -50,11 +54,76 @@ impl sea_orm_rocket::Pool for RocketDbPool {
             session_garbage_collector(&c2).await;
         });
 
+        let c3 = conn.clone();
+        tokio::spawn(async move {
+            session_ingress_worker(&c3).await;
+        });
+
         Ok(RocketDbPool { conn })
     }
 
     fn borrow(&self) -> &Self::Connection {
         &self.conn
+    }
+}
+
+pub async fn session_ingress_worker(db: &DbConn) {
+    let currently_ingesting = Arc::new(Mutex::new(vec![]));
+    let mut interval = tokio::time::interval(Duration::from_secs(5));
+
+    loop {
+        interval.tick().await;
+
+        if let Ok(dir) = fs::read_dir("/ingress/") {
+            let found_files = dir
+                .map(|directory| directory.unwrap().path().to_str().unwrap().to_string())
+                .collect::<Vec<String>>();
+
+            let loop_ingest_clone = currently_ingesting.clone();
+
+            // Find discontinuity between the files in the directory and those being ingested.
+            for file in found_files {
+                if !loop_ingest_clone.lock().await.contains(&file) {
+                    // We need to start an ingest for it.
+                    loop_ingest_clone.lock().await.push(file.clone());
+
+                    let cloned_ingest = loop_ingest_clone.clone();
+                    let cloned_connection = db.clone();
+
+                    // Spawn worker on another thread.
+                    tokio::spawn(async move {
+                        ingest_file(&cloned_connection, file.clone()).await;
+                        cloned_ingest.lock().await.retain(|x| *x != file);
+                    });
+                }
+            }
+        }
+    }
+}
+
+pub async fn ingest_file(db: &DbConn, file_path: String) {
+    // Read in the file to memory, hoping the memory is sufficient to do so.
+    let to_ingest = fs::read_to_string(file_path);
+
+    if let Err(error) = to_ingest {
+        println!("Failed to ingest file, {}", error);
+        return;
+    }
+
+    let objectified: (Vec<Product>, Vec<Customer>, Vec<Transaction>) =
+        serde_json::from_str(&to_ingest.unwrap()).unwrap();
+
+    // Start with project ingest
+    for product in objectified.0 {
+        let _ = Product::insert(product, db).await;
+    }
+
+    for customer in objectified.1 {
+        let _ = Customer::insert_raw(customer, db).await;
+    }
+
+    for transaction in objectified.2 {
+        let _ = Transaction::insert_raw(transaction, db).await;
     }
 }
 
