@@ -22,8 +22,8 @@ async fn upload(
     let db = conn.into_inner();
 
     // Disable verification in testing;
-    // let session = cookie_status_wrapper(db, cookies).await?;
-    // check_permissions!(session.clone(), Action::AccessAdminPanel);
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::AccessAdminPanel);
 
     receive_file(file).await
 }
