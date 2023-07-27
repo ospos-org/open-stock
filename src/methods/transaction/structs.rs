@@ -243,6 +243,13 @@ impl Transaction {
 
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
         let tsn = Transactions::find_by_id(id.to_string()).one(db).await?;
+
+        if tsn.is_none() {
+            return Err(DbErr::Custom(
+                "Unable to query value, returns none".to_string(),
+            ));
+        }
+
         let t = tsn.unwrap();
 
         let t = Transaction {
