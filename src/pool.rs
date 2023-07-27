@@ -2,7 +2,7 @@ use std::{env, fs, sync::Arc, time::Duration};
 
 use crate::{
     entities::{session, transactions},
-    Customer, Product, Transaction,
+    Customer, Product, Store, Transaction,
 };
 use async_trait::async_trait;
 use chrono::{Duration as ChronoDuration, Utc};
@@ -93,7 +93,15 @@ pub async fn session_ingress_worker(db: &DbConn) {
                     // Spawn worker on another thread.
                     tokio::spawn(async move {
                         ingest_file(&cloned_connection, file.clone()).await;
-                        cloned_ingest.lock().await.retain(|x| *x != file);
+                        match fs::remove_file(file.clone()) {
+                            Ok(_) => cloned_ingest.lock().await.retain(|x| *x != file),
+                            Err(error) => {
+                                // As we don't want to infinitely ingest the file,
+                                // if it cannot be deleted we shall preserve it as
+                                // continually being in the "currently_ingesting" state.
+                                println!("Failed to remove file after ingest; {}", error)
+                            }
+                        }
                     });
                 }
             }
@@ -110,10 +118,13 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
         return;
     }
 
-    let objectified: (Vec<Product>, Vec<Customer>, Vec<Transaction>) =
+    let objectified: (Vec<Product>, Vec<Customer>, Vec<Transaction>, Vec<Store>) =
         serde_json::from_str(&to_ingest.unwrap()).unwrap();
 
-    // Start with project ingest
+    for store in objectified.3 {
+        let _ = Store::insert(store, db).await;
+    }
+
     for product in objectified.0 {
         let _ = Product::insert(product, db).await;
     }
