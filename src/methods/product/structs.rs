@@ -315,15 +315,12 @@ impl Product {
         let with_promotions = join_all(mapped.iter().map(|p| async move {
             let b = db.clone();
 
+            let tags_iterable = p.product.tags.clone().into_iter();
+            let search_tags = tags_iterable
+                .filter(|tag| !tag.is_empty())
+                .collect::<Vec<String>>();
+
             let promos = Promotions::find()
-                // .filter(
-                //     Condition::any()
-                //         .add(promotion::Column::Buy.contains(&p.product.sku))
-                //         .add(promotion::Column::Buy.contains(&p.product.tags[0]))
-                //         .add(promotion::Column::Get.contains(&p.product.sku))
-                //         .add(promotion::Column::Buy.contains("Any"))
-                //         .add(promotion::Column::Get.contains("Any"))
-                // )
                 .from_raw_sql(Statement::from_sql_and_values(
                     sea_orm::DatabaseBackend::MySql,
                     &format!(
@@ -337,8 +334,16 @@ impl Product {
                             LIMIT 25",
                         p.product.sku,
                         p.product.sku,
-                        p.product.tags.join("%' OR `buy` LIKE '%"),
-                        p.product.tags.join("%' OR `get` LIKE '%")
+                        if search_tags.is_empty() {
+                            Uuid::new_v4().to_string()
+                        } else {
+                            search_tags.join("%' OR `buy` LIKE '%")
+                        },
+                        if search_tags.is_empty() {
+                            Uuid::new_v4().to_string()
+                        } else {
+                            search_tags.join("%' OR `get` LIKE '%")
+                        }
                     ),
                     vec![],
                 ))
