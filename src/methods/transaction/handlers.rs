@@ -8,7 +8,7 @@ use super::{Transaction, TransactionInit, TransactionInput};
 use crate::methods::employee::Action;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, QuantityAlterationIntent};
 use crate::pool::Db;
-use crate::{check_permissions, Order, OrderStatus, PickStatus};
+use crate::{apply_discount, check_permissions, Order, OrderStatus, PickStatus};
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![
@@ -243,6 +243,37 @@ pub async fn create(
             });
         });
     });
+
+    let total_paid = new_transaction
+        .payment
+        .iter()
+        .map(|payment| payment.amount.quantity)
+        .sum::<f32>();
+    let total_cost = new_transaction
+        .products
+        .iter()
+        .map(|order| {
+            apply_discount(
+                order.discount.clone(),
+                order
+                    .products
+                    .iter()
+                    .map(|product| {
+                        apply_discount(
+                            product.discount.clone(),
+                            product.product_cost * product.quantity,
+                        )
+                    })
+                    .sum::<f32>(),
+            )
+        })
+        .sum::<f32>();
+
+    if (total_paid - total_cost).abs() > 0.1 {
+        return Err(ErrorResponse::create_error(
+            "Payment amount does not match product costs.",
+        ));
+    }
 
     match Transaction::insert(new_transaction, session, db).await {
         Ok(data) => {
