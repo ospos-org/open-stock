@@ -7,10 +7,12 @@ use std::thread;
 
 pub mod entities;
 pub mod methods;
+pub mod migrator;
 pub mod pool;
 
 pub use self::entities::*;
 pub use self::methods::*;
+pub use self::migrator::*;
 pub use self::pool::*;
 
 enum Message {

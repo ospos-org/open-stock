@@ -10,10 +10,12 @@ use sea_orm_rocket::Database;
 
 pub mod entities;
 pub mod methods;
+pub mod migrator;
 pub mod pool;
 
 pub use entities::*;
 pub use methods::*;
+pub use migrator::*;
 
 extern crate argon2;
 extern crate futures_cpupool;

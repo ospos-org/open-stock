@@ -2,6 +2,7 @@ use std::{env, fs, sync::Arc, time::Duration};
 
 use crate::{
     entities::{session, transactions},
+    migrator::Migrator,
     Customer, Product, Store, Transaction,
 };
 use async_trait::async_trait;
@@ -9,6 +10,7 @@ use chrono::{Duration as ChronoDuration, Utc};
 use dotenv::dotenv;
 use rocket::tokio;
 use sea_orm::{ColumnTrait, ConnectOptions, DbConn, EntityTrait, QuerySelect};
+use sea_orm_migration::prelude::*;
 use sea_orm_rocket::{rocket::figment::Figment, Database};
 use tokio::sync::Mutex;
 
@@ -48,6 +50,9 @@ impl sea_orm_rocket::Pool for RocketDbPool {
         options.min_connections(1);
 
         let conn = sea_orm::Database::connect(options).await?;
+
+        // Perform all migrations to the DB
+        Migrator::refresh(&conn).await?;
 
         let c2 = conn.clone();
         tokio::spawn(async move {
