@@ -39,6 +39,7 @@ impl MigrationTrait for Migration {
 
 #[derive(Iden)]
 pub enum AuthRecord {
+    #[iden = "AuthRecord"]
     Table,
     #[iden = "id"]
     Id,

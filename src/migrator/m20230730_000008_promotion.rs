@@ -41,6 +41,7 @@ impl MigrationTrait for Migration {
 
 #[derive(Iden)]
 pub enum Promotion {
+    #[iden = "Promotion"]
     Table,
     #[iden = "id"]
     Id,

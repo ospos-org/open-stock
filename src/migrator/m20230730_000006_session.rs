@@ -39,6 +39,7 @@ impl MigrationTrait for Migration {
 
 #[derive(Iden)]
 pub enum Session {
+    #[iden = "Session"]
     Table,
     #[iden = "id"]
     Id,

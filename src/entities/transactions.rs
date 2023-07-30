@@ -18,7 +18,7 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub salesperson: String,
     #[sea_orm(column_type = "Text")]
-    pub till: String,
+    pub kiosk: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

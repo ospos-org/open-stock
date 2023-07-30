@@ -77,7 +77,7 @@ pub struct Transaction {
     pub order_notes: NoteList,
 
     pub salesperson: Id,
-    pub till: Id,
+    pub kiosk: Id,
 }
 
 #[derive(Serialize, Deserialize, Clone, FromQueryResult)]
@@ -95,7 +95,7 @@ pub struct DerivableTransaction {
     pub order_notes: JsonValue,
 
     pub salesperson: Id,
-    pub till: Id,
+    pub kiosk: Id,
 }
 
 #[derive(Deserialize, Clone)]
@@ -111,7 +111,7 @@ pub struct TransactionInput {
     pub order_notes: NoteList,
 
     pub salesperson: Id,
-    pub till: Id,
+    pub kiosk: Id,
 }
 
 #[derive(Deserialize, Clone)]
@@ -126,7 +126,7 @@ pub struct TransactionInit {
     pub order_date: DateTime<Utc>,
     pub order_notes: NoteList,
 
-    pub till: Id,
+    pub kiosk: Id,
 }
 
 impl Transaction {
@@ -147,7 +147,7 @@ impl Transaction {
             order_date: Set(tsn.order_date.naive_utc()),
             order_notes: Set(json!(tsn.order_notes)),
             salesperson: Set(session.employee.id),
-            till: Set(tsn.till),
+            kiosk: Set(tsn.kiosk),
         };
 
         match Transactions::insert(insert_crud).exec(db).await {
@@ -170,7 +170,7 @@ impl Transaction {
             order_date: Set(tsn.order_date.naive_utc()),
             order_notes: Set(json!(tsn.order_notes)),
             salesperson: Set(tsn.salesperson),
-            till: Set(tsn.till),
+            kiosk: Set(tsn.kiosk),
         };
 
         match Transactions::insert(insert_crud).exec(db).await {
@@ -262,7 +262,7 @@ impl Transaction {
             order_date: DateTime::from_utc(t.order_date, Utc),
             order_notes: serde_json::from_value::<NoteList>(t.order_notes).unwrap(),
             salesperson: t.salesperson,
-            till: t.till,
+            kiosk: t.kiosk,
         };
 
         Ok(t)
@@ -293,7 +293,7 @@ impl Transaction {
                 order_date: DateTime::from_utc(t.order_date, Utc),
                 order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
                 salesperson: t.salesperson.clone(),
-                till: t.till.clone(),
+                kiosk: t.kiosk.clone(),
             })
             .collect();
 
@@ -324,7 +324,7 @@ impl Transaction {
                 order_date: DateTime::from_utc(t.order_date, Utc),
                 order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
                 salesperson: t.salesperson.clone(),
-                till: t.till.clone(),
+                kiosk: t.kiosk.clone(),
             })
             .collect();
 
@@ -350,7 +350,7 @@ impl Transaction {
                 order_date: DateTime::from_utc(t.order_date, Utc),
                 order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
                 salesperson: t.salesperson.clone(),
-                till: t.till.clone(),
+                kiosk: t.kiosk.clone(),
             })
             .collect();
 
@@ -372,7 +372,7 @@ impl Transaction {
             order_date: Set(tsn.order_date.naive_utc()),
             order_notes: Set(json!(tsn.order_notes)),
             salesperson: Set(tsn.salesperson),
-            till: Set(tsn.till),
+            kiosk: Set(tsn.kiosk),
         }
         .update(db)
         .await?;
@@ -395,7 +395,7 @@ impl Transaction {
             order_date: Set(tsn.order_date.naive_utc()),
             order_notes: Set(json!(tsn.order_notes)),
             salesperson: Set(tsn.salesperson),
-            till: Set(tsn.till),
+            kiosk: Set(tsn.kiosk),
         }
         .update(db)
         .await?;
@@ -670,7 +670,7 @@ impl Display for Transaction {
             "Transaction ({}) {} {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {:?}\nNotes:\n{}\n{}",
             self.id,
             self.order_date.format("%d/%m/%Y %H:%M"),
-            self.till,
+            self.kiosk,
             products,
             self.order_total,
             self.payment,
@@ -683,7 +683,7 @@ impl Display for Transaction {
 // // impl! Implement the intent as a builder.
 // pub struct Intent {
 //     request: Transaction,
-//     // Employee ID for the dispatcher (instigator) for an In-store Purchase (i.e. Tills person) or website deployment ID
+//     // Employee ID for the dispatcher (instigator) for an In-store Purchase (i.e. kiosks person) or website deployment ID
 //     dispatcher: Id,
 // }
 
@@ -884,6 +884,6 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
             author: Uuid::new_v4().to_string(),
         }],
         // order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
-        till: "...".into(),
+        kiosk: "...".into(),
     }
 }

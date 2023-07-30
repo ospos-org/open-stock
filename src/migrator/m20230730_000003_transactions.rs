@@ -54,6 +54,7 @@ impl MigrationTrait for Migration {
 
 #[derive(Iden)]
 pub enum Transactions {
+    #[iden = "Transactions"]
     Table,
     #[iden = "id"]
     Id,

@@ -48,6 +48,7 @@ impl MigrationTrait for Migration {
 
 #[derive(Iden)]
 pub enum Products {
+    #[iden = "Products"]
     Table,
     #[iden = "sku"]
     Sku,
