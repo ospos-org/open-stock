@@ -36,7 +36,6 @@ However, for a default setup, the API can be hosted yourself by performing the f
 1. Create an empty directory
 2. In the directory, create a `docker-compose.yaml` (template file [here](./docker-compose.yaml)).
 3. Customize it to add/remove `open-pos`, and `adminer`.
-4. Include the default schema by creating a `/init` directory, and including [`01.sql`](./init/01.sql) inside.
 5. Run `docker compose up`.
 
 It is recommended to add a database viewer such as adminer for development to monitor changes and trace any issues of object structure you may encounter.

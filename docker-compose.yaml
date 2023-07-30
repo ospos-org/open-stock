@@ -51,16 +51,6 @@ services:
     volumes:
       - datavolume:/var/lib/mysql
 
-  # seed:
-  #   image: mysql:latest
-  #   volumes:
-  #     - ./init:/init
-  #   environment:
-  #       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-  #   entrypoint: [ "bash", "-c", "sleep 10 && mysql --user=root --password=root --host=os-db --port=3306 stock < /init/01.sql && exit"]
-  #   depends_on:
-  #     - os-db
-
 # -- Kario --
   # api:
   #   container_name: karrio.api
