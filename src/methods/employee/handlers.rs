@@ -348,7 +348,7 @@ pub async fn create(
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct LogRequest {
-    pub till: String,
+    pub kiosk: String,
     pub reason: String,
     pub in_or_out: String,
 }
@@ -371,7 +371,7 @@ pub async fn log(
     let new_attendance = History::<Attendance> {
         item: Attendance {
             track_type,
-            till: data.till,
+            kiosk: data.kiosk,
         },
         reason: "".to_string(),
         timestamp: Utc::now(),

@@ -260,7 +260,9 @@ pub async fn cookie_status_wrapper(
                 ))
             }
         },
-        None => Err(ErrorResponse::create_error("Unable to fetch user cookie.")),
+        None => Err(ErrorResponse::custom_unauthorized(
+            "Unable to fetch user cookie.",
+        )),
     }
 }
 

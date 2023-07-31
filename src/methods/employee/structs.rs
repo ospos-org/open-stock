@@ -108,7 +108,7 @@ impl Display for Employee {
                     "{}: {} ({})\n",
                     f.timestamp.format("%d/%m/%Y %H:%M"),
                     f.item.track_type.to_string(),
-                    f.item.till
+                    f.item.kiosk
                 )
             })
             .collect();
@@ -377,7 +377,7 @@ impl Employee {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Attendance {
     pub track_type: TrackType,
-    pub till: Id,
+    pub kiosk: Id,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -423,7 +423,7 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> {
                 item: Attendance {
                     track_type: TrackType::In,
-                    till: "5".to_string(),
+                    kiosk: "5".to_string(),
                 },
                 reason: "".to_string(),
                 timestamp: Utc::now(),
@@ -431,7 +431,7 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> {
                 item: Attendance {
                     track_type: TrackType::Out,
-                    till: "6".to_string(),
+                    kiosk: "6".to_string(),
                 },
                 reason: "".to_string(),
                 timestamp: Utc::now(),
@@ -439,7 +439,7 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> {
                 item: Attendance {
                     track_type: TrackType::In,
-                    till: "1".to_string(),
+                    kiosk: "1".to_string(),
                 },
                 reason: "".to_string(),
                 timestamp: Utc::now(),
@@ -447,7 +447,7 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> {
                 item: Attendance {
                     track_type: TrackType::Out,
-                    till: "3".to_string(),
+                    kiosk: "3".to_string(),
                 },
                 reason: "".to_string(),
                 timestamp: Utc::now(),
@@ -455,7 +455,7 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> {
                 item: Attendance {
                     track_type: TrackType::In,
-                    till: "4".to_string(),
+                    kiosk: "4".to_string(),
                 },
                 reason: "".to_string(),
                 timestamp: Utc::now(),
@@ -463,7 +463,7 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> {
                 item: Attendance {
                     track_type: TrackType::Out,
-                    till: "4".to_string(),
+                    kiosk: "4".to_string(),
                 },
                 reason: "Left Early".to_string(),
                 timestamp: Utc::now(),
@@ -471,7 +471,7 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> {
                 item: Attendance {
                     track_type: TrackType::In,
-                    till: "4".to_string(),
+                    kiosk: "4".to_string(),
                 },
                 reason: "".to_string(),
                 timestamp: Utc::now(),
@@ -479,7 +479,7 @@ pub fn example_employee() -> EmployeeInput {
             History::<Attendance> {
                 item: Attendance {
                     track_type: TrackType::Out,
-                    till: "5".to_string(),
+                    kiosk: "5".to_string(),
                 },
                 reason: "".to_string(),
                 timestamp: Utc::now(),
