@@ -11,10 +11,13 @@ impl MigrationName for Migration {
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let db = manager.get_connection();
+
         manager
             .create_table(
                 Table::create()
                     .table(Products::Table)
+                    .engine("InnoDB".to_string())
                     .col(
                         ColumnDef::new(Products::Sku)
                             .string()
@@ -35,7 +38,12 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Products::Visible).json().not_null())
                     .to_owned(),
             )
-            .await
+            .await?;
+
+        db.execute_unprepared("ALTER TABLE `Products` ADD FULLTEXT indx(`name`,`company`)")
+            .await?;
+
+        Ok(())
     }
 
     // Define how to rollback this migration: Drop the Bakery table.

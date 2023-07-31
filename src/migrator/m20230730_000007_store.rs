@@ -15,6 +15,7 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Store::Table)
+                    .engine("InnoDB".to_string())
                     .col(ColumnDef::new(Store::Id).string().not_null().primary_key())
                     .col(ColumnDef::new(Store::Name).text().not_null())
                     .col(ColumnDef::new(Store::Contact).json().not_null())

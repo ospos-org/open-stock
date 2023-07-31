@@ -15,6 +15,7 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Session::Table)
+                    .engine("InnoDB".to_string())
                     .col(
                         ColumnDef::new(Session::Id)
                             .string()
