@@ -30,7 +30,8 @@ pub fn routes() -> Vec<rocket::Route> {
         update,
         log,
         generate,
-        auth
+        auth,
+        get_status,
     ]
 }
 
@@ -381,7 +382,7 @@ pub async fn log(
         Ok(mut data) => {
             data.clock_history.push(new_attendance);
 
-            match Employee::update(data, id, db).await {
+            match Employee::update_no_geom(data, id, db).await {
                 Ok(data) => Ok(Json(data)),
                 Err(reason) => {
                     println!("[dberr]: {}", reason);
@@ -418,7 +419,7 @@ pub async fn get_status(
             }
 
             data.clock_history
-                .sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+                .sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
 
             Ok(Json(data.clock_history[0].clone()))
         }

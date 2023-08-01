@@ -325,6 +325,22 @@ impl Employee {
         Ok(mapped)
     }
 
+    pub async fn update_no_geom(empl: Employee, id: &str, db: &DbConn) -> Result<Employee, DbErr> {
+        employee::ActiveModel {
+            id: Set(id.to_string()),
+            rid: Set(empl.rid),
+            name: Set(json!(empl.name)),
+            auth: Set(json!(empl.auth)),
+            clock_history: Set(json!(empl.clock_history)),
+            level: Set(json!(empl.level)),
+            ..Default::default()
+        }
+        .update(db)
+        .await?;
+
+        Self::fetch_by_id(id, db).await
+    }
+
     pub async fn update(empl: Employee, id: &str, db: &DbConn) -> Result<Employee, DbErr> {
         let addr = convert_addr_to_geo(&format!(
             "{} {} {} {}",
