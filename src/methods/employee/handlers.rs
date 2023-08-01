@@ -180,6 +180,7 @@ async fn update(
 pub struct Auth {
     pub pass: String,
     pub kiosk_id: String,
+    pub tenant_id: String,
 }
 
 #[post("/auth/<id>", data = "<input_data>")]
@@ -211,6 +212,7 @@ pub async fn auth(
                     key: Set(api_key.clone()),
                     employee_id: Set(id.to_string()),
                     expiry: Set(exp.naive_utc()),
+                    tenant_id: Set(input.tenant_id),
                 })
                 .exec(db)
                 .await
@@ -277,6 +279,7 @@ pub async fn auth_rid(
                 key: Set(api_key.clone()),
                 employee_id: Set(data.id.to_string()),
                 expiry: Set(exp.naive_utc()),
+                tenant_id: Set(input.tenant_id),
             })
             .exec(db)
             .await

@@ -10,6 +10,7 @@ mod m20230730_000007_store;
 mod m20230730_000008_promotion;
 mod m20230730_000009_kiosk;
 mod m20230730_000010_authrec;
+mod m20230730_000011_tenants;
 
 pub struct Migrator;
 
@@ -27,6 +28,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20230730_000008_promotion::Migration),
             Box::new(m20230730_000009_kiosk::Migration),
             Box::new(m20230730_000010_authrec::Migration),
+            Box::new(m20230730_000011_tenants::Migration),
         ]
     }
 }
