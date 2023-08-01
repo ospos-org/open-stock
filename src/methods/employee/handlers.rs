@@ -395,3 +395,36 @@ pub async fn log(
         }
     }
 }
+
+#[get("/log/<id>")]
+pub async fn get_status(
+    conn: Connection<'_, Db>,
+    id: &str,
+) -> Result<Json<History<Attendance>>, Error> {
+    let db = conn.into_inner();
+
+    match Employee::fetch_by_id(id, db).await {
+        Ok(mut data) => {
+            // First time employee is just considered "clocked out"
+            if data.clock_history.is_empty() {
+                return Ok(Json(History {
+                    item: Attendance {
+                        track_type: TrackType::Out,
+                        kiosk: "new-employee".to_string(),
+                    },
+                    reason: String::new(),
+                    timestamp: Utc::now(),
+                }));
+            }
+
+            data.clock_history
+                .sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+
+            Ok(Json(data.clock_history[0].clone()))
+        }
+        Err(reason) => {
+            println!("[dberr]: {}", reason);
+            Err(ErrorResponse::input_error())
+        }
+    }
+}

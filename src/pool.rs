@@ -52,7 +52,7 @@ impl sea_orm_rocket::Pool for RocketDbPool {
         let conn = sea_orm::Database::connect(options).await?;
 
         // Perform all migrations to the DB
-        Migrator::refresh(&conn).await?;
+        Migrator::up(&conn, None).await?;
 
         let c2 = conn.clone();
         tokio::spawn(async move {
