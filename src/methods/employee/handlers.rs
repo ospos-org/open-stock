@@ -425,7 +425,7 @@ pub async fn log(
     let data = input_data.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session.clone(), Action::CreateEmployee);
+    check_permissions!(session.clone(), Action::FetchEmployee);
 
     let track_type = if data.in_or_out.to_lowercase() == "in" {
         TrackType::In
@@ -470,7 +470,7 @@ pub async fn get_status(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session.clone(), Action::CreateEmployee);
+    check_permissions!(session.clone(), Action::FetchEmployee);
 
     match Employee::fetch_by_id(id, session, db).await {
         Ok(mut data) => {

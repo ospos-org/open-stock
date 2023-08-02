@@ -36,7 +36,7 @@ pub fn routes() -> Vec<rocket::Route> {
 pub struct All {
     employee: Employee,
     stores: Vec<Store>,
-    tenant: Tenant,
+    tenants: Vec<Tenant>,
     products: Vec<Product>,
     customer: Customer,
     transaction: Transaction,
@@ -55,24 +55,43 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
 
     let db = conn.into_inner();
     let tenant_id = "DEFAULT_TENANT";
+    let tenant_id2 = "ALTERNATE_TENANT";
     let default_employee = example_employee();
 
     let session = Session {
         id: String::new(),
         key: String::new(),
-        employee: default_employee.into(),
+        employee: default_employee.clone().into(),
         expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
         tenant_id: tenant_id.to_string().clone(),
     };
 
+    let session2 = Session {
+        id: String::new(),
+        key: String::new(),
+        employee: default_employee.into(),
+        expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+        tenant_id: tenant_id2.to_string().clone(),
+    };
+
     let tenant = Tenant::generate(db, tenant_id).await.unwrap();
+    let tenant2 = Tenant::generate(db, tenant_id2).await.unwrap();
+
     let employee = Employee::generate(db, session.clone()).await.unwrap();
+    let _employee2 = Employee::generate(db, session2.clone()).await.unwrap();
+
     let stores = Store::generate(session.clone(), db).await.unwrap();
     let products = Product::generate(session.clone(), db).await.unwrap();
     let customer = Customer::generate(session.clone(), db).await.unwrap();
+
     let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), db)
         .await
         .unwrap();
+
+    let _kiosk2 = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133622", session2.clone(), db)
+        .await
+        .unwrap();
+
     let transaction = Transaction::generate(
         db,
         &customer.id,
@@ -90,7 +109,7 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
 
     Ok(rocket::serde::json::Json(All {
         employee,
-        tenant,
+        tenants: vec![tenant, tenant2],
         stores,
         products,
         customer,

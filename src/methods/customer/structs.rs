@@ -143,7 +143,7 @@ impl Customer {
                 &format!("SELECT Customer.*, GROUP_CONCAT(`Transactions`.`id`) as transactions
                 FROM Customer
                 LEFT JOIN Transactions ON (REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '\"', '')) = Customer.id
-                WHERE LOWER(Customer.name) LIKE '%{}%' OR Customer.contact LIKE '%{}%' AND Customer.tenant_id == '{}'
+                WHERE (LOWER(Customer.name) LIKE '%{}%' OR Customer.contact LIKE '%{}%') AND Customer.tenant_id = '{}'
                 GROUP BY Customer.id
                 LIMIT 25",
                 query, query, session.tenant_id),
