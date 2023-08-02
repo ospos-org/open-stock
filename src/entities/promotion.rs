@@ -13,6 +13,7 @@ pub struct Model {
     pub get: Json,
     pub valid_till: DateTime,
     pub timestamp: DateTime,
+    pub tenant_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

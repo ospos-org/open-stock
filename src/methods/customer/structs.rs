@@ -1,12 +1,14 @@
 use std::fmt::Display;
 
 use crate::entities::prelude::Customer as Cust;
+use crate::Session;
 use crate::{
     entities::customer,
     methods::{
         convert_addr_to_geo, Address, ContactInformation, Email, Id, MobileNumber, NoteList,
     },
 };
+use sea_orm::QueryFilter;
 use sea_orm::{
     sea_query::{Expr, Func},
     ActiveModelTrait, ColumnTrait, DbBackend, DbConn, DbErr, EntityTrait, FromQueryResult,
@@ -65,6 +67,7 @@ pub struct CustomerInput {
 impl Customer {
     pub async fn insert(
         cust: CustomerInput,
+        session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<customer::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
@@ -77,6 +80,7 @@ impl Customer {
             balance: Set(cust.balance),
             special_pricing: Set(json!(cust.special_pricing)),
             accepts_marketing: Set(cust.accepts_marketing),
+            tenant_id: Set(session.tenant_id),
         };
 
         match Cust::insert(insert_crud).exec(db).await {
@@ -87,6 +91,7 @@ impl Customer {
 
     pub async fn insert_raw(
         cust: Customer,
+        session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<customer::ActiveModel>, DbErr> {
         let insert_crud = customer::ActiveModel {
@@ -97,6 +102,7 @@ impl Customer {
             balance: Set(cust.balance),
             special_pricing: Set(json!(cust.special_pricing)),
             accepts_marketing: Set(cust.accepts_marketing),
+            tenant_id: Set(session.tenant_id),
         };
 
         match Cust::insert(insert_crud).exec(db).await {
@@ -105,8 +111,11 @@ impl Customer {
         }
     }
 
-    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Customer, DbErr> {
-        let cust = Cust::find_by_id(id.to_string()).one(db).await?;
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Customer, DbErr> {
+        let cust = Cust::find_by_id(id.to_string())
+            .filter(customer::Column::TenantId.eq(session.tenant_id))
+            .one(db)
+            .await?;
 
         match cust {
             Some(c) => Ok(Customer {
@@ -126,6 +135,7 @@ impl Customer {
 
     pub async fn search(
         query: &str,
+        session: Session,
         db: &DbConn,
     ) -> Result<Vec<CustomerWithTransactionsOut>, DbErr> {
         let as_str: Vec<CustomerWithTransactions> = CustomerWithTransactions::find_by_statement(Statement::from_sql_and_values(
@@ -134,9 +144,10 @@ impl Customer {
                 FROM Customer
                 LEFT JOIN Transactions ON (REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '\"', '')) = Customer.id
                 WHERE LOWER(Customer.name) LIKE '%{}%' OR Customer.contact LIKE '%{}%'
+                WHERE Customer.tenant_id == {}
                 GROUP BY Customer.id
                 LIMIT 25",
-                query, query),
+                query, query, session.tenant_id),
                 vec![]
             ))
             .all(db)
@@ -161,8 +172,13 @@ impl Customer {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
+    pub async fn fetch_by_name(
+        name: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Customer>, DbErr> {
         let res = customer::Entity::find()
+            .filter(customer::Column::TenantId.eq(session.tenant_id))
             .having(
                 Expr::expr(Func::lower(Expr::col(customer::Column::Name)))
                     .like(format!("%{}%", name)),
@@ -189,8 +205,13 @@ impl Customer {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_phone(phone: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
+    pub async fn fetch_by_phone(
+        phone: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Customer>, DbErr> {
         let res = customer::Entity::find()
+            .filter(customer::Column::TenantId.eq(session.tenant_id))
             .having(customer::Column::Contact.contains(phone))
             .limit(25)
             .all(db)
@@ -214,8 +235,13 @@ impl Customer {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_addr(addr: &str, db: &DbConn) -> Result<Vec<Customer>, DbErr> {
+    pub async fn fetch_by_addr(
+        addr: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Customer>, DbErr> {
         let res = customer::Entity::find()
+            .filter(customer::Column::TenantId.eq(session.tenant_id))
             .having(customer::Column::Contact.contains(addr))
             .limit(25)
             .all(db)
@@ -240,17 +266,22 @@ impl Customer {
     }
 
     /// Generate and insert a default customer.
-    pub async fn generate(db: &DbConn) -> Result<Customer, DbErr> {
+    pub async fn generate(session: Session, db: &DbConn) -> Result<Customer, DbErr> {
         let cust = example_customer();
         // Insert & Fetch Customer
-        let r = Customer::insert(cust, db).await.unwrap();
-        match Customer::fetch_by_id(&r.last_insert_id, db).await {
+        let r = Customer::insert(cust, session.clone(), db).await.unwrap();
+        match Customer::fetch_by_id(&r.last_insert_id, session, db).await {
             Ok(cust) => Ok(cust),
             Err(e) => Err(e),
         }
     }
 
-    pub async fn update(cust: CustomerInput, id: &str, db: &DbConn) -> Result<Customer, DbErr> {
+    pub async fn update(
+        cust: CustomerInput,
+        session: Session,
+        id: &str,
+        db: &DbConn,
+    ) -> Result<Customer, DbErr> {
         let addr = convert_addr_to_geo(&format!(
             "{} {} {} {}",
             cust.contact.address.street,
@@ -274,11 +305,12 @@ impl Customer {
                     special_pricing: Set(json!(cust.special_pricing)),
                     balance: Set(cust.balance),
                     accepts_marketing: Set(cust.accepts_marketing),
+                    tenant_id: Set(session.clone().tenant_id),
                 }
                 .update(db)
                 .await?;
 
-                Self::fetch_by_id(id, db).await
+                Self::fetch_by_id(id, session, db).await
             }
             Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
                 "Invalid address format".to_string(),
@@ -289,9 +321,10 @@ impl Customer {
     pub async fn update_contact_information(
         contact: ContactInformation,
         id: &str,
+        session: Session,
         db: &DbConn,
     ) -> Result<Customer, DbErr> {
-        let customer = Self::fetch_by_id(id, db).await?;
+        let customer = Self::fetch_by_id(id, session.clone(), db).await?;
         // Get geo location for new contact information...
         let addr = convert_addr_to_geo(&format!(
             "{} {} {} {}",
@@ -314,11 +347,12 @@ impl Customer {
                     special_pricing: Set(json!(customer.special_pricing)),
                     balance: Set(customer.balance),
                     accepts_marketing: Set(customer.accepts_marketing),
+                    tenant_id: Set(session.clone().tenant_id),
                 }
                 .update(db)
                 .await?;
 
-                Self::fetch_by_id(id, db).await
+                Self::fetch_by_id(id, session, db).await
             }
             Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
                 "Invalid address format".to_string(),

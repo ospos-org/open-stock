@@ -36,9 +36,9 @@ pub async fn get(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchCustomer);
+    check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_id(id, db).await {
+    match Customer::fetch_by_id(id, session, db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -53,9 +53,9 @@ pub async fn get_by_name(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchCustomer);
+    check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_name(name, db).await {
+    match Customer::fetch_by_name(name, session, db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -71,9 +71,9 @@ pub async fn search_query(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchCustomer);
+    check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::search(query, db).await {
+    match Customer::search(query, session, db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -88,9 +88,9 @@ pub async fn find_related_transactions(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchCustomer);
+    check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Transaction::fetch_by_client_id(id, db).await {
+    match Transaction::fetch_by_client_id(id, session, db).await {
         Ok(transactions) => Ok(Json(transactions)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -104,9 +104,9 @@ pub async fn get_by_phone(
 ) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchCustomer);
+    check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_phone(phone, db).await {
+    match Customer::fetch_by_phone(phone, session, db).await {
         Ok(customer) => Ok(Json(customer)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -121,9 +121,9 @@ pub async fn get_by_addr(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchCustomer);
+    check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_addr(addr, db).await {
+    match Customer::fetch_by_addr(addr, session, db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -137,9 +137,9 @@ async fn generate(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::GenerateTemplateContent);
+    check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Customer::generate(db).await {
+    match Customer::generate(session, db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -156,9 +156,9 @@ async fn update(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::ModifyCustomer);
+    check_permissions!(session.clone(), Action::ModifyCustomer);
 
-    match Customer::update(input_data, id, db).await {
+    match Customer::update(input_data, session, id, db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
@@ -175,9 +175,9 @@ async fn update_contact_info(
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
 
-    check_permissions!(session, Action::ModifyCustomer);
+    check_permissions!(session.clone(), Action::ModifyCustomer);
 
-    match Customer::update_contact_information(input_data, id, db).await {
+    match Customer::update_contact_information(input_data, id, session, db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
@@ -193,10 +193,10 @@ pub async fn create(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::CreateCustomer);
+    check_permissions!(session.clone(), Action::CreateCustomer);
 
-    match Customer::insert(new_transaction, db).await {
-        Ok(data) => match Customer::fetch_by_id(&data.last_insert_id, db).await {
+    match Customer::insert(new_transaction, session.clone(), db).await {
+        Ok(data) => match Customer::fetch_by_id(&data.last_insert_id, session, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => {
                 println!("[dberr]: {}", reason);

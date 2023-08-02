@@ -13,7 +13,8 @@ pub struct Model {
     pub customer_notes: Json,
     pub balance: f32,
     pub special_pricing: Json,
-    pub accepts_marketing: bool
+    pub accepts_marketing: bool,
+    pub tenant_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -1,6 +1,6 @@
 use std::env;
 
-use chrono::Utc;
+use chrono::{Days, Utc};
 use geo::point;
 use rocket::{get, http::CookieJar, post, routes, serde::json::Json};
 use sea_orm_rocket::Connection;
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    check_permissions,
+    check_permissions, example_employee,
     methods::{
         cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
         Promotion, Session, Store, Transaction,
@@ -54,15 +54,23 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
     }
 
     let db = conn.into_inner();
-
     let tenant_id = "DEFAULT_TENANT";
+    let default_employee = example_employee();
+
+    let session = Session {
+        id: String::new(),
+        key: String::new(),
+        employee: default_employee.into(),
+        expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+        tenant_id: tenant_id.to_string().clone(),
+    };
 
     let tenant = Tenant::generate(db, tenant_id).await.unwrap();
-    let employee = Employee::generate(db).await.unwrap();
-    let stores = Store::generate(db).await.unwrap();
-    let products = Product::generate(db).await.unwrap();
-    let customer = Customer::generate(db).await.unwrap();
-    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", db)
+    let employee = Employee::generate(db, session.clone()).await.unwrap();
+    let stores = Store::generate(session.clone(), db).await.unwrap();
+    let products = Product::generate(session.clone(), db).await.unwrap();
+    let customer = Customer::generate(session.clone(), db).await.unwrap();
+    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), db)
         .await
         .unwrap();
     let transaction = Transaction::generate(
@@ -73,11 +81,12 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
             key: String::new(),
             employee: employee.clone(),
             expiry: Utc::now(),
+            tenant_id: tenant_id.to_string(),
         },
     )
     .await
     .unwrap();
-    let promotions = Promotion::generate(db).await.unwrap();
+    let promotions = Promotion::generate(session, db).await.unwrap();
 
     Ok(rocket::serde::json::Json(All {
         employee,
@@ -206,14 +215,14 @@ pub async fn distance_to_stores(
 ) -> Result<Json<Vec<Distance>>, Error> {
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchGeoLocation);
+    check_permissions!(session.clone(), Action::FetchGeoLocation);
 
-    let customer = match Customer::fetch_by_id(id, db).await {
+    let customer = match Customer::fetch_by_id(id, session.clone(), db).await {
         Ok(c) => c,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
 
-    let stores = match Store::fetch_all(db).await {
+    let stores = match Store::fetch_all(session, db).await {
         Ok(s) => s,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
@@ -245,14 +254,14 @@ pub async fn distance_to_stores_from_store(
 ) -> Result<Json<Vec<Distance>>, Error> {
     let db = conn.into_inner();
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchGeoLocation);
+    check_permissions!(session.clone(), Action::FetchGeoLocation);
 
-    let store_ = match Store::fetch_by_id(store_id, db).await {
+    let store_ = match Store::fetch_by_id(store_id, session.clone(), db).await {
         Ok(c) => c,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
 
-    let stores = match Store::fetch_all(db).await {
+    let stores = match Store::fetch_all(session, db).await {
         Ok(s) => s,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };

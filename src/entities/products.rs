@@ -20,7 +20,8 @@ pub struct Model {
     pub identification: Json,
     pub visible: Json,
     pub name_long: String,
-    pub description_long: String
+    pub description_long: String,
+    pub tenant_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

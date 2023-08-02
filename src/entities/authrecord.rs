@@ -10,6 +10,7 @@ pub struct Model {
     pub kiosk_id: String,
     pub attempt: Json,
     pub timestamp: DateTime,
+    pub tenant_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

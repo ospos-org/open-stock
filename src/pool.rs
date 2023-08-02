@@ -2,11 +2,12 @@ use std::{env, fs, sync::Arc, time::Duration};
 
 use crate::{
     entities::{session, transactions},
+    example_employee,
     migrator::Migrator,
-    Customer, Product, Store, Transaction,
+    Customer, Product, Session, Store, Transaction,
 };
 use async_trait::async_trait;
-use chrono::{Duration as ChronoDuration, Utc};
+use chrono::{Days, Duration as ChronoDuration, Utc};
 use dotenv::dotenv;
 use rocket::tokio;
 use sea_orm::{ColumnTrait, ConnectOptions, DbConn, EntityTrait, QuerySelect};
@@ -116,7 +117,7 @@ pub async fn session_ingress_worker(db: &DbConn) {
 
 pub async fn ingest_file(db: &DbConn, file_path: String) {
     // Read in the file to memory, hoping the memory is sufficient to do so.
-    let to_ingest = fs::read_to_string(file_path);
+    let to_ingest = fs::read_to_string(file_path.clone());
 
     if let Err(error) = to_ingest {
         println!("Failed to ingest file, {}", error);
@@ -126,20 +127,42 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
     let objectified: (Vec<Product>, Vec<Customer>, Vec<Transaction>, Vec<Store>) =
         serde_json::from_str(&to_ingest.unwrap()).unwrap();
 
+    let tenant_id = file_path.split('/').last();
+
+    if tenant_id.is_none() {
+        return;
+    }
+
+    let tenant_id = tenant_id.unwrap().split('_').last();
+
+    if tenant_id.is_none() {
+        return;
+    }
+
+    let default_employee = example_employee();
+
+    let session = Session {
+        id: String::new(),
+        key: String::new(),
+        employee: default_employee.into(),
+        expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+        tenant_id: tenant_id.unwrap().to_string().clone(),
+    };
+
     for store in objectified.3 {
-        let _ = Store::insert(store, db).await;
+        let _ = Store::insert(store, session.clone(), db).await;
     }
 
     for product in objectified.0 {
-        let _ = Product::insert(product, db).await;
+        let _ = Product::insert(product, session.clone(), db).await;
     }
 
     for customer in objectified.1 {
-        let _ = Customer::insert_raw(customer, db).await;
+        let _ = Customer::insert_raw(customer, session.clone(), db).await;
     }
 
     for transaction in objectified.2 {
-        let _ = Transaction::insert_raw(transaction, db).await;
+        let _ = Transaction::insert_raw(transaction, session.clone(), db).await;
     }
 }
 

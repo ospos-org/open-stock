@@ -148,6 +148,7 @@ impl Transaction {
             order_notes: Set(json!(tsn.order_notes)),
             salesperson: Set(session.employee.id),
             kiosk: Set(tsn.kiosk),
+            tenant_id: Set(session.tenant_id),
         };
 
         match Transactions::insert(insert_crud).exec(db).await {
@@ -158,6 +159,7 @@ impl Transaction {
 
     pub async fn insert_raw(
         tsn: Transaction,
+        session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
         let insert_crud = transactions::ActiveModel {
@@ -171,6 +173,7 @@ impl Transaction {
             order_notes: Set(json!(tsn.order_notes)),
             salesperson: Set(tsn.salesperson),
             kiosk: Set(tsn.kiosk),
+            tenant_id: Set(session.tenant_id),
         };
 
         match Transactions::insert(insert_crud).exec(db).await {
@@ -179,13 +182,17 @@ impl Transaction {
         }
     }
 
-    pub async fn fetch_deliverable_jobs(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
+    pub async fn fetch_deliverable_jobs(
+        query: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Order>, DbErr> {
         let as_str: Vec<DerivableTransaction> =
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
                 &format!(
-                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%'",
-                    query
+                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%' AND WHERE Transactions.tenant_id == {}",
+                    query, session.tenant_id
                 ),
                 vec![],
             ))
@@ -210,13 +217,17 @@ impl Transaction {
         Ok(mapped)
     }
 
-    pub async fn fetch_receivable_jobs(query: &str, db: &DbConn) -> Result<Vec<Order>, DbErr> {
+    pub async fn fetch_receivable_jobs(
+        query: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Order>, DbErr> {
         let as_str: Vec<DerivableTransaction> =
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
                 &format!(
-                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%'",
-                    query
+                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%' AND WHERE Transactions.tenant_id == {}",
+                    query, session.tenant_id
                 ),
                 vec![],
             ))
@@ -241,8 +252,15 @@ impl Transaction {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Transaction, DbErr> {
-        let tsn = Transactions::find_by_id(id.to_string()).one(db).await?;
+    pub async fn fetch_by_id(
+        id: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Transaction, DbErr> {
+        let tsn = Transactions::find_by_id(id.to_string())
+            .filter(transactions::Column::TenantId.eq(session.tenant_id))
+            .one(db)
+            .await?;
 
         if tsn.is_none() {
             return Err(DbErr::Custom(
@@ -268,8 +286,9 @@ impl Transaction {
         Ok(t)
     }
 
-    pub async fn fetch_all_saved(db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
+    pub async fn fetch_all_saved(session: Session, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
         let res = Transactions::find()
+            .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(
                 Expr::expr(Func::lower(Expr::col(
                     transactions::Column::TransactionType,
@@ -300,8 +319,13 @@ impl Transaction {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_ref(reference: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
+    pub async fn fetch_by_ref(
+        reference: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Transaction>, DbErr> {
         let res = Transactions::find()
+            .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(
                 Expr::expr(Func::lower(Expr::col(transactions::Column::Products)))
                     .like(format!("%{}%", reference.to_lowercase())),
@@ -331,8 +355,13 @@ impl Transaction {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_client_id(id: &str, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
+    pub async fn fetch_by_client_id(
+        id: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Transaction>, DbErr> {
         let tsn = Transactions::find()
+            .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(transactions::Column::Customer.contains(id))
             .all(db)
             .await?;
@@ -359,6 +388,7 @@ impl Transaction {
 
     pub async fn update(
         tsn: TransactionInput,
+        session: Session,
         id: &str,
         db: &DbConn,
     ) -> Result<Transaction, DbErr> {
@@ -373,15 +403,17 @@ impl Transaction {
             order_notes: Set(json!(tsn.order_notes)),
             salesperson: Set(tsn.salesperson),
             kiosk: Set(tsn.kiosk),
+            tenant_id: Set(session.clone().tenant_id),
         }
         .update(db)
         .await?;
 
-        Self::fetch_by_id(id, db).await
+        Self::fetch_by_id(id, session, db).await
     }
 
     pub async fn update_value(
         tsn: Transaction,
+        session: Session,
         id: &str,
         db: &DbConn,
     ) -> Result<Transaction, DbErr> {
@@ -396,20 +428,22 @@ impl Transaction {
             order_notes: Set(json!(tsn.order_notes)),
             salesperson: Set(tsn.salesperson),
             kiosk: Set(tsn.kiosk),
+            tenant_id: Set(session.clone().tenant_id),
         }
         .update(db)
         .await?;
 
-        Self::fetch_by_id(id, db).await
+        Self::fetch_by_id(id, session, db).await
     }
 
     pub async fn update_order_status(
         id: &str,
         refer: &str,
         status: OrderStatus,
+        session: Session,
         db: &DbConn,
     ) -> Result<Transaction, DbErr> {
-        let mut transaction = Transaction::fetch_by_id(id, db).await?;
+        let mut transaction = Transaction::fetch_by_id(id, session.clone(), db).await?;
 
         let new_orders = transaction
             .clone()
@@ -438,7 +472,7 @@ impl Transaction {
 
         transaction.products = new_orders;
 
-        Self::update_value(transaction, id, db).await
+        Self::update_value(transaction, session, id, db).await
     }
 
     pub async fn update_product_status(
@@ -447,9 +481,10 @@ impl Transaction {
         pid: &str,
         iid: &str,
         status: PickStatus,
+        session: Session,
         db: &DbConn,
     ) -> Result<Transaction, DbErr> {
-        let mut transaction = Transaction::fetch_by_id(id, db).await?;
+        let mut transaction = Transaction::fetch_by_id(id, session.clone(), db).await?;
 
         let new_orders = transaction
             .clone()
@@ -494,7 +529,7 @@ impl Transaction {
 
         transaction.products = new_orders;
 
-        Self::update_value(transaction, id, db).await
+        Self::update_value(transaction, session, id, db).await
     }
 
     pub async fn generate(
@@ -506,8 +541,8 @@ impl Transaction {
         let tsn = example_transaction(customer_id);
 
         // Insert & Fetch Transaction
-        match Transaction::insert(tsn, session, db).await {
-            Ok(data) => match Transaction::fetch_by_id(&data.last_insert_id, db).await {
+        match Transaction::insert(tsn, session.clone(), db).await {
+            Ok(data) => match Transaction::fetch_by_id(&data.last_insert_id, session, db).await {
                 Ok(res) => Ok(res),
                 Err(e) => Err(e),
             },
@@ -516,19 +551,24 @@ impl Transaction {
     }
 
     pub async fn process_intents(
+        session: Session,
         db: &DbConn,
         intents: Vec<QuantityAlterationIntent>,
     ) -> Vec<Result<Product, JoinError>> {
         let intent_processor = intents
             .iter()
-            .map(|intent| async move {
+            .map(|intent| async {
                 let intent = intent.clone();
                 let database = db.clone();
+                let session = session.clone();
+
+                println!("{}", session.employee);
 
                 tokio::spawn(async move {
                     let db_ = database.clone();
+                    let session_clone = session.clone();
 
-                    match Product::fetch_by_id(&intent.product_sku, &db_).await {
+                    match Product::fetch_by_id(&intent.product_sku, session.clone(), &db_).await {
                         Ok(mut val) => {
                             let variants: Vec<VariantInformation> = val
                                 .variants
@@ -588,7 +628,9 @@ impl Transaction {
                             val.variants = variants;
 
                             // Possible chance for an alternate client to have a modification during this time-frame, try implementing a queued solution.
-                            match Product::update(val, &intent.product_sku, &db_).await {
+                            match Product::update(val, session_clone, &intent.product_sku, &db_)
+                                .await
+                            {
                                 Ok(val) => Ok(val),
                                 Err(_) => Err(DbErr::Custom(String::new())),
                             }
@@ -604,9 +646,10 @@ impl Transaction {
         futures::future::join_all(intent_processor).await
     }
 
-    pub async fn delete(id: &str, db: &DbConn) -> Result<DeleteResult, DbErr> {
+    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, DbErr> {
         Transactions::delete(transactions::ActiveModel {
             id: Set(id.to_string()),
+            tenant_id: Set(session.tenant_id),
             ..Default::default()
         })
         .exec(db)
@@ -656,15 +699,6 @@ impl Display for Transaction {
 
         let notes: String = self.order_notes.iter().map(|p| format!("{}", p)).collect();
 
-        // let order_history: String = self.order_history.iter()
-        //     .map(|f| {
-        //         format!(
-        //             "{}: {}\n",
-        //             f.timestamp.format("%d/%m/%Y %H:%M"),
-        //             f.item,
-        //         )
-        //     }).collect();
-
         write!(
             f,
             "Transaction ({}) {} {}\nOrders:\n{}\n---\nTotal: ${}\nPayment: {:?}\nNotes:\n{}\n{}",
@@ -679,17 +713,6 @@ impl Display for Transaction {
         )
     }
 }
-
-// // impl! Implement the intent as a builder.
-// pub struct Intent {
-//     request: Transaction,
-//     // Employee ID for the dispatcher (instigator) for an In-store Purchase (i.e. kiosks person) or website deployment ID
-//     dispatcher: Id,
-// }
-
-// impl Intent {
-//     //...
-// }
 
 pub fn example_transaction(customer_id: &str) -> TransactionInit {
     let torpedo7 = ContactInformation {
