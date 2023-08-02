@@ -14,7 +14,7 @@ use crate::{
         Promotion, Session, Store, Transaction,
     },
     pool::Db,
-    Kiosk,
+    Kiosk, Tenant,
 };
 use geo::VincentyDistance;
 use photon_geocoding::{
@@ -36,6 +36,7 @@ pub fn routes() -> Vec<rocket::Route> {
 pub struct All {
     employee: Employee,
     stores: Vec<Store>,
+    tenant: Tenant,
     products: Vec<Product>,
     customer: Customer,
     transaction: Transaction,
@@ -54,6 +55,9 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
 
     let db = conn.into_inner();
 
+    let tenant_id = "DEFAULT_TENANT";
+
+    let tenant = Tenant::generate(db, tenant_id).await.unwrap();
     let employee = Employee::generate(db).await.unwrap();
     let stores = Store::generate(db).await.unwrap();
     let products = Product::generate(db).await.unwrap();
@@ -77,6 +81,7 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
 
     Ok(rocket::serde::json::Json(All {
         employee,
+        tenant,
         stores,
         products,
         customer,

@@ -1,9 +1,11 @@
-use crate::entities::prelude::Tenants;
+use crate::{entities::prelude::Tenants, tenants};
 use chrono::{DateTime, Utc};
-use sea_orm::{DbConn, DbErr, EntityTrait};
+use sea_orm::Set;
+use sea_orm::{DbConn, DbErr, EntityTrait, InsertResult};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
-use crate::{tenants, Id};
+use crate::Id;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TenantSettings {}
@@ -35,5 +37,43 @@ impl Tenant {
         };
 
         Ok(t)
+    }
+
+    pub async fn generate(db: &DbConn, tenant_id: &str) -> Result<Tenant, DbErr> {
+        // Create Transaction
+        let tsn = example_tenant(tenant_id);
+
+        // Insert & Fetch Transaction
+        match Tenant::insert(tsn, db).await {
+            Ok(data) => match Tenant::fetch_by_id(&data.last_insert_id, db).await {
+                Ok(res) => Ok(res),
+                Err(e) => Err(e),
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    pub async fn insert(
+        tnt: Tenant,
+        db: &DbConn,
+    ) -> Result<InsertResult<tenants::ActiveModel>, DbErr> {
+        let insert_crud = tenants::ActiveModel {
+            tenant_id: Set(tnt.tenant_id),
+            registration_date: Set(tnt.registration_date.naive_utc()),
+            settings: Set(json!(tnt.settings)),
+        };
+
+        match Tenants::insert(insert_crud).exec(db).await {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err),
+        }
+    }
+}
+
+pub fn example_tenant(tenant_id: &str) -> Tenant {
+    Tenant {
+        tenant_id: tenant_id.to_string(),
+        registration_date: Utc::now(),
+        settings: TenantSettings {},
     }
 }

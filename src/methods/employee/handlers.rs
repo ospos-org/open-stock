@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::entities::session;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
 use crate::pool::Db;
-use crate::{check_permissions, AuthenticationLog, Kiosk};
+use crate::{check_permissions, tenants, AuthenticationLog, Kiosk};
 use chrono::{Duration as ChronoDuration, Utc};
 use rocket::get;
 use rocket::http::{Cookie, CookieJar, SameSite};
@@ -273,6 +273,13 @@ pub async fn auth_rid(
             let exp = Utc::now()
                 .checked_add_signed(ChronoDuration::minutes(10))
                 .unwrap();
+
+            if let Err(error) = tenants::Entity::find_by_id(input.tenant_id.clone())
+                .one(db)
+                .await
+            {
+                return Err(ErrorResponse::db_err(error));
+            }
 
             match session::Entity::insert(session::ActiveModel {
                 id: Set(session_id.to_string()),
