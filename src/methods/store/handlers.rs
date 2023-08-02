@@ -23,7 +23,7 @@ pub async fn get_all(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    match Store::fetch_all(db).await {
+    match Store::fetch_all(session, db).await {
         Ok(stores) => Ok(Json(stores)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -40,7 +40,7 @@ pub async fn get(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    match Store::fetch_by_id(id, db).await {
+    match Store::fetch_by_id(id, session, db).await {
         Ok(store) => Ok(Json(store)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -57,7 +57,7 @@ pub async fn get_by_code(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    match Store::fetch_by_code(code, db).await {
+    match Store::fetch_by_code(code, session, db).await {
         Ok(store) => Ok(Json(store)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -73,7 +73,7 @@ async fn generate(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Store::generate(db).await {
+    match Store::generate(session, db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -93,6 +93,7 @@ async fn update(
     check_permissions!(session.clone(), Action::ModifyStore);
 
     if session
+        .clone()
         .employee
         .level
         .into_iter()
@@ -101,7 +102,7 @@ async fn update(
         .authority
         >= 1
     {
-        match Store::update(input_data, id, db).await {
+        match Store::update(input_data, session, id, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => Err(ErrorResponse::db_err(reason)),
         }

@@ -2,14 +2,15 @@ use std::fmt::{self, Display};
 
 use chrono::Utc;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QuerySelect,
-    RuntimeErr, Set,
+    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
+    QuerySelect, RuntimeErr, Set,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
 use crate::entities::prelude::Employee as Epl;
+use crate::Session;
 use crate::{
     entities::employee,
     methods::{
@@ -26,6 +27,23 @@ pub struct Employee {
     pub contact: ContactInformation,
     pub clock_history: Vec<History<Attendance>>,
     pub level: Vec<Access<Action>>,
+}
+
+impl From<EmployeeInput> for Employee {
+    fn from(value: EmployeeInput) -> Self {
+        let id = Uuid::new_v4().to_string();
+        Employee {
+            id,
+            rid: value.rid.to_string(),
+            name: value.name,
+            auth: EmployeeAuth {
+                hash: String::new(),
+            },
+            contact: value.contact,
+            clock_history: value.clock_history,
+            level: value.level,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -139,6 +157,7 @@ impl Employee {
     pub async fn insert(
         empl: EmployeeInput,
         db: &DbConn,
+        session: Session,
         static_rid: Option<i32>,
     ) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
@@ -161,6 +180,7 @@ impl Employee {
             contact: Set(json!(empl.contact)),
             clock_history: Set(json!(empl.clock_history)),
             level: Set(json!(empl.level)),
+            tenant_id: Set(session.tenant_id),
         };
 
         match Epl::insert(insert_crud).exec(db).await {
@@ -169,15 +189,25 @@ impl Employee {
         }
     }
 
-    pub async fn verify(id: &str, pass: &str, db: &DbConn) -> Result<bool, DbErr> {
-        let empl = Self::fetch_by_id(id, db).await?;
+    pub async fn verify(
+        id: &str,
+        session: Session,
+        pass: &str,
+        db: &DbConn,
+    ) -> Result<bool, DbErr> {
+        let empl = Self::fetch_by_id(id, session, db).await?;
         let is_valid = argon2::verify_encoded(&empl.auth.hash, pass.as_bytes()).unwrap();
 
         Ok(is_valid)
     }
 
-    pub async fn verify_with_rid(rid: &str, pass: &str, db: &DbConn) -> Result<Employee, DbErr> {
-        let empl = Self::fetch_by_rid(rid, db).await?;
+    pub async fn verify_with_rid(
+        rid: &str,
+        session: Session,
+        pass: &str,
+        db: &DbConn,
+    ) -> Result<Employee, DbErr> {
+        let empl = Self::fetch_by_rid(rid, session, db).await?;
 
         let mut valid_user: Option<Employee> = None;
 
@@ -200,8 +230,11 @@ impl Employee {
         }
     }
 
-    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Employee, DbErr> {
-        let empl = Epl::find_by_id(id.to_string()).one(db).await?;
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Employee, DbErr> {
+        let empl = Epl::find_by_id(id.to_string())
+            .filter(employee::Column::TenantId.eq(session.tenant_id))
+            .one(db)
+            .await?;
 
         match empl {
             Some(e) => Ok(Employee {
@@ -218,9 +251,14 @@ impl Employee {
         }
     }
 
-    pub async fn fetch_by_rid(rid: &str, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
+    pub async fn fetch_by_rid(
+        rid: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Employee>, DbErr> {
         let res = employee::Entity::find()
             .having(employee::Column::Rid.contains(rid))
+            .filter(employee::Column::TenantId.eq(session.tenant_id))
             .limit(25)
             .all(db)
             .await?;
@@ -244,9 +282,14 @@ impl Employee {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_name(name: &str, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
+    pub async fn fetch_by_name(
+        name: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Employee>, DbErr> {
         let res = employee::Entity::find()
             .having(employee::Column::Name.contains(name))
+            .filter(employee::Column::TenantId.eq(session.tenant_id))
             .limit(25)
             .all(db)
             .await?;
@@ -272,10 +315,12 @@ impl Employee {
 
     pub async fn fetch_by_name_exact(
         name: serde_json::Value,
+        session: Session,
         db: &DbConn,
     ) -> Result<Vec<Employee>, DbErr> {
         let res = employee::Entity::find()
             .having(employee::Column::Name.eq(name))
+            .filter(employee::Column::TenantId.eq(session.tenant_id))
             .limit(25)
             .all(db)
             .await?;
@@ -299,9 +344,14 @@ impl Employee {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_level(level: i32, db: &DbConn) -> Result<Vec<Employee>, DbErr> {
+    pub async fn fetch_by_level(
+        level: i32,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Employee>, DbErr> {
         let res = employee::Entity::find()
             .having(employee::Column::Level.eq(level))
+            .filter(employee::Column::TenantId.eq(session.tenant_id))
             .limit(25)
             .all(db)
             .await?;
@@ -325,7 +375,12 @@ impl Employee {
         Ok(mapped)
     }
 
-    pub async fn update_no_geom(empl: Employee, id: &str, db: &DbConn) -> Result<Employee, DbErr> {
+    pub async fn update_no_geom(
+        empl: Employee,
+        session: Session,
+        id: &str,
+        db: &DbConn,
+    ) -> Result<Employee, DbErr> {
         employee::ActiveModel {
             id: Set(id.to_string()),
             rid: Set(empl.rid),
@@ -338,10 +393,15 @@ impl Employee {
         .update(db)
         .await?;
 
-        Self::fetch_by_id(id, db).await
+        Self::fetch_by_id(id, session, db).await
     }
 
-    pub async fn update(empl: Employee, id: &str, db: &DbConn) -> Result<Employee, DbErr> {
+    pub async fn update(
+        empl: Employee,
+        session: Session,
+        id: &str,
+        db: &DbConn,
+    ) -> Result<Employee, DbErr> {
         let addr = convert_addr_to_geo(&format!(
             "{} {} {} {}",
             empl.contact.address.street,
@@ -363,11 +423,12 @@ impl Employee {
                     contact: Set(json!(new_contact)),
                     clock_history: Set(json!(empl.clock_history)),
                     level: Set(json!(empl.level)),
+                    tenant_id: Set(session.clone().tenant_id),
                 }
                 .update(db)
                 .await?;
 
-                Self::fetch_by_id(id, db).await
+                Self::fetch_by_id(id, session, db).await
             }
             Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
                 "Invalid address format".to_string(),
@@ -375,13 +436,13 @@ impl Employee {
         }
     }
 
-    pub async fn generate(db: &DbConn) -> Result<Employee, DbErr> {
+    pub async fn generate(db: &DbConn, session: Session) -> Result<Employee, DbErr> {
         // Create Transaction
         let empl = example_employee();
 
         // Insert & Fetch Transaction
-        match Employee::insert(empl.clone(), db, Some(empl.rid)).await {
-            Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, db).await {
+        match Employee::insert(empl.clone(), db, session.clone(), Some(empl.rid)).await {
+            Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, session, db).await {
                 Ok(res) => Ok(res),
                 Err(e) => Err(e),
             },

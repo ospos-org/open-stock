@@ -4,7 +4,7 @@ pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20230730_000005_supplier"
+        "m20230730_000011_tenants"
     }
 }
 
@@ -14,22 +14,20 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Supplier::Table)
+                    .table(Tenants::Table)
                     .engine("InnoDB".to_string())
                     .col(
-                        ColumnDef::new(Supplier::Id)
+                        ColumnDef::new(Tenants::TenantId)
                             .string()
                             .not_null()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Supplier::TenantId).string().not_null())
-                    .col(ColumnDef::new(Supplier::Name).json().not_null())
-                    .col(ColumnDef::new(Supplier::Contact).json().not_null())
                     .col(
-                        ColumnDef::new(Supplier::TransactionHistory)
-                            .json()
+                        ColumnDef::new(Tenants::RegistrationDate)
+                            .date_time()
                             .not_null(),
                     )
+                    .col(ColumnDef::new(Tenants::Settings).json().not_null())
                     .to_owned(),
             )
             .await
@@ -38,23 +36,19 @@ impl MigrationTrait for Migration {
     // Define how to rollback this migration: Drop the Bakery table.
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Supplier::Table).to_owned())
+            .drop_table(Table::drop().table(Tenants::Table).to_owned())
             .await
     }
 }
 
 #[derive(Iden)]
-pub enum Supplier {
-    #[iden = "Supplier"]
+pub enum Tenants {
+    #[iden = "Tenants"]
     Table,
-    #[iden = "id"]
-    Id,
-    #[iden = "name"]
-    Name,
-    #[iden = "contact"]
-    Contact,
-    #[iden = "transaction_history"]
-    TransactionHistory,
     #[iden = "tenant_id"]
     TenantId,
+    #[iden = "registration_date"]
+    RegistrationDate,
+    #[iden = "settings"]
+    Settings,
 }

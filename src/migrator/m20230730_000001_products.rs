@@ -26,6 +26,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Products::Name).string().not_null())
                     .col(ColumnDef::new(Products::NameLong).string().not_null())
+                    .col(ColumnDef::new(Products::TenantId).string().not_null())
                     .col(ColumnDef::new(Products::Company).string().not_null())
                     .col(ColumnDef::new(Products::Variants).json().not_null())
                     .col(ColumnDef::new(Products::VariantGroups).json().not_null())
@@ -84,4 +85,6 @@ pub enum Products {
     Specifications,
     #[iden = "visible"]
     Visible,
+    #[iden = "tenant_id"]
+    TenantId,
 }

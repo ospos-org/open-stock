@@ -1,6 +1,7 @@
 use chrono::{DateTime, Days, Utc};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
+    QuerySelect, Set,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -8,7 +9,7 @@ use std::fmt::Display;
 use crate::entities::prelude::Promotion as Promotions;
 use crate::entities::promotion;
 use crate::methods::{DiscountValue, HistoryList, Id, StockList, Url};
-use crate::ProductIdentification;
+use crate::{products, ProductIdentification, Session};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -140,6 +141,7 @@ pub enum PromotionGet {
 impl Promotion {
     pub async fn insert(
         prm: PromotionInput,
+        session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<promotion::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
@@ -151,6 +153,7 @@ impl Promotion {
             get: Set(json!(prm.get)),
             valid_till: Set(prm.valid_till.naive_utc()),
             timestamp: Set(prm.timestamp.naive_utc()),
+            tenant_id: Set(session.tenant_id),
         };
 
         match Promotions::insert(insert_crud).exec(db).await {
@@ -159,8 +162,11 @@ impl Promotion {
         }
     }
 
-    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Promotion, DbErr> {
-        let pdt = Promotions::find_by_id(id.to_string()).one(db).await?;
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Promotion, DbErr> {
+        let pdt = Promotions::find_by_id(id.to_string())
+            .filter(products::Column::TenantId.eq(session.tenant_id))
+            .one(db)
+            .await?;
         let p = pdt.unwrap();
 
         Ok(Promotion {
@@ -173,8 +179,13 @@ impl Promotion {
         })
     }
 
-    pub async fn fetch_by_query(query: &str, db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
+    pub async fn fetch_by_query(
+        query: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Promotion>, DbErr> {
         let res = Promotions::find()
+            .filter(products::Column::TenantId.eq(session.tenant_id))
             // Is the bought product
             .having(promotion::Column::Buy.contains(query))
             // Is the promoted product
@@ -201,7 +212,12 @@ impl Promotion {
         Ok(mapped)
     }
 
-    pub async fn update(prm: PromotionInput, id: &str, db: &DbConn) -> Result<Promotion, DbErr> {
+    pub async fn update(
+        prm: PromotionInput,
+        session: Session,
+        id: &str,
+        db: &DbConn,
+    ) -> Result<Promotion, DbErr> {
         promotion::ActiveModel {
             id: Set(id.to_string()),
             name: Set(prm.name.to_string()),
@@ -209,15 +225,19 @@ impl Promotion {
             get: Set(json!(prm.get)),
             valid_till: Set(prm.valid_till.naive_utc()),
             timestamp: Set(prm.timestamp.naive_utc()),
+            ..Default::default()
         }
         .update(db)
         .await?;
 
-        Self::fetch_by_id(id, db).await
+        Self::fetch_by_id(id, session, db).await
     }
 
-    pub async fn fetch_all(db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
-        let stores = Promotions::find().all(db).await?;
+    pub async fn fetch_all(session: Session, db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
+        let stores = Promotions::find()
+            .filter(promotion::Column::TenantId.eq(session.tenant_id))
+            .all(db)
+            .await?;
 
         let mapped = stores
             .iter()
@@ -236,6 +256,7 @@ impl Promotion {
 
     pub async fn insert_many(
         stores: Vec<PromotionInput>,
+        session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<promotion::ActiveModel>, DbErr> {
         let entities = stores.into_iter().map(|prm| {
@@ -248,6 +269,7 @@ impl Promotion {
                 get: Set(json!(prm.get)),
                 valid_till: Set(prm.valid_till.naive_utc()),
                 timestamp: Set(prm.timestamp.naive_utc()),
+                tenant_id: Set(session.clone().tenant_id),
             }
         });
 
@@ -257,11 +279,11 @@ impl Promotion {
         }
     }
 
-    pub async fn generate(db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
+    pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
         let promotions = example_promotions();
 
-        match Promotion::insert_many(promotions, db).await {
-            Ok(_) => match Promotion::fetch_all(db).await {
+        match Promotion::insert_many(promotions, session.clone(), db).await {
+            Ok(_) => match Promotion::fetch_all(session, db).await {
                 Ok(res) => Ok(res),
                 Err(e) => Err(e),
             },

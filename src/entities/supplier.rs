@@ -10,6 +10,7 @@ pub struct Model {
     pub name: Json,
     pub contact: Json,
     pub transaction_history: Json,
+    pub tenant_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -1,6 +1,6 @@
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QuerySelect,
-    RuntimeErr, Set,
+    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
+    QuerySelect, RuntimeErr, Set,
 };
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +8,7 @@ use crate::entities::prelude::Store as StoreEntity;
 use crate::entities::store;
 use crate::methods::{convert_addr_to_geo, Address, Email, MobileNumber};
 use crate::methods::{ContactInformation, Id};
+use crate::Session;
 use serde_json::json;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -21,6 +22,7 @@ pub struct Store {
 impl Store {
     pub async fn insert(
         store: Store,
+        session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<store::ActiveModel>, DbErr> {
         let insert_crud = store::ActiveModel {
@@ -28,6 +30,7 @@ impl Store {
             id: Set(store.id),
             contact: Set(json!(store.contact)),
             code: Set(store.code),
+            tenant_id: Set(session.tenant_id),
         };
 
         match StoreEntity::insert(insert_crud).exec(db).await {
@@ -38,6 +41,7 @@ impl Store {
 
     pub async fn insert_many(
         stores: Vec<Store>,
+        session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<store::ActiveModel>, DbErr> {
         let entities = stores.into_iter().map(|s| store::ActiveModel {
@@ -45,6 +49,7 @@ impl Store {
             id: Set(s.id),
             contact: Set(json!(s.contact)),
             code: Set(s.code),
+            tenant_id: Set(session.clone().tenant_id),
         });
 
         match StoreEntity::insert_many(entities).exec(db).await {
@@ -53,8 +58,11 @@ impl Store {
         }
     }
 
-    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Store, DbErr> {
-        let store = StoreEntity::find_by_id(id.to_string()).one(db).await?;
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Store, DbErr> {
+        let store = StoreEntity::find_by_id(id.to_string())
+            .filter(store::Column::TenantId.eq(session.tenant_id))
+            .one(db)
+            .await?;
 
         match store {
             Some(e) => Ok(Store {
@@ -67,8 +75,9 @@ impl Store {
         }
     }
 
-    pub async fn fetch_by_code(code: &str, db: &DbConn) -> Result<Store, DbErr> {
+    pub async fn fetch_by_code(code: &str, session: Session, db: &DbConn) -> Result<Store, DbErr> {
         let store = StoreEntity::find()
+            .filter(store::Column::TenantId.eq(session.tenant_id))
             .having(store::Column::Code.eq(code))
             .one(db)
             .await?;
@@ -84,8 +93,11 @@ impl Store {
         }
     }
 
-    pub async fn fetch_all(db: &DbConn) -> Result<Vec<Store>, DbErr> {
-        let stores = StoreEntity::find().all(db).await?;
+    pub async fn fetch_all(session: Session, db: &DbConn) -> Result<Vec<Store>, DbErr> {
+        let stores = StoreEntity::find()
+            .filter(store::Column::TenantId.eq(session.tenant_id))
+            .all(db)
+            .await?;
 
         let mapped = stores
             .iter()
@@ -101,7 +113,12 @@ impl Store {
         Ok(mapped)
     }
 
-    pub async fn update(store: Store, id: &str, db: &DbConn) -> Result<Store, DbErr> {
+    pub async fn update(
+        store: Store,
+        session: Session,
+        id: &str,
+        db: &DbConn,
+    ) -> Result<Store, DbErr> {
         let addr = convert_addr_to_geo(&format!(
             "{} {} {} {}",
             store.contact.address.street,
@@ -120,11 +137,12 @@ impl Store {
                     name: Set(store.name.clone()),
                     code: Set(store.code.clone()),
                     contact: Set(json!(new_contact)),
+                    tenant_id: Set(session.clone().tenant_id),
                 }
                 .update(db)
                 .await?;
 
-                Self::fetch_by_id(id, db).await
+                Self::fetch_by_id(id, session, db).await
             }
             Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
                 "Invalid address format".to_string(),
@@ -132,12 +150,12 @@ impl Store {
         }
     }
 
-    pub async fn generate(db: &DbConn) -> Result<Vec<Store>, DbErr> {
+    pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Store>, DbErr> {
         // Create Transaction
         let stores = example_stores();
 
-        match Store::insert_many(stores, db).await {
-            Ok(_) => match Store::fetch_all(db).await {
+        match Store::insert_many(stores, session.clone(), db).await {
+            Ok(_) => match Store::fetch_all(session, db).await {
                 Ok(res) => Ok(res),
                 Err(e) => Err(e),
             },

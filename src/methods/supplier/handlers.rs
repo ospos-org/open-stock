@@ -33,7 +33,7 @@ pub async fn get(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchSupplier);
 
-    match Supplier::fetch_by_id(id, db).await {
+    match Supplier::fetch_by_id(id, session, db).await {
         Ok(supplier) => Ok(Json(supplier)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -50,7 +50,7 @@ pub async fn get_by_name(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchSupplier);
 
-    match Supplier::fetch_by_name(name, db).await {
+    match Supplier::fetch_by_name(name, session, db).await {
         Ok(suppliers) => Ok(Json(suppliers)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -67,7 +67,7 @@ pub async fn get_by_phone(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchSupplier);
 
-    match Supplier::fetch_by_phone(phone, db).await {
+    match Supplier::fetch_by_phone(phone, session, db).await {
         Ok(suppliers) => Ok(Json(suppliers)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -84,7 +84,7 @@ pub async fn get_by_addr(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchSupplier);
 
-    match Supplier::fetch_by_addr(addr, db).await {
+    match Supplier::fetch_by_addr(addr, session, db).await {
         Ok(suppliers) => Ok(Json(suppliers)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -100,7 +100,7 @@ async fn generate(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Supplier::generate(db).await {
+    match Supplier::generate(session, db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -119,7 +119,7 @@ async fn update(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifySupplier);
 
-    match Supplier::update(input_data, id, db).await {
+    match Supplier::update(input_data, session, id, db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
@@ -137,8 +137,8 @@ pub async fn create(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifySupplier);
 
-    match Supplier::insert(new_data, db).await {
-        Ok(data) => match Supplier::fetch_by_id(&data.last_insert_id, db).await {
+    match Supplier::insert(new_data, session.clone(), db).await {
+        Ok(data) => match Supplier::fetch_by_id(&data.last_insert_id, session, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => {
                 println!("[dberr]: {}", reason);

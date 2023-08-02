@@ -8,4 +8,5 @@ pub use super::promotion::Entity as Promotion;
 pub use super::session::Entity as Session;
 pub use super::store::Entity as Store;
 pub use super::supplier::Entity as Supplier;
+pub use super::tenants::Entity as Tenants;
 pub use super::transactions::Entity as Transactions;

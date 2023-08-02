@@ -37,7 +37,7 @@ pub async fn get(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_by_id(&id, db).await {
+    match Transaction::fetch_by_id(&id, session, db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -53,7 +53,7 @@ pub async fn get_all_saved(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_all_saved(db).await {
+    match Transaction::fetch_all_saved(session, db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -70,7 +70,7 @@ pub async fn get_by_name(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_by_ref(name, db).await {
+    match Transaction::fetch_by_ref(name, session, db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -87,7 +87,7 @@ pub async fn get_by_product_sku(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_by_ref(sku, db).await {
+    match Transaction::fetch_by_ref(sku, session, db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -104,7 +104,7 @@ pub async fn deliverables_search(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_deliverable_jobs(store_id, db).await {
+    match Transaction::fetch_deliverable_jobs(store_id, session, db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -120,7 +120,7 @@ pub async fn receivables_search(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_receivable_jobs(store_id, db).await {
+    match Transaction::fetch_receivable_jobs(store_id, session, db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -139,7 +139,7 @@ async fn update(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyTransaction);
 
-    match Transaction::update(input_data, id, db).await {
+    match Transaction::update(input_data, session, id, db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
@@ -158,10 +158,12 @@ async fn update_order_status(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyTransaction);
 
-    let tsn = Transaction::fetch_by_ref(refer, db).await.unwrap();
+    let tsn = Transaction::fetch_by_ref(refer, session.clone(), db)
+        .await
+        .unwrap();
     let id = tsn.get(0).unwrap().id.as_str();
 
-    match Transaction::update_order_status(id, refer, status, db).await {
+    match Transaction::update_order_status(id, refer, status, session, db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
@@ -178,11 +180,13 @@ async fn update_product_status(
 ) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
 
-    let tsn = Transaction::fetch_by_ref(refer, db).await.unwrap();
-    let id = tsn.get(0).unwrap().id.as_str();
-
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyTransaction);
+
+    let tsn = Transaction::fetch_by_ref(refer, session.clone(), db)
+        .await
+        .unwrap();
+    let id = tsn.get(0).unwrap().id.as_str();
 
     let product_status: PickStatus = match status {
         "picked" => PickStatus::Picked,
@@ -193,7 +197,8 @@ async fn update_product_status(
         _ => return Err(ErrorResponse::input_error()),
     };
 
-    match Transaction::update_product_status(id, refer, pid, iid, product_status, db).await {
+    match Transaction::update_product_status(id, refer, pid, iid, product_status, session, db).await
+    {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
@@ -275,11 +280,11 @@ pub async fn create(
         ));
     }
 
-    match Transaction::insert(new_transaction, session, db).await {
+    match Transaction::insert(new_transaction, session.clone(), db).await {
         Ok(data) => {
-            Transaction::process_intents(db, quantity_alteration_intents).await;
+            Transaction::process_intents(session.clone(), db, quantity_alteration_intents).await;
 
-            match Transaction::fetch_by_id(&data.last_insert_id, db).await {
+            match Transaction::fetch_by_id(&data.last_insert_id, session, db).await {
                 Ok(res) => Ok(Json(res)),
                 Err(reason) => Err(ErrorResponse::db_err(reason)),
             }
@@ -295,7 +300,7 @@ async fn delete(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> 
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::DeleteTransaction);
 
-    match Transaction::delete(id, db).await {
+    match Transaction::delete(id, session, db).await {
         Ok(_res) => Ok(()),
         Err(_) => Err(ErrorResponse::input_error()),
     }

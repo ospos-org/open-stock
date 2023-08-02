@@ -13,6 +13,7 @@ pub struct Model {
     pub auth: Json,
     pub clock_history: Json,
     pub level: Json,
+    pub tenant_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

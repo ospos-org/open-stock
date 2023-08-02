@@ -22,6 +22,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Employee::TenantId).string().not_null())
                     .col(ColumnDef::new(Employee::RId).string().not_null())
                     .col(ColumnDef::new(Employee::Name).json().not_null())
                     .col(ColumnDef::new(Employee::Contact).json().not_null())
@@ -59,4 +60,6 @@ pub enum Employee {
     ClockHistory,
     #[iden = "level"]
     Level,
+    #[iden = "tenant_id"]
+    TenantId,
 }

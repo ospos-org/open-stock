@@ -34,7 +34,7 @@ pub async fn get(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Kiosk::fetch_by_id(id, db).await {
+    match Kiosk::fetch_by_id(id, session, db).await {
         Ok(employee) => Ok(Json(employee)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -52,8 +52,8 @@ pub async fn initialize(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
 
-    match Kiosk::insert(input_data, db, None).await {
-        Ok(kiosk) => match Kiosk::fetch_by_id(&kiosk.last_insert_id, db).await {
+    match Kiosk::insert(input_data, session.clone(), db, None).await {
+        Ok(kiosk) => match Kiosk::fetch_by_id(&kiosk.last_insert_id, session, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => Err(ErrorResponse::db_err(reason)),
         },
@@ -74,7 +74,7 @@ pub async fn update(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
 
-    match Kiosk::update(input_data, id, db).await {
+    match Kiosk::update(input_data, session, id, db).await {
         Ok(kiosk) => Ok(Json(kiosk)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -93,7 +93,7 @@ pub async fn update_preferences(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyKioskPreferences);
 
-    match Kiosk::update_preferences(id, input_data, db).await {
+    match Kiosk::update_preferences(id, session, input_data, db).await {
         Ok(kiosk) => Ok(Json(kiosk)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -110,7 +110,7 @@ pub async fn update_online_status(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchKiosk);
 
-    match Kiosk::update_online_to_now(id, db).await {
+    match Kiosk::update_online_to_now(id, session, db).await {
         Ok(kiosk) => Ok(Json(kiosk)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -127,7 +127,7 @@ pub async fn delete(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
 
-    match Kiosk::delete(id, db).await {
+    match Kiosk::delete(id, session, db).await {
         Ok(_res) => Ok(()),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -146,7 +146,7 @@ pub async fn auth_log(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
 
-    match Kiosk::auth_log(id, input_data, db).await {
+    match Kiosk::auth_log(id, session, input_data, db).await {
         Ok(_res) => Ok(()),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }

@@ -13,6 +13,7 @@ pub struct Model {
     pub preferences: Json,
     pub disabled: i8,
     pub last_online: DateTime,
+    pub tenant_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

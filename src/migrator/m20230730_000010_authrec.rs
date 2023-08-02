@@ -22,6 +22,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(AuthRecord::TenantId).string().not_null())
                     .col(ColumnDef::new(AuthRecord::KioskId).text().not_null())
                     .col(ColumnDef::new(AuthRecord::Attempt).json().not_null())
                     .col(ColumnDef::new(AuthRecord::Timestamp).date_time().not_null())
@@ -50,4 +51,6 @@ pub enum AuthRecord {
     Attempt,
     #[iden = "timestamp"]
     Timestamp,
+    #[iden = "tenant_id"]
+    TenantId,
 }

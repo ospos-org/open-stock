@@ -3,8 +3,8 @@ use std::time::Duration;
 use crate::entities::session;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
 use crate::pool::Db;
-use crate::{check_permissions, AuthenticationLog, Kiosk};
-use chrono::{Duration as ChronoDuration, Utc};
+use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session};
+use chrono::{Days, Duration as ChronoDuration, Utc};
 use rocket::get;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
@@ -49,7 +49,7 @@ pub async fn get(
     if session.employee.id == id {
         Ok(Json(session.employee))
     } else {
-        match Employee::fetch_by_id(id, db).await {
+        match Employee::fetch_by_id(id, session, db).await {
             Ok(employee) => Ok(Json(employee)),
             Err(err) => Err(ErrorResponse::db_err(err)),
         }
@@ -67,7 +67,7 @@ pub async fn get_by_rid(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Employee::fetch_by_rid(rid, db).await {
+    match Employee::fetch_by_rid(rid, session, db).await {
         Ok(employee) => Ok(Json(employee)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -82,9 +82,9 @@ pub async fn get_by_name(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchEmployee);
+    check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Employee::fetch_by_name(name, db).await {
+    match Employee::fetch_by_name(name, session, db).await {
         Ok(employees) => Ok(Json(employees)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -105,7 +105,7 @@ pub async fn get_by_name_exact(
     if session.employee.name == new_transaction {
         Ok(Json(vec![session.employee]))
     } else {
-        match Employee::fetch_by_name_exact(json!(new_transaction), db).await {
+        match Employee::fetch_by_name_exact(json!(new_transaction), session, db).await {
             Ok(employees) => Ok(Json(employees)),
             Err(reason) => Err(ErrorResponse::db_err(reason)),
         }
@@ -121,9 +121,9 @@ pub async fn get_by_level(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::FetchEmployee);
+    check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Employee::fetch_by_level(level, db).await {
+    match Employee::fetch_by_level(level, session, db).await {
         Ok(employees) => Ok(Json(employees)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -137,9 +137,9 @@ async fn generate(
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(db, cookies).await?;
-    check_permissions!(session, Action::GenerateTemplateContent);
+    check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Employee::generate(db).await {
+    match Employee::generate(db, session).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -159,6 +159,7 @@ async fn update(
     check_permissions!(session.clone(), Action::ModifyEmployee);
 
     if session
+        .clone()
         .employee
         .level
         .into_iter()
@@ -167,7 +168,7 @@ async fn update(
         .authority
         >= 1
     {
-        match Employee::update(input_data, id, db).await {
+        match Employee::update(input_data, session, id, db).await {
             Ok(res) => Ok(Json(res)),
             Err(_) => Err(ErrorResponse::input_error()),
         }
@@ -180,6 +181,7 @@ async fn update(
 pub struct Auth {
     pub pass: String,
     pub kiosk_id: String,
+    pub tenant_id: String,
 }
 
 #[post("/auth/<id>", data = "<input_data>")]
@@ -192,7 +194,22 @@ pub async fn auth(
     let input = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    match Employee::verify(id, &input.pass, db).await {
+    let default_employee = example_employee();
+
+    match Employee::verify(
+        id,
+        Session {
+            id: String::new(),
+            key: String::new(),
+            employee: default_employee.into(),
+            expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+            tenant_id: input_data.tenant_id.clone(),
+        },
+        &input.pass,
+        db,
+    )
+    .await
+    {
         Ok(data) => {
             if !data {
                 Err(ErrorResponse::custom_unauthorized(
@@ -206,11 +223,27 @@ pub async fn auth(
                     .checked_add_signed(ChronoDuration::minutes(10))
                     .unwrap();
 
+                let tenant_data = match tenants::Entity::find_by_id(input.tenant_id.clone())
+                    .one(db)
+                    .await
+                {
+                    Ok(optional_data) => match optional_data {
+                        Some(data) => data,
+                        None => {
+                            return Err(ErrorResponse::custom_unauthorized(
+                                "Tenant ID does not exist.",
+                            ))
+                        }
+                    },
+                    Err(error) => return Err(ErrorResponse::db_err(error)),
+                };
+
                 match session::Entity::insert(session::ActiveModel {
                     id: Set(session_id.to_string()),
                     key: Set(api_key.clone()),
                     employee_id: Set(id.to_string()),
                     expiry: Set(exp.naive_utc()),
+                    tenant_id: Set(tenant_data.tenant_id),
                 })
                 .exec(db)
                 .await
@@ -252,10 +285,20 @@ pub async fn auth_rid(
     let input = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    match Employee::verify_with_rid(rid, &input.pass, db).await {
+    let default_employee = example_employee();
+    let session = Session {
+        id: String::new(),
+        key: String::new(),
+        employee: default_employee.into(),
+        expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+        tenant_id: input_data.tenant_id.clone(),
+    };
+
+    match Employee::verify_with_rid(rid, session.clone(), &input.pass, db).await {
         Ok(data) => {
             Kiosk::auth_log(
                 &input.kiosk_id,
+                session.clone(),
                 AuthenticationLog {
                     employee_id: data.id.to_string(),
                     successful: true,
@@ -272,11 +315,27 @@ pub async fn auth_rid(
                 .checked_add_signed(ChronoDuration::minutes(10))
                 .unwrap();
 
+            let tenant_data = match tenants::Entity::find_by_id(input.tenant_id.clone())
+                .one(db)
+                .await
+            {
+                Ok(optional_data) => match optional_data {
+                    Some(data) => data,
+                    None => {
+                        return Err(ErrorResponse::custom_unauthorized(
+                            "Tenant ID does not exist.",
+                        ))
+                    }
+                },
+                Err(error) => return Err(ErrorResponse::db_err(error)),
+            };
+
             match session::Entity::insert(session::ActiveModel {
                 id: Set(session_id.to_string()),
                 key: Set(api_key.clone()),
                 employee_id: Set(data.id.to_string()),
                 expiry: Set(exp.naive_utc()),
+                tenant_id: Set(tenant_data.tenant_id),
             })
             .exec(db)
             .await
@@ -303,6 +362,7 @@ pub async fn auth_rid(
         Err(reason) => {
             Kiosk::auth_log(
                 &input.kiosk_id,
+                session.clone(),
                 AuthenticationLog {
                     employee_id: rid.to_string(),
                     successful: false,
@@ -332,8 +392,8 @@ pub async fn create(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateEmployee);
 
-    match Employee::insert(new_transaction, db, None).await {
-        Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, db).await {
+    match Employee::insert(new_transaction, db, session.clone(), None).await {
+        Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, session, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => {
                 println!("[dberr]: {}", reason);
@@ -359,9 +419,13 @@ pub async fn log(
     conn: Connection<'_, Db>,
     input_data: Json<LogRequest>,
     id: &str,
+    cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
     let data = input_data.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchEmployee);
 
     let track_type = if data.in_or_out.to_lowercase() == "in" {
         TrackType::In
@@ -378,11 +442,11 @@ pub async fn log(
         timestamp: Utc::now(),
     };
 
-    match Employee::fetch_by_id(id, db).await {
+    match Employee::fetch_by_id(id, session.clone(), db).await {
         Ok(mut data) => {
             data.clock_history.push(new_attendance);
 
-            match Employee::update_no_geom(data, id, db).await {
+            match Employee::update_no_geom(data, session, id, db).await {
                 Ok(data) => Ok(Json(data)),
                 Err(reason) => {
                     println!("[dberr]: {}", reason);
@@ -401,10 +465,14 @@ pub async fn log(
 pub async fn get_status(
     conn: Connection<'_, Db>,
     id: &str,
+    cookies: &CookieJar<'_>,
 ) -> Result<Json<History<Attendance>>, Error> {
     let db = conn.into_inner();
 
-    match Employee::fetch_by_id(id, db).await {
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchEmployee);
+
+    match Employee::fetch_by_id(id, session, db).await {
         Ok(mut data) => {
             // First time employee is just considered "clocked out"
             if data.clock_history.is_empty() {

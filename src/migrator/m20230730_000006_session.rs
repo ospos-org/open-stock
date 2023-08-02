@@ -22,6 +22,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Session::TenantId).string().not_null())
                     .col(ColumnDef::new(Session::Key).text().not_null())
                     .col(ColumnDef::new(Session::EmployeeId).text().not_null())
                     .col(ColumnDef::new(Session::Expiry).date_time().not_null())
@@ -46,8 +47,10 @@ pub enum Session {
     Id,
     #[iden = "key"]
     Key,
-    #[iden = "employeeId"]
+    #[iden = "employee_id"]
     EmployeeId,
     #[iden = "expiry"]
     Expiry,
+    #[iden = "tenant_id"]
+    TenantId,
 }

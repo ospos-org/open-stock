@@ -39,7 +39,7 @@ pub async fn get(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::fetch_by_id(&id.to_string(), db).await {
+    match Product::fetch_by_id(&id.to_string(), session, db).await {
         Ok(product) => Ok(Json(product)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -56,7 +56,7 @@ pub async fn get_with_associated_promotions(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::fetch_by_id_with_promotion(&id.to_string(), db).await {
+    match Product::fetch_by_id_with_promotion(&id.to_string(), session, db).await {
         Ok(product) => Ok(Json(product)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -73,7 +73,7 @@ pub async fn get_by_name(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::fetch_by_name(name, db).await {
+    match Product::fetch_by_name(name, session, db).await {
         Ok(products) => Ok(Json(products)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -91,7 +91,7 @@ pub async fn get_by_name_exact(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::fetch_by_name_exact(name, db).await {
+    match Product::fetch_by_name_exact(name, session, db).await {
         Ok(products) => Ok(Json(products)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -109,7 +109,7 @@ pub async fn search_query(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::search(query, db).await {
+    match Product::search(query, session, db).await {
         Ok(products) => Ok(Json(products)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -126,7 +126,7 @@ pub async fn search_with_associated_promotions(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::search_with_promotion(query, db).await {
+    match Product::search_with_promotion(query, session, db).await {
         Ok(products) => Ok(Json(products)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -145,7 +145,7 @@ async fn update(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyProduct);
 
-    match Product::update(input_data, id, db).await {
+    match Product::update(input_data, session, id, db).await {
         Ok(res) => Ok(Json(res)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -163,8 +163,8 @@ pub async fn create(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateProduct);
 
-    match Product::insert(new_transaction, db).await {
-        Ok(data) => match Product::fetch_by_id(&data.last_insert_id, db).await {
+    match Product::insert(new_transaction, session.clone(), db).await {
+        Ok(data) => match Product::fetch_by_id(&data.last_insert_id, session, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => {
                 println!("[dberr]: {}", reason);
@@ -188,7 +188,7 @@ async fn generate(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Product::generate(db).await {
+    match Product::generate(session, db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -205,7 +205,9 @@ pub async fn get_promotion(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let product = Promotion::fetch_by_id(&id.to_string(), db).await.unwrap();
+    let product = Promotion::fetch_by_id(&id.to_string(), session, db)
+        .await
+        .unwrap();
     Ok(Json(product))
 }
 
@@ -220,7 +222,7 @@ pub async fn get_promotion_by_query(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let product = Promotion::fetch_by_query(query, db).await.unwrap();
+    let product = Promotion::fetch_by_query(query, session, db).await.unwrap();
     Ok(Json(product))
 }
 
@@ -237,7 +239,7 @@ async fn update_promotion(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyProduct);
 
-    match Promotion::update(input_data, id, db).await {
+    match Promotion::update(input_data, session, id, db).await {
         Ok(res) => Ok(Json(res)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -255,8 +257,8 @@ pub async fn create_promotion(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateProduct);
 
-    match Promotion::insert(new_promotion, db).await {
-        Ok(data) => match Promotion::fetch_by_id(&data.last_insert_id, db).await {
+    match Promotion::insert(new_promotion, session.clone(), db).await {
+        Ok(data) => match Promotion::fetch_by_id(&data.last_insert_id, session, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => {
                 println!("[dberr]: {}", reason);
@@ -280,7 +282,7 @@ async fn generate_promotion(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Promotion::generate(db).await {
+    match Promotion::generate(session, db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
