@@ -22,6 +22,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Promotion::TenantId).string().not_null())
                     .col(ColumnDef::new(Promotion::Name).text().not_null())
                     .col(ColumnDef::new(Promotion::Buy).json().not_null())
                     .col(ColumnDef::new(Promotion::Get).json().not_null())
@@ -56,4 +57,6 @@ pub enum Promotion {
     ValidTill,
     #[iden = "timestamp"]
     Timestamp,
+    #[iden = "tenant_id"]
+    TenantId,
 }

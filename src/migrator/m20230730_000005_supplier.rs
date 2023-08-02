@@ -22,6 +22,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Supplier::TenantId).string().not_null())
                     .col(ColumnDef::new(Supplier::Name).json().not_null())
                     .col(ColumnDef::new(Supplier::Contact).json().not_null())
                     .col(
@@ -54,4 +55,6 @@ pub enum Supplier {
     Contact,
     #[iden = "transaction_history"]
     TransactionHistory,
+    #[iden = "tenant_id"]
+    TenantId,
 }

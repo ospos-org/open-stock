@@ -23,6 +23,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Customer::Name).text().not_null())
+                    .col(ColumnDef::new(Customer::TenantId).string().not_null())
                     .col(ColumnDef::new(Customer::Contact).json().not_null())
                     .col(ColumnDef::new(Customer::CustomerNotes).json().not_null())
                     .col(ColumnDef::new(Customer::Balance).float().not_null())
@@ -63,4 +64,6 @@ pub enum Customer {
     SpecialPricing,
     #[iden = "accepts_marketing"]
     AcceptsMarketing,
+    #[iden = "tenant_id"]
+    TenantId,
 }

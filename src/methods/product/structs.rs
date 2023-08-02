@@ -282,7 +282,7 @@ impl Product {
             .from_raw_sql(
                 Statement::from_sql_and_values(
                     sea_orm::DatabaseBackend::MySql,
-                    &format!("SELECT * FROM `Products` WHERE MATCH(`name`, `company`) AGAINST('{}' IN NATURAL LANGUAGE MODE) OR `Products`.`sku` LIKE '%{}%' OR `Products`.`variants` LIKE '%{}%' AND `tenant_id` == {} LIMIT 25",
+                    &format!("SELECT * FROM `Products` WHERE (MATCH(`name`, `company`) AGAINST('{}' IN NATURAL LANGUAGE MODE) OR `Products`.`sku` LIKE '%{}%' OR `Products`.`variants` LIKE '%{}%') AND Products.tenant_id = '{}' LIMIT 25",
                     query, query, query, session.tenant_id),
                     vec![]
                 )

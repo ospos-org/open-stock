@@ -16,6 +16,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Kiosk::Table)
                     .engine("InnoDB".to_string())
+                    .col(ColumnDef::new(Kiosk::TenantId).string().not_null())
                     .col(ColumnDef::new(Kiosk::Id).string().not_null().primary_key())
                     .col(ColumnDef::new(Kiosk::Name).text().not_null())
                     .col(ColumnDef::new(Kiosk::StoreId).string().not_null())
@@ -51,4 +52,6 @@ pub enum Kiosk {
     Disabled,
     #[iden = "last_online"]
     LastOnline,
+    #[iden = "tenant_id"]
+    TenantId,
 }

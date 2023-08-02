@@ -23,6 +23,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Transactions::TenantId).string().not_null())
                     .col(ColumnDef::new(Transactions::Customer).json().not_null())
                     .col(
                         ColumnDef::new(Transactions::TransactionType)
@@ -77,6 +78,8 @@ pub enum Transactions {
     Salesperson,
     #[iden = "kiosk"]
     Kiosk,
+    #[iden = "tenant_id"]
+    TenantId,
 }
 
 #[derive(Iden, EnumIter)]

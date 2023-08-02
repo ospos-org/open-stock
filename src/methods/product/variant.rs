@@ -235,7 +235,7 @@ impl Promotion {
 
     pub async fn fetch_all(session: Session, db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
         let stores = Promotions::find()
-            .filter(products::Column::TenantId.eq(session.tenant_id))
+            .filter(promotion::Column::TenantId.eq(session.tenant_id))
             .all(db)
             .await?;
 
