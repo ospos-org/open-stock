@@ -175,6 +175,7 @@ pub struct Session {
     pub key: String,
     pub employee: EmployeeObj,
     pub expiry: DateTime<Utc>,
+    pub tenant_id: String,
 }
 
 impl Session {
@@ -215,6 +216,7 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
         Some((val, Some(e))) => Ok(Session {
             id: val.id,
             key: val.key,
+            tenant_id: val.tenant_id,
             employee: EmployeeObj {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
