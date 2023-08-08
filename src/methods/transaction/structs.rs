@@ -191,7 +191,7 @@ impl Transaction {
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
                 &format!(
-                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%' AND WHERE Transactions.tenant_id == {}",
+                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%' AND Transactions.tenant_id = '{}'",
                     query, session.tenant_id
                 ),
                 vec![],
@@ -226,7 +226,7 @@ impl Transaction {
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
                 &format!(
-                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%' AND Transactions.tenant_id == {}",
+                    "SELECT * FROM Transactions WHERE Transactions.products LIKE '%{}%' AND Transactions.tenant_id = '{}'",
                     query, session.tenant_id
                 ),
                 vec![],
