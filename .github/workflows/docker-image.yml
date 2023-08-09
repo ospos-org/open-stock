@@ -11,7 +11,6 @@ env:
   REGISTRY: australia-southeast1-docker.pkg.dev
   REGISTRY_PATH: ${{ secrets.GCP_PROJECT_ID }}/open-stock
   GCP_REGION: australia-southeast1
-  SERVICE_NAME: open-stock
   
 jobs:
   build-amd:
@@ -36,7 +35,7 @@ jobs:
           id: meta
           uses: docker/metadata-action@v3
           with:
-            images: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.SERVICE_NAME }}
+            images: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}
         - name: Build and push
           uses: docker/build-push-action@v3
           with:
@@ -62,7 +61,7 @@ jobs:
           id: meta
           uses: docker/metadata-action@v3
           with:
-            images: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.SERVICE_NAME }}
+            images: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}
         - name: Build and push
           uses: docker/build-push-action@v3
           with:
