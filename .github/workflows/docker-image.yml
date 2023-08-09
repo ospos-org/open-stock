@@ -6,8 +6,21 @@ on:
   release:
     types: [ published ]
 
+env:
+  # Github Container registry
+  REGISTRY: australia-southeast1-docker.pkg.dev
+  REGISTRY_PATH: ${{ secrets.GCP_PROJECT_ID }}/open-stock
+  GCP_REGION: australia-southeast1
+  SERVICE_NAME: open-stock
+  
 jobs:
   build-amd:
+    permissions:
+        contents: read
+        packages: write
+        # This is used to complete the identity challenge
+        # with sigstore/fulcio when running outside of PRs.
+        id-token: write
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
         - uses: actions/checkout@v3
@@ -16,16 +29,22 @@ jobs:
           if: github.event_name != 'pull_request'
           uses: docker/login-action@v1
           with:
-              registry: australia-southeast1-docker.pkg.dev
+              registry: ${{ env.REGISTRY }}
               username: _json_key
               password: ${{ secrets.GAR_JSON_KEY }}
+        - name: Extract Docker metadata
+          id: meta
+          uses: docker/metadata-action@v3
+          with:
+            images: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.SERVICE_NAME }}
         - name: Build and push
           uses: docker/build-push-action@v3
           with:
             context: .
             platforms: linux/amd64
-            push: true
-            tags: open-stock:latest
+            push: ${{ github.event_name != 'pull_request' }}
+            tags: ${{ steps.meta.outputs.tags }}
+            labels: ${{ steps.meta.outputs.labels }}
 
   build-arm:
     runs-on: buildjet-4vcpu-ubuntu-2204-arm
@@ -39,10 +58,16 @@ jobs:
               registry: australia-southeast1-docker.pkg.dev
               username: _json_key
               password: ${{ secrets.GAR_JSON_KEY }}
+        - name: Extract Docker metadata
+          id: meta
+          uses: docker/metadata-action@v3
+          with:
+            images: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.SERVICE_NAME }}
         - name: Build and push
           uses: docker/build-push-action@v3
           with:
             context: .
             platforms: linux/arm64
-            push: true
-            tags: open-stock:latest-arm
+            push: ${{ github.event_name != 'pull_request' }}
+            tags: ${{ steps.meta.outputs.tags }}
+            labels: ${{ steps.meta.outputs.labels }}
