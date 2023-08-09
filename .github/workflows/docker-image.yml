@@ -65,5 +65,5 @@ jobs:
             context: .
             platforms: linux/arm64
             push: ${{ github.event_name != 'pull_request' }}
-            tags: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.SERVICE_NAME }}:latest
+            tags: ${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.SERVICE_NAME }}:latest-arm
             labels: ${{ steps.meta.outputs.labels }}
