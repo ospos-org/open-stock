@@ -47,7 +47,8 @@ impl sea_orm_rocket::Pool for RocketDbPool {
 
         let mut options = ConnectOptions::new(database_url);
         options.idle_timeout(Duration::new(3600, 0));
-        options.acquire_timeout(Duration::new(90, 0));
+        options.acquire_timeout(Duration::new(3600, 0));
+        options.connect_timeout(Duration::new(3600, 0));
         options.min_connections(1);
 
         let conn = sea_orm::Database::connect(options).await?;
