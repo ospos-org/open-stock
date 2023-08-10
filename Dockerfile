@@ -31,7 +31,9 @@ FROM rust:1.70.0
 COPY --from=build /open-stock/target/release/open-stock .
 COPY --from=build /open-stock/Rocket.toml .
 
-EXPOSE 8000
+ARG PORT=8080
+ENV PORT ${PORT}
+EXPOSE ${PORT}
 
 # set the startup command to run your binary
 ENTRYPOINT ["./open-stock"]
