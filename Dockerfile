@@ -32,7 +32,10 @@ COPY --from=build /open-stock/target/release/open-stock .
 COPY --from=build /open-stock/Rocket.toml .
 
 ARG PORT=8080
+ARG SECRET_KEY="OPEN_STOCK_SECRET_KEY_TEMPLATE"
 ENV ROCKET_PORT ${PORT}
+ENV ROCKET_SECRET_KEY ${SECRET_KEY}
+
 EXPOSE ${ROCKET_PORT}
 
 # set the startup command to run your binary
