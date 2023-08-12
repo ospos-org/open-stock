@@ -1,3 +1,11 @@
+[development]
+address = "localhost"
+port = 8080
+
+[production]
+address = "0.0.0.0"
+port = 8080
+
 [global.limits]
 file = 1073741824 # 1 GiBs
 forms = 1073741824 # 1 GiB

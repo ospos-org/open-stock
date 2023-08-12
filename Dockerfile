@@ -22,7 +22,7 @@ COPY ./Rocket.toml ./
 
 # build for release
 # RUN rm ./target/release/deps/stock* .
-RUN cargo build --release --locked
+RUN ROCKET_ENV=prod cargo build --release --locked
 
 # our final base
 FROM rust:1.70.0
@@ -32,8 +32,8 @@ COPY --from=build /open-stock/target/release/open-stock .
 COPY --from=build /open-stock/Rocket.toml .
 
 ARG PORT=8080
-ENV PORT ${PORT}
-EXPOSE ${PORT}
+ENV ROCKET_PORT ${PORT}
+EXPOSE ${ROCKET_PORT}
 
 # set the startup command to run your binary
 ENTRYPOINT ["./open-stock"]
