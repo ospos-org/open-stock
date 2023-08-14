@@ -8,9 +8,9 @@ on:
 
 env:
   # Github Container registry
-  REGISTRY: asia-southeast1-docker.pkg.dev
+  REGISTRY: asia-docker.pkg.dev
   REGISTRY_PATH: ${{ secrets.GCP_PROJECT_ID }}/open-stock
-  GCP_REGION: asia-southeast1
+  GCP_REGION: asia
   SERVICE_NAME: open-stock
   
 jobs:
