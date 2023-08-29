@@ -13,7 +13,7 @@ use uuid::Uuid;
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct KioskPreferences {
-    printer_id: String,
+    pub printer_id: String,
 }
 
 #[cfg(feature = "types")]
