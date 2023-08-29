@@ -1,6 +1,8 @@
 #![allow(ambiguous_glob_reexports)]
 
+#[cfg(feature = "sql")]
 use pool::Db;
+#[cfg(feature = "sql")]
 use rocket::{
     fairing::{Fairing, Info, Kind},
     http::Header,
@@ -22,11 +24,14 @@ pub use methods::*;
 #[cfg(feature = "sql")]
 pub use migrator::*;
 
+#[cfg(feature = "sql")]
 extern crate argon2;
+#[cfg(feature = "sql")]
 extern crate futures_cpupool;
 
 pub struct CORS;
 
+#[cfg(feature = "sql")]
 #[rocket::async_trait]
 impl Fairing for CORS {
     fn info(&self) -> Info {
@@ -49,6 +54,7 @@ impl Fairing for CORS {
     }
 }
 
+#[cfg(feature = "sql")]
 #[launch] // The "main" function of the program
 fn rocket() -> _ {
     dotenv::dotenv().ok();
