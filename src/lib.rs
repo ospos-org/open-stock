@@ -5,11 +5,13 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 
+#[cfg(feature = "process")]
 pub mod entities;
 pub mod methods;
 pub mod migrator;
 pub mod pool;
 
+#[cfg(feature = "process")]
 pub use self::entities::*;
 pub use self::methods::*;
 pub use self::migrator::*;

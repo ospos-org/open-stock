@@ -1,6 +1,7 @@
 use std::fmt::{self, Display};
 
 use chrono::Utc;
+#[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
     QuerySelect, RuntimeErr, Set,
@@ -9,14 +10,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
+#[cfg(feature = "process")]
+use crate::entities::employee;
+#[cfg(feature = "process")]
 use crate::entities::prelude::Employee as Epl;
+use crate::methods::{Address, ContactInformation, Email, History, Id, MobileNumber, Name};
 use crate::Session;
-use crate::{
-    entities::employee,
-    methods::{
-        convert_addr_to_geo, Address, ContactInformation, Email, History, Id, MobileNumber, Name,
-    },
-};
+
+#[cfg(feature = "process")]
+use crate::methods::convert_addr_to_geo;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]

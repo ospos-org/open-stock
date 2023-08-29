@@ -1,7 +1,11 @@
+#[cfg(feature = "process")]
 use crate::entities::prelude::Kiosk as Ksk;
+#[cfg(feature = "process")]
 use crate::{entities::authrecord::ActiveModel as AuthRecord, entities::kiosk::ActiveModel};
+#[cfg(feature = "process")]
 use crate::{entities::kiosk, Session};
 use chrono::{DateTime, Utc};
+#[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, InsertResult,
     QueryFilter, Set,

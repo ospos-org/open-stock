@@ -1,16 +1,20 @@
 use std::fmt::Display;
 
 use super::{Employee as EmployeeObj, ProductExchange};
+#[cfg(feature = "process")]
 use crate::entities::employee::Entity as Employee;
+#[cfg(feature = "process")]
 use crate::entities::session::Entity as SessionEntity;
-use crate::{
-    entities,
-    methods::{stml::Order, Access, Action, Attendance, EmployeeAuth},
-};
+
+#[cfg(feature = "process")]
+use crate::entities;
+use crate::methods::{stml::Order, Access, Action, Attendance, EmployeeAuth};
 use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
+#[cfg(feature = "process")]
 use rocket::{http::CookieJar, serde::json::Json, Responder};
+#[cfg(feature = "process")]
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QuerySelect};
 use serde::{Deserialize, Serialize};
 
@@ -201,10 +205,12 @@ impl Session {
     }
 }
 
+#[cfg(feature = "process")]
 pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
     cookies.get("key").map(|crumb| crumb.value().to_string())
 }
 
+#[cfg(feature = "process")]
 pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Session, DbErr> {
     let session = SessionEntity::find()
         .having(entities::session::Column::Key.eq(key.clone()))
@@ -238,6 +244,7 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
     }
 }
 
+#[cfg(feature = "process")]
 pub async fn _handle_cookie(
     db: &DatabaseConnection,
     cookies: &CookieJar<'_>,
@@ -248,6 +255,7 @@ pub async fn _handle_cookie(
     }
 }
 
+#[cfg(feature = "process")]
 pub async fn cookie_status_wrapper(
     db: &DatabaseConnection,
     cookies: &CookieJar<'_>,
@@ -273,6 +281,7 @@ pub struct ErrorResponse {
     message: String,
 }
 
+#[cfg(feature = "process")]
 impl ErrorResponse {
     pub fn create_error(message: &str) -> Error {
         Error::StandardError(Json(ErrorResponse {
@@ -305,6 +314,7 @@ impl ErrorResponse {
     }
 }
 
+#[cfg(feature = "process")]
 #[derive(Debug, Responder)]
 pub enum Error {
     #[response(status = 500, content_type = "json")]

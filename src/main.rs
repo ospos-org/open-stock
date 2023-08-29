@@ -10,7 +10,7 @@ use rocket::{
 };
 use sea_orm_rocket::Database;
 
-#[cfg(feature = "sql")]
+#[cfg(feature = "process")]
 pub mod entities;
 pub mod methods;
 #[cfg(feature = "sql")]
@@ -54,7 +54,7 @@ impl Fairing for CORS {
     }
 }
 
-#[cfg(feature = "sql")]
+#[cfg(feature = "process")]
 #[launch] // The "main" function of the program
 fn rocket() -> _ {
     dotenv::dotenv().ok();
@@ -71,3 +71,6 @@ fn rocket() -> _ {
         .mount("/api/store", methods::store::handlers::routes())
         .mount("/api/helpers", methods::helpers::handlers::routes())
 }
+
+#[cfg(not(feature = "process"))]
+fn main() {}

@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
-use crate::{History, Session};
+use crate::{History, Session, TransactionType};
 use chrono::{DateTime, Utc};
+#[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
     ActiveModelTrait, ColumnTrait, Condition, DbConn, DbErr, EntityTrait, InsertResult,
@@ -18,10 +19,14 @@ use super::{
     Promotion, PromotionBuy, PromotionGet, StockInformation, Variant, VariantCategory,
     VariantCategoryList, VariantIdTag, VariantInformation,
 };
+#[cfg(feature = "process")]
+use crate::entiries::{products, sea_orm_active_enums::TransactionType};
+#[cfg(feature = "process")]
 use crate::entities::prelude::Products;
+#[cfg(feature = "process")]
 use crate::entities::prelude::Promotion as Promotions;
+
 use crate::{
-    entities::{products, sea_orm_active_enums::TransactionType},
     methods::{
         Address, ContactInformation, DiscountValue, Email, Location, MobileNumber, Quantity, Stock,
         TagList, Url,

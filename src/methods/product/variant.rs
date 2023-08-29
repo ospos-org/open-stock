@@ -1,4 +1,5 @@
 use chrono::{DateTime, Days, Utc};
+#[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
     QuerySelect, Set,
@@ -6,10 +7,14 @@ use sea_orm::{
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
+#[cfg(feature = "process")]
 use crate::entities::prelude::Promotion as Promotions;
+#[cfg(feature = "process")]
 use crate::entities::promotion;
 use crate::methods::{DiscountValue, HistoryList, Id, StockList, Url};
-use crate::{products, ProductIdentification, Session};
+#[cfg(feature = "process")]
+use crate::products;
+use crate::{ProductIdentification, Session};
 use serde_json::json;
 use uuid::Uuid;
 

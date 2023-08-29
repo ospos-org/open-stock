@@ -2,20 +2,23 @@ use core::fmt;
 use std::fmt::Display;
 
 use chrono::{DateTime, Days, Duration, NaiveDateTime, Utc};
+#[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
     *,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+#[cfg(feature = "process")]
 use tokio::task::JoinError;
 use uuid::Uuid;
 
+#[cfg(feature = "process")]
 use sea_orm::FromQueryResult;
 
-use crate::entities::prelude::Transactions;
+#[cfg(feature = "process")]
+use crate::entities::{prelude::Transactions, sea_orm_active_enums::TransactionType, transactions};
 use crate::{
-    entities::{sea_orm_active_enums::TransactionType, transactions},
     methods::{
         Address, ContactInformation, DiscountValue, Email, History, Id, Location, MobileNumber,
         Note, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment, Payment,
@@ -24,6 +27,7 @@ use crate::{
     },
     PickStatus, ProductInstance,
 };
+#[cfg(feature = "process")]
 use sea_orm::DbConn;
 
 #[cfg(feature = "types")]
@@ -41,7 +45,7 @@ pub enum CustomerType {
     Commercial,
 }
 
-#[cfg(feature = "types")]
+#[cfg(feature = "process")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QuantityAlterationIntent {
     pub variant_code: String,
@@ -50,6 +54,17 @@ pub struct QuantityAlterationIntent {
     pub transaction_store_id: String,
     pub transaction_type: TransactionType,
     pub quantity_to_transact: f32,
+}
+
+#[cfg(feature = "types")]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum TransactionType {
+    In,
+    Out,
+    PendingIn,
+    PendingOut,
+    Saved,
+    Quote,
 }
 
 // Discounts on the transaction are applied per-order - such that they are unique to each item, i.e. each item can be discounted individually where needed to close a sale.
@@ -84,6 +99,7 @@ pub struct Transaction {
     pub kiosk: Id,
 }
 
+#[cfg(feature = "process")]
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, FromQueryResult)]
 pub struct DerivableTransaction {

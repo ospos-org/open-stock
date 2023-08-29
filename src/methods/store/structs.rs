@@ -1,12 +1,19 @@
+#[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
     QuerySelect, RuntimeErr, Set,
 };
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "process")]
 use crate::entities::prelude::Store as StoreEntity;
+#[cfg(feature = "process")]
 use crate::entities::store;
-use crate::methods::{convert_addr_to_geo, Address, Email, MobileNumber};
+use crate::methods::{Address, Email, MobileNumber};
+
+#[cfg(feature = "process")]
+use crate::methods::convert_addr_to_geo;
+
 use crate::methods::{ContactInformation, Id};
 use crate::Session;
 use serde_json::json;

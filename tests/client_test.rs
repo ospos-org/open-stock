@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "process")]
 #[tokio::test]
 async fn main() {
     let mut durations: Vec<u128> = vec![]; 

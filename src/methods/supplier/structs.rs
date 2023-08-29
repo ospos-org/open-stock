@@ -1,14 +1,17 @@
 use std::fmt::Display;
 
+#[cfg(feature = "process")]
 use crate::entities::prelude::Supplier as Suppl;
+#[cfg(feature = "process")]
+use crate::entities::supplier;
 use crate::Session;
-use crate::{
-    entities::supplier,
-    methods::{
-        convert_addr_to_geo, Address, ContactInformation, Email, MobileNumber, Name, Transaction,
-    },
-};
 
+use crate::methods::{Address, ContactInformation, Email, MobileNumber, Name, Transaction};
+
+#[cfg(feature = "process")]
+use crate::methods::convert_addr_to_geo;
+
+#[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
     QuerySelect, RuntimeErr, Set,

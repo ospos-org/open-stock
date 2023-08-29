@@ -1,20 +1,20 @@
 use std::{env, fs, sync::Arc, time::Duration};
 
-use crate::{
-    entities::{session, transactions},
-    example_employee,
-    migrator::Migrator,
-    Customer, Product, Session, Store, Transaction,
-};
+#[cfg(feature = "process")]
+use crate::entities::{session, transactions};
+use crate::{example_employee, migrator::Migrator, Customer, Product, Session, Store, Transaction};
 use async_trait::async_trait;
 use chrono::{Days, Duration as ChronoDuration, Utc};
 use dotenv::dotenv;
+#[cfg(feature = "process")]
 use rocket::tokio;
 use sea_orm::{ColumnTrait, ConnectOptions, DbConn, EntityTrait, QuerySelect};
 use sea_orm_migration::prelude::*;
 use sea_orm_rocket::{rocket::figment::Figment, Database};
+#[cfg(feature = "process")]
 use tokio::sync::Mutex;
 
+#[cfg(feature = "process")]
 #[derive(Database, Debug)]
 #[database("stock")]
 pub struct Db(RocketDbPool);
@@ -24,6 +24,7 @@ pub struct RocketDbPool {
     pub conn: sea_orm::DatabaseConnection,
 }
 
+#[cfg(feature = "process")]
 #[async_trait]
 impl sea_orm_rocket::Pool for RocketDbPool {
     type Error = sea_orm::DbErr;
@@ -74,6 +75,7 @@ impl sea_orm_rocket::Pool for RocketDbPool {
     }
 }
 
+#[cfg(feature = "process")]
 pub async fn session_ingress_worker(db: &DbConn) {
     let currently_ingesting = Arc::new(Mutex::new(vec![]));
     let mut interval = tokio::time::interval(Duration::from_secs(5));
@@ -116,6 +118,7 @@ pub async fn session_ingress_worker(db: &DbConn) {
     }
 }
 
+#[cfg(feature = "process")]
 pub async fn ingest_file(db: &DbConn, file_path: String) {
     // Read in the file to memory, hoping the memory is sufficient to do so.
     let to_ingest = fs::read_to_string(file_path.clone());
@@ -167,6 +170,7 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
     }
 }
 
+#[cfg(feature = "process")]
 pub async fn session_garbage_collector(db: &DbConn) {
     let mut interval = tokio::time::interval(Duration::from_secs(5));
 

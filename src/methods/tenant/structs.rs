@@ -1,7 +1,8 @@
+#[cfg(feature = "process")]
 use crate::{entities::prelude::Tenants, tenants};
 use chrono::{DateTime, Utc};
-use sea_orm::Set;
-use sea_orm::{DbConn, DbErr, EntityTrait, InsertResult};
+#[cfg(feature = "process")]
+use sea_orm::{DbConn, DbErr, EntityTrait, InsertResult, Set};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 

@@ -1,14 +1,16 @@
 use std::fmt::Display;
 
+#[cfg(feature = "process")]
+use crate::entities::customer;
+#[cfg(feature = "process")]
 use crate::entities::prelude::Customer as Cust;
+#[cfg(feature = "process")]
+use crate::methods::convert_addr_to_geo;
+use crate::methods::{Address, ContactInformation, Email, Id, MobileNumber, NoteList};
 use crate::Session;
-use crate::{
-    entities::customer,
-    methods::{
-        convert_addr_to_geo, Address, ContactInformation, Email, Id, MobileNumber, NoteList,
-    },
-};
+#[cfg(feature = "process")]
 use sea_orm::QueryFilter;
+#[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
     ActiveModelTrait, ColumnTrait, DbBackend, DbConn, DbErr, EntityTrait, FromQueryResult,
@@ -30,7 +32,7 @@ pub struct Customer {
     pub accepts_marketing: bool,
 }
 
-#[cfg(feature = "types")]
+#[cfg(feature = "process")]
 #[derive(Serialize, Deserialize, Clone, FromQueryResult)]
 pub struct CustomerWithTransactions {
     pub id: Id,
