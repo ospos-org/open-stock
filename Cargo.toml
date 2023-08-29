@@ -1,49 +1,49 @@
 [package]
 name = "open-stock"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2021"
 authors = ["bennjii"]
 license = "MIT"
 description = "An Inventory Management Database Interface Layer for MySQL"
 
 [dependencies]
-chrono = { version = "0.4.23", features = ["serde"] }
-dotenv = "0.15.0"
-async-std = { version = "^1.9", features = [ "attributes", "tokio1" ] }
-uuid = { version = "1.2.2", features = [ "v4", "fast-rng", "serde" ] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-sea-orm-rocket = { version = "0.5.2" }
 sea-orm = { version = "0.12.1", features = [
   "macros",
   "runtime-tokio-native-tls",
   "sqlx-mysql"
-]}
-sea-orm-migration = "0.12.1"
-futures = { version = "^0.3" }
-async-stream = { version = "^0.3" }
-futures-util = { version = "^0.3" }
-async-trait = { version = "0.1.58" }
+], optional = true}
+tokio = { version = "1.28.2", features = ["rt"], optional = true }
 rocket = { version = "0.5.0-rc.3", features = [
   "json", "secrets", "tls"
-] }
+], optional = true }
+
+sea-orm-migration = "0.12.1"
+chrono = { version = "0.4.23", features = ["serde"] }
+dotenv = "0.15.0"
+async-std = { version = "^1.9", features = [ "attributes", "std" ] }
+uuid = { version = "1.2.2", features = [ "v4", "fast-rng", "serde" ] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sea-orm-rocket = { version = "0.5.2" }
 rust-argon2 = "1.0"
 futures-cpupool = "0.1.8"
 rand = "0.8.5"
 photon-geocoding = { version = "1.1.0" }
 geo = "0.23.1"
-tokio = "1.22.0"
 alea = "0.2"
 regex = "1.5.4"
 lazy_static = "1.4.0"
+futures = { version = "^0.3" }
+async-stream = { version = "^0.3" }
+futures-util = { version = "^0.3" }
+async-trait = { version = "0.1.58" }
 
 [dev-dependencies]
-tokio = { version = "1.22.0", features = ["rt"] }
 reqwest = "0.11.13"
 
 [features]
 types = []
-process = []
+process = ["sea-orm", "tokio", "rocket"]
 methods = ["types"]
 sql = ["methods"]
 default = ["types", "methods", "sql", "process", "sea-orm/sqlx-mysql"]
