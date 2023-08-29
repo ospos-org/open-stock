@@ -27,22 +27,22 @@ pub struct AuthenticationLog {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Kiosk {
     /// Standard Unique Identification
-    id: String,
+    pub id: String,
 
     /// A user-set custom identifier (Should not be used for unique identification)
-    name: String,
+    pub name: String,
 
     /// The long-form identification of the store to which the kiosk resides.
-    store_id: String,
+    pub store_id: String,
 
     /// Kiosk Preferences, i.e. Preferred printer [`KioskPreferences`]
-    preferences: KioskPreferences,
+    pub preferences: KioskPreferences,
 
     /// Lock-down, i.e. Externally disable a Kiosk for any reason
-    disabled: bool,
+    pub disabled: bool,
 
     // The timestamp for the kiosk's last time online.
-    last_online: DateTime<Utc>,
+    pub last_online: DateTime<Utc>,
 }
 
 #[cfg(feature = "types")]
