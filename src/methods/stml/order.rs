@@ -7,6 +7,7 @@ use crate::methods::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Order {
     pub id: Id,
@@ -30,6 +31,7 @@ pub struct Order {
     pub order_type: OrderType,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderType {
@@ -48,12 +50,14 @@ impl ToString for Order {
     }
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderState {
     pub timestamp: DateTime<Utc>,
     pub status: OrderStatus,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderStatusAssignment {
     pub status: OrderStatus,
@@ -61,6 +65,7 @@ pub struct OrderStatusAssignment {
     pub timestamp: DateTime<Utc>,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "value")]
 #[serde(rename_all = "lowercase")]
@@ -130,6 +135,7 @@ impl Display for OrderStatusAssignment {
     }
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TransitInformation {
     pub shipping_company: ContactInformation,

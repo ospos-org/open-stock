@@ -8,13 +8,18 @@ use rocket::{
 };
 use sea_orm_rocket::Database;
 
+#[cfg(feature = "sql")]
 pub mod entities;
 pub mod methods;
+#[cfg(feature = "sql")]
 pub mod migrator;
+#[cfg(feature = "process")]
 pub mod pool;
 
+#[cfg(feature = "sql")]
 pub use entities::*;
 pub use methods::*;
+#[cfg(feature = "sql")]
 pub use migrator::*;
 
 extern crate argon2;

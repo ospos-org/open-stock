@@ -26,12 +26,14 @@ use crate::{
 };
 use sea_orm::DbConn;
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransactionCustomer {
     pub customer_type: CustomerType,
     pub customer_id: String,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CustomerType {
     Store,
@@ -39,6 +41,7 @@ pub enum CustomerType {
     Commercial,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QuantityAlterationIntent {
     pub variant_code: String,
@@ -62,6 +65,7 @@ pub struct QuantityAlterationIntent {
 ///
 /// `IN:`     As a purchase order it's transaction type takes the form of "In", the customer object will be treated as the company bought from and the payment as an outward payment in exchange for the goods. <br />
 /// `OUT:`    A sale - It can occur in-store or online and is comprised of the sale of goods outlined in the order list.
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Transaction {
     pub id: Id,
@@ -80,6 +84,7 @@ pub struct Transaction {
     pub kiosk: Id,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, FromQueryResult)]
 pub struct DerivableTransaction {
     pub id: Id,
@@ -98,6 +103,7 @@ pub struct DerivableTransaction {
     pub kiosk: Id,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Clone)]
 pub struct TransactionInput {
     pub customer: TransactionCustomer,
@@ -114,6 +120,7 @@ pub struct TransactionInput {
     pub kiosk: Id,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Clone)]
 pub struct TransactionInit {
     pub customer: TransactionCustomer,
@@ -129,6 +136,7 @@ pub struct TransactionInit {
     pub kiosk: Id,
 }
 
+#[cfg(feature = "methods")]
 impl Transaction {
     pub async fn insert(
         tsn: TransactionInit,

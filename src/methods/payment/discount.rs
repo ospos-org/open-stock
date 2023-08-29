@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
+#[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DiscountValue {
     Percentage(u32),
@@ -27,6 +28,7 @@ impl ToString for DiscountValue {
     }
 }
 
+#[cfg(feature = "types")]
 pub type DiscountMap = Vec<DiscountValue>;
 
 pub fn greatest_discount(map: DiscountMap, price: f32) -> DiscountValue {

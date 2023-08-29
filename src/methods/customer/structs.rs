@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Customer {
     pub id: Id,
@@ -29,6 +30,7 @@ pub struct Customer {
     pub accepts_marketing: bool,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, FromQueryResult)]
 pub struct CustomerWithTransactions {
     pub id: Id,
@@ -41,8 +43,8 @@ pub struct CustomerWithTransactions {
     pub accepts_marketing: bool,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
-
 pub struct CustomerWithTransactionsOut {
     pub id: Id,
     pub name: String,
@@ -54,6 +56,7 @@ pub struct CustomerWithTransactionsOut {
     pub accepts_marketing: bool,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CustomerInput {
     pub name: String,
@@ -64,6 +67,7 @@ pub struct CustomerInput {
     pub accepts_marketing: bool,
 }
 
+#[cfg(feature = "methods")]
 impl Customer {
     pub async fn insert(
         cust: CustomerInput,

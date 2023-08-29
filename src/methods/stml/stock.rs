@@ -2,14 +2,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::methods::Location;
 
+#[cfg(feature = "types")]
 pub type StockList = Vec<Stock>;
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Stock {
     pub store: Location,
-    pub quantity: Quantity
+    pub quantity: Quantity,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Quantity {
     pub quantity_sellable: f32,

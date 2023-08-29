@@ -10,17 +10,20 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct KioskPreferences {
     printer_id: String,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AuthenticationLog {
     pub employee_id: String,
     pub successful: bool,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Kiosk {
     /// Standard Unique Identification
@@ -42,6 +45,7 @@ pub struct Kiosk {
     last_online: DateTime<Utc>,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct KioskInit {
     name: String,
@@ -51,6 +55,7 @@ pub struct KioskInit {
     last_online: DateTime<Utc>,
 }
 
+#[cfg(feature = "methods")]
 impl Kiosk {
     pub async fn generate(id: &str, session: Session, db: &DbConn) -> Result<Kiosk, DbErr> {
         let ksk: KioskInit = example_kiosk();

@@ -18,6 +18,7 @@ use crate::{
     },
 };
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Employee {
     pub id: Id,
@@ -46,12 +47,14 @@ impl From<EmployeeInput> for Employee {
     }
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Access<T> {
     pub action: T,
     pub authority: i32,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Action {
     CreateCustomer,
@@ -99,6 +102,7 @@ pub enum Action {
     FetchGeoLocation,
 }
 
+#[cfg(feature = "types")]
 /// Stores a password hash, signed as a key using the users login ID.
 /// Upon logging in using a client portal, the pre-sign object is signed using the provided ID - if the hash matches that which is given, authentication can be approved.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -106,6 +110,7 @@ pub struct EmployeeAuth {
     pub hash: String,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EmployeeInput {
     pub name: Name,
@@ -153,6 +158,7 @@ impl Display for Employee {
 
 use argon2::{self, Config};
 
+#[cfg(feature = "methods")]
 impl Employee {
     pub async fn insert(
         empl: EmployeeInput,
@@ -451,12 +457,14 @@ impl Employee {
     }
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Attendance {
     pub track_type: TrackType,
     pub kiosk: Id,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum TrackType {
     In,

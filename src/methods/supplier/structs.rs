@@ -8,6 +8,7 @@ use crate::{
         convert_addr_to_geo, Address, ContactInformation, Email, MobileNumber, Name, Transaction,
     },
 };
+
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
     QuerySelect, RuntimeErr, Set,
@@ -16,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Supplier {
     pub id: String,
@@ -24,6 +26,7 @@ pub struct Supplier {
     pub transaction_history: Vec<Transaction>,
 }
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SupplierInput {
     pub name: Name,
@@ -31,6 +34,7 @@ pub struct SupplierInput {
     pub transaction_history: Vec<Transaction>,
 }
 
+#[cfg(feature = "methods")]
 impl Supplier {
     pub async fn insert(
         suppl: SupplierInput,

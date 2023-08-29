@@ -13,17 +13,23 @@ use crate::{products, ProductIdentification, Session};
 use serde_json::json;
 use uuid::Uuid;
 
+#[cfg(feature = "types")]
 pub type VariantIdTag = Vec<VariantId>;
+
+#[cfg(feature = "types")]
 type VariantId = String;
 
+#[cfg(feature = "types")]
 pub type VariantCategoryList = Vec<VariantCategory>;
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub struct VariantCategory {
     pub category: String,
     pub variants: Vec<Variant>,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 /// #### Information for a Variant.
 /// This includes its name, identification, stock information and quantities, prices, etc.
@@ -83,6 +89,7 @@ impl Display for VariantInformation {
     }
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Promotion {
     pub id: Id,
@@ -93,6 +100,7 @@ pub struct Promotion {
     pub timestamp: DateTime<Utc>,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub struct PromotionInput {
     name: String,
@@ -102,6 +110,7 @@ pub struct PromotionInput {
     timestamp: DateTime<Utc>,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub enum PromotionBuy {
     // This(quantity), Specific((id, quantity)), Any(quantity)
@@ -110,6 +119,7 @@ pub enum PromotionBuy {
     Category((String, f32)),
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub enum PromotionGet {
     /// `SoloThis(discount)` <br />
@@ -138,6 +148,7 @@ pub enum PromotionGet {
     Category((String, (f32, DiscountValue))),
 }
 
+#[cfg(feature = "methods")]
 impl Promotion {
     pub async fn insert(
         prm: PromotionInput,
@@ -293,6 +304,7 @@ impl Promotion {
 }
 
 /// Represents all sub-variant types; i.e. All 'White' variants, whether small, long-sleeve, ... it represents the sub-group of all which are 'White'.
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Variant {
     pub name: String,
@@ -302,6 +314,7 @@ pub struct Variant {
     pub order_history: HistoryList,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub struct StockInformation {
     pub stock_group: String,

@@ -3,6 +3,7 @@ use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Payment {
     pub id: String,
@@ -21,12 +22,14 @@ pub struct Payment {
     pub delay_duration: String,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Price {
     pub quantity: f32,
     pub currency: String,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PaymentProcessor {
     pub location: String,
@@ -35,6 +38,7 @@ pub struct PaymentProcessor {
     pub token: String,
 }
 
+#[cfg(feature = "types")]
 impl PaymentProcessor {
     /// `anonymous(source: String) -> Self`
     ///
@@ -53,6 +57,7 @@ impl PaymentProcessor {
     }
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Processable {
     /// CardDetails() (CardTransaction)
@@ -61,6 +66,7 @@ pub enum Processable {
     Anonymous(String),
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum PaymentStatus {
     Unfulfilled(String),
@@ -70,6 +76,7 @@ pub enum PaymentStatus {
     Complete(Processable),
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum PaymentAction {
     Cancel,
@@ -77,6 +84,7 @@ pub enum PaymentAction {
     RequireFurtherAction,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CardDetails {
     pub card_brand: String,
@@ -96,12 +104,14 @@ pub struct CardDetails {
     pub card_payment_timeline: PaymentTimeline,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PaymentTimeline {
     pub authorized_at: String,
     pub captured_at: String,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum PaymentMethod {
     Card,

@@ -2,6 +2,7 @@
 
 use sea_orm::entity::prelude::*;
 
+#[cfg(feature = "sql")]
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "AuthRecord")]
 pub struct Model {

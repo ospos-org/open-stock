@@ -7,9 +7,11 @@ use serde_json::json;
 
 use crate::Id;
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TenantSettings {}
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tenant {
     pub tenant_id: Id,
@@ -18,6 +20,7 @@ pub struct Tenant {
     pub settings: TenantSettings,
 }
 
+#[cfg(feature = "methods")]
 impl Tenant {
     pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Tenant, DbErr> {
         let tsn = Tenants::find_by_id(id.to_string()).one(db).await?;

@@ -11,6 +11,7 @@ use crate::methods::{ContactInformation, Id};
 use crate::Session;
 use serde_json::json;
 
+#[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Store {
     pub id: Id,
@@ -19,6 +20,7 @@ pub struct Store {
     pub code: String,
 }
 
+#[cfg(feature = "methods")]
 impl Store {
     pub async fn insert(
         store: Store,

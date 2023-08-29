@@ -30,6 +30,7 @@ use crate::{
 };
 use futures::future::join_all;
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub enum ProductVisibility {
     AlwaysShown,
@@ -37,6 +38,7 @@ pub enum ProductVisibility {
     ShowWhenInStock,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone, Default)]
 pub struct ProductIdentification {
     pub sku: String,
@@ -46,6 +48,7 @@ pub struct ProductIdentification {
     pub isbn: String,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 /// A product, containing a list of `Vec<Variant>`, an identifiable `sku` along with identifying information such as `tags`, `description` and `specifications`.
 /// > Stock-relevant information about a product is kept under each variant, thus allowing for modularity of different variants and a fine-grained control over your inventory.
@@ -71,6 +74,7 @@ pub struct Product {
     pub visible: ProductVisibility,
 }
 
+#[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone)]
 pub struct ProductWPromotion {
     pub product: Product,
@@ -97,6 +101,7 @@ impl Display for Product {
     }
 }
 
+#[cfg(feature = "methods")]
 impl Product {
     pub async fn insert(
         pdt: Product,
@@ -765,6 +770,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
     }
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductInstance {
     pub id: String,
@@ -781,6 +787,7 @@ fn default_fulfillment() -> FulfillmentStatus {
     }
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FulfillmentStatus {
     pub pick_status: PickStatus,
@@ -789,6 +796,7 @@ pub struct FulfillmentStatus {
     pub notes: Vec<Note>,
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum PickStatus {
     Pending,
@@ -799,6 +807,7 @@ pub enum PickStatus {
     Other(String),
 }
 
+#[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProductExchange {
     pub method_type: TransactionType,
@@ -829,7 +838,10 @@ impl Display for ProductExchange {
     }
 }
 
+#[cfg(feature = "types")]
 pub type ProductCode = String;
+
+#[cfg(feature = "types")]
 pub type ProductPurchaseList = Vec<ProductPurchase>;
 
 fn example_products() -> Vec<Product> {

@@ -14,7 +14,7 @@ use crate::{
         Promotion, Session, Store, Transaction,
     },
     pool::Db,
-    Kiosk, Tenant,
+    All, Kiosk, Tenant,
 };
 use geo::VincentyDistance;
 use photon_geocoding::{
@@ -30,18 +30,6 @@ pub fn routes() -> Vec<rocket::Route> {
         suggest_addr,
         distance_to_stores_from_store
     ]
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct All {
-    employee: Employee,
-    stores: Vec<Store>,
-    tenants: Vec<Tenant>,
-    products: Vec<Product>,
-    customer: Customer,
-    transaction: Transaction,
-    promotions: Vec<Promotion>,
-    kiosk: Kiosk,
 }
 
 /// This route does not require authentication, but is not enabled in release mode.
