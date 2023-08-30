@@ -158,6 +158,7 @@ impl Display for Employee {
     }
 }
 
+#[cfg(feature = "process")]
 use argon2::{self, Config};
 
 #[cfg(feature = "methods")]

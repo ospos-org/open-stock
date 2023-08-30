@@ -2,13 +2,19 @@ use std::{env, fs, sync::Arc, time::Duration};
 
 #[cfg(feature = "process")]
 use crate::entities::{session, transactions};
-use crate::{example_employee, migrator::Migrator, Customer, Product, Session, Store, Transaction};
+#[cfg(feature = "process")]
+use crate::migrator::Migrator;
+use crate::{example_employee, Customer, Product, Session, Store, Transaction};
+#[cfg(feature = "process")]
 use async_trait::async_trait;
 use chrono::{Days, Duration as ChronoDuration, Utc};
+#[cfg(feature = "process")]
 use dotenv::dotenv;
 #[cfg(feature = "process")]
 use rocket::tokio;
+#[cfg(feature = "process")]
 use sea_orm::{ColumnTrait, ConnectOptions, DbConn, EntityTrait, QuerySelect};
+#[cfg(feature = "process")]
 use sea_orm_migration::prelude::*;
 #[cfg(feature = "process")]
 use sea_orm_rocket::{rocket::figment::Figment, Database};
@@ -20,6 +26,7 @@ use tokio::sync::Mutex;
 #[database("stock")]
 pub struct Db(RocketDbPool);
 
+#[cfg(feature = "process")]
 #[derive(Debug, Clone)]
 pub struct RocketDbPool {
     pub conn: sea_orm::DatabaseConnection,

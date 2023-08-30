@@ -33,6 +33,7 @@ use crate::{
     },
     Note,
 };
+#[cfg(feature = "process")]
 use futures::future::join_all;
 
 #[cfg(feature = "types")]

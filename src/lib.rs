@@ -8,12 +8,14 @@ use std::thread;
 #[cfg(feature = "process")]
 pub mod entities;
 pub mod methods;
+#[cfg(feature = "process")]
 pub mod migrator;
 pub mod pool;
 
 #[cfg(feature = "process")]
 pub use self::entities::*;
 pub use self::methods::*;
+#[cfg(feature = "process")]
 pub use self::migrator::*;
 pub use self::pool::*;
 
