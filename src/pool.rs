@@ -10,6 +10,7 @@ use dotenv::dotenv;
 use rocket::tokio;
 use sea_orm::{ColumnTrait, ConnectOptions, DbConn, EntityTrait, QuerySelect};
 use sea_orm_migration::prelude::*;
+#[cfg(feature = "process")]
 use sea_orm_rocket::{rocket::figment::Figment, Database};
 #[cfg(feature = "process")]
 use tokio::sync::Mutex;

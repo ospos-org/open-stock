@@ -8,6 +8,7 @@ use rocket::{
     http::Header,
     *,
 };
+#[cfg(feature = "process")]
 use sea_orm_rocket::Database;
 
 #[cfg(feature = "process")]
