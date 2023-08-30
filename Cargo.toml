@@ -47,7 +47,7 @@ process = ["sea-orm", "tokio", "rocket", "sea-orm-rocket", "async-std", "geo", "
 methods = ["types"]
 sql = ["methods"]
 all = ["types", "methods", "sql", "process", "sea-orm/sqlx-mysql"]
-default = ["types"]
+default = ["all"]
 
 [profile.release]
 strip = false

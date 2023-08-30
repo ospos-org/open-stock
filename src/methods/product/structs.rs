@@ -20,11 +20,11 @@ use super::{
     VariantCategoryList, VariantIdTag, VariantInformation,
 };
 #[cfg(feature = "process")]
-use crate::entiries::{products, sea_orm_active_enums::TransactionType};
-#[cfg(feature = "process")]
 use crate::entities::prelude::Products;
 #[cfg(feature = "process")]
 use crate::entities::prelude::Promotion as Promotions;
+#[cfg(feature = "process")]
+use crate::entities::products;
 
 use crate::{
     methods::{

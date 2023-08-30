@@ -17,7 +17,9 @@ use uuid::Uuid;
 use sea_orm::FromQueryResult;
 
 #[cfg(feature = "process")]
-use crate::entities::{prelude::Transactions, sea_orm_active_enums::TransactionType, transactions};
+use crate::entities::{
+    prelude::Transactions, sea_orm_active_enums::TransactionType as SeaORMTType, transactions,
+};
 use crate::{
     methods::{
         Address, ContactInformation, DiscountValue, Email, History, Id, Location, MobileNumber,
@@ -67,6 +69,32 @@ pub enum TransactionType {
     Quote,
 }
 
+impl From<SeaORMTType> for TransactionType {
+    fn from(value: SeaORMTType) -> Self {
+        match value {
+            SeaORMTType::In => TransactionType::In,
+            SeaORMTType::Out => TransactionType::Out,
+            SeaORMTType::PendingIn => TransactionType::PendingIn,
+            SeaORMTType::PendingOut => TransactionType::PendingOut,
+            SeaORMTType::Saved => TransactionType::Saved,
+            SeaORMTType::Quote => TransactionType::Quote,
+        }
+    }
+}
+
+impl From<TransactionType> for SeaORMTType {
+    fn from(value: TransactionType) -> Self {
+        match value {
+            TransactionType::In => SeaORMTType::In,
+            TransactionType::Out => SeaORMTType::Out,
+            TransactionType::PendingIn => SeaORMTType::PendingIn,
+            TransactionType::PendingOut => SeaORMTType::PendingOut,
+            TransactionType::Saved => SeaORMTType::Saved,
+            TransactionType::Quote => SeaORMTType::Quote,
+        }
+    }
+}
+
 // Discounts on the transaction are applied per-order - such that they are unique to each item, i.e. each item can be discounted individually where needed to close a sale.
 // A discount placed upon the payment object is an order-discount, such that it will act upon the basket:
 
@@ -106,7 +134,7 @@ pub struct DerivableTransaction {
     pub id: Id,
 
     pub customer: JsonValue,
-    pub transaction_type: TransactionType,
+    pub transaction_type: SeaORMTType,
 
     pub products: JsonValue,
     pub order_total: f32,
@@ -164,7 +192,7 @@ impl Transaction {
         let insert_crud = transactions::ActiveModel {
             id: Set(id),
             customer: Set(json!(tsn.customer)),
-            transaction_type: Set(tsn.transaction_type),
+            transaction_type: Set(tsn.transaction_type.into()),
             products: Set(json!(tsn.products)),
             order_total: Set(tsn.order_total),
             payment: Set(json!(tsn.payment)),
@@ -189,7 +217,7 @@ impl Transaction {
         let insert_crud = transactions::ActiveModel {
             id: Set(tsn.id),
             customer: Set(json!(tsn.customer)),
-            transaction_type: Set(tsn.transaction_type),
+            transaction_type: Set(tsn.transaction_type.into()),
             products: Set(json!(tsn.products)),
             order_total: Set(tsn.order_total),
             payment: Set(json!(tsn.payment)),
@@ -297,7 +325,7 @@ impl Transaction {
         let t = Transaction {
             id: t.id,
             customer: serde_json::from_value::<TransactionCustomer>(t.customer).unwrap(),
-            transaction_type: t.transaction_type,
+            transaction_type: t.transaction_type.into(),
             products: serde_json::from_value::<OrderList>(t.products).unwrap(),
             order_total: t.order_total,
             payment: serde_json::from_value::<Vec<Payment>>(t.payment).unwrap(),
@@ -329,7 +357,7 @@ impl Transaction {
                 id: t.id.clone(),
                 customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone())
                     .unwrap(),
-                transaction_type: t.transaction_type.clone(),
+                transaction_type: t.transaction_type.clone().into(),
                 products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
                 order_total: t.order_total,
                 payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
@@ -365,7 +393,7 @@ impl Transaction {
                 id: t.id.clone(),
                 customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone())
                     .unwrap(),
-                transaction_type: t.transaction_type.clone(),
+                transaction_type: t.transaction_type.clone().into(),
                 products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
                 order_total: t.order_total,
                 payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
@@ -396,7 +424,7 @@ impl Transaction {
                 id: t.id.clone(),
                 customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone())
                     .unwrap(),
-                transaction_type: t.transaction_type.clone(),
+                transaction_type: t.transaction_type.clone().into(),
                 products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
                 order_total: t.order_total,
                 payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
@@ -419,7 +447,7 @@ impl Transaction {
         transactions::ActiveModel {
             id: Set(id.to_string()),
             customer: Set(json!(tsn.customer)),
-            transaction_type: Set(tsn.transaction_type),
+            transaction_type: Set(tsn.transaction_type.into()),
             products: Set(json!(tsn.products)),
             order_total: Set(tsn.order_total),
             payment: Set(json!(tsn.payment)),
@@ -444,7 +472,7 @@ impl Transaction {
         transactions::ActiveModel {
             id: Set(id.to_string()),
             customer: Set(json!(tsn.customer)),
-            transaction_type: Set(tsn.transaction_type),
+            transaction_type: Set(tsn.transaction_type.into()),
             products: Set(json!(tsn.products)),
             order_total: Set(tsn.order_total),
             payment: Set(json!(tsn.payment)),
