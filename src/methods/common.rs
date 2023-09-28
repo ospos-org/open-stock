@@ -6,23 +6,40 @@ use crate::entities::employee::Entity as Employee;
 #[cfg(feature = "process")]
 use crate::entities::session::Entity as SessionEntity;
 
+use crate::{Employee as EmployeeStruct, EmployeeInput};
+
 #[cfg(feature = "process")]
 use crate::entities;
 use crate::methods::{stml::Order, Access, Action, Attendance, EmployeeAuth};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Days, Duration, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
+use rocket::http::{Cookie, SameSite};
+use rocket::time::OffsetDateTime;
 #[cfg(feature = "process")]
 use rocket::{http::CookieJar, serde::json::Json, Responder};
 #[cfg(feature = "process")]
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QuerySelect};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Name {
     pub first: String,
     pub middle: String,
     pub last: String,
+}
+
+impl Name {
+    pub(crate) fn from_string(name: String) -> Self {
+        let names: Vec<&str> = name.split(' ').collect();
+
+        Name {
+            first: names.get(0).map_or("", |x| x).to_string(),
+            middle: names.get(1).map_or("", |x| x).to_string(),
+            last: names.get(2).map_or("", |x| x).to_string(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -203,6 +220,16 @@ impl Session {
             action.authority >= 1
         }
     }
+
+    pub fn ingestion(employee: EmployeeInput, tenant_id: String) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            key: Uuid::new_v4().to_string(),
+            employee: employee.into(),
+            expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+            tenant_id,
+        }
+    }
 }
 
 #[cfg(feature = "process")]
@@ -242,6 +269,22 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
             key
         ))),
     }
+}
+
+#[cfg(feature = "process")]
+pub fn create_cookie(api_key: String) -> Cookie<'static> {
+    use std::time::Duration;
+
+    let now = OffsetDateTime::now_utc();
+    let expiry = now + Duration::from_secs(10 * 60);
+
+    Cookie::build("key", api_key.clone())
+        .expires(expiry)
+        .path("/")
+        .secure(true)
+        .same_site(SameSite::None)
+        .http_only(true)
+        .finish()
 }
 
 #[cfg(feature = "process")]

@@ -8,13 +8,14 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    check_permissions, example_employee,
+    check_permissions, create_cookie, example_employee,
     methods::{
         cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
         Promotion, Session, Store, Transaction,
     },
     pool::Db,
-    All, Kiosk, Tenant,
+    All, ContactInformation, Email, EmployeeAuth, EmployeeInput, Kiosk, MobileNumber,
+    NewTenantInput, NewTenantResponse, Tenant, TenantSettings,
 };
 use geo::VincentyDistance;
 use photon_geocoding::{
@@ -104,6 +105,64 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
         transaction,
         promotions,
         kiosk,
+    }))
+}
+
+/// Unprotected route, does not require a cookie
+#[post("/new", data = "<tenant_input>")]
+pub async fn new_tenant(
+    conn: Connection<'_, Db>,
+    tenant_input: Json<NewTenantInput>,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<NewTenantResponse>, Error> {
+    let db = conn.into_inner();
+    let data = tenant_input.into_inner();
+
+    // Create new Tenant
+    let tenant_id = Uuid::new_v4().to_string();
+    let tenant = Tenant {
+        tenant_id: tenant_id.clone(),
+        settings: TenantSettings::default(),
+        registration_date: Utc::now(),
+    };
+
+    Tenant::insert(tenant, db)
+        .await
+        .map_err(ErrorResponse::db_err)?;
+
+    // Create Primary Employee
+    let employee = EmployeeInput {
+        name: crate::Name::from_string(data.clone().name),
+        level: vec![],
+        rid: 0000,
+        password: "...".to_string(),
+        clock_history: vec![],
+        contact: ContactInformation {
+            name: data.clone().name,
+            mobile: MobileNumber {
+                number: "".to_string(),
+                valid: false,
+            },
+            email: Email::from(data.clone().email),
+            landline: "".to_string(),
+            address: convert_addr_to_geo(&data.clone().address)?,
+        },
+    };
+
+    // Load a temporary session
+    let session = Session::ingestion(employee.clone(), tenant_id.clone());
+
+    Employee::insert(employee, db, session, None)
+        .await
+        .map_err(ErrorResponse::db_err)?;
+
+    // Return Tenant ID and assign a cookie to use.
+    let api_key = Uuid::new_v4().to_string();
+    cookies.add(create_cookie(api_key.clone()));
+
+    Ok(rocket::serde::json::Json(NewTenantResponse {
+        tenant_id,
+        api_key,
     }))
 }
 

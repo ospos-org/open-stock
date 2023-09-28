@@ -14,3 +14,16 @@ pub struct All {
     pub promotions: Vec<Promotion>,
     pub kiosk: Kiosk,
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct NewTenantInput {
+    pub(crate) name: String,
+    pub(crate) email: String,
+    pub(crate) address: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct NewTenantResponse {
+    pub tenant_id: String,
+    pub api_key: String,
+}

@@ -9,7 +9,7 @@ use serde_json::json;
 use crate::Id;
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct TenantSettings {}
 
 #[cfg(feature = "types")]
