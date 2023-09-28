@@ -1,6 +1,6 @@
 [package]
 name = "open-stock"
-version = "0.1.15"
+version = "0.1.16"
 edition = "2021"
 authors = ["bennjii"]
 license = "MIT"
