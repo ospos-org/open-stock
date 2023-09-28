@@ -153,17 +153,13 @@ pub async fn new_tenant(
     // Load a temporary session
     let session = Session::ingestion(employee.clone(), tenant_id.clone());
 
-    Employee::insert(employee, db, session, None)
+    Employee::insert(employee, db, session.clone(), None)
         .await
         .map_err(ErrorResponse::db_err)?;
 
-    // Return Tenant ID and assign a cookie to use.
-    let api_key = Uuid::new_v4().to_string();
-    cookies.add(create_cookie(api_key.clone()));
-
     Ok(rocket::serde::json::Json(NewTenantResponse {
         tenant_id,
-        api_key,
+        api_key: session.key,
     }))
 }
 
