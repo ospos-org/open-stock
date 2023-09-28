@@ -29,6 +29,7 @@ pub fn routes() -> Vec<rocket::Route> {
         address_to_geolocation,
         distance_to_stores,
         suggest_addr,
+        new_tenant,
         distance_to_stores_from_store
     ]
 }
