@@ -380,7 +380,7 @@ pub async fn create(
     let session = cookie_status_wrapper(db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateEmployee);
 
-    match Employee::insert(new_transaction, db, session.clone(), None).await {
+    match Employee::insert(new_transaction, db, session.clone(), None, None).await {
         Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, session, db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => {

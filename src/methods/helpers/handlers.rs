@@ -7,16 +7,10 @@ use sea_orm_rocket::Connection;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{
-    check_permissions, create_cookie, example_employee,
-    methods::{
-        cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
-        Promotion, Session, Store, Transaction,
-    },
-    pool::Db,
-    All, ContactInformation, Email, EmployeeAuth, EmployeeInput, Kiosk, MobileNumber,
-    NewTenantInput, NewTenantResponse, Tenant, TenantSettings,
-};
+use crate::{check_permissions, create_cookie, example_employee, methods::{
+    cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
+    Promotion, Session, Store, Transaction,
+}, pool::Db, All, ContactInformation, Email, EmployeeAuth, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access};
 use geo::VincentyDistance;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
@@ -134,7 +128,7 @@ pub async fn new_tenant(
     // Create Primary Employee
     let employee = EmployeeInput {
         name: crate::Name::from_string(data.clone().name),
-        level: vec![],
+        level: vec![Access { action: Action::AccessAdminPanel, authority: 1 }],
         rid: 0000,
         password: "...".to_string(),
         clock_history: vec![],
@@ -150,10 +144,18 @@ pub async fn new_tenant(
         },
     };
 
-    // Load a temporary session
-    let session = Session::ingestion(employee.clone(), tenant_id.clone());
+    let employee_id = Uuid::new_v4().to_string();
 
-    Employee::insert(employee, db, session.clone(), None)
+    // Load a temporary session
+    let session = Session::ingestion(
+        employee.clone(),
+        tenant_id.clone(),
+        Some(employee_id.clone())
+    );
+
+    Employee::insert(
+        employee, db, session.clone(),
+        None, Some(employee_id))
         .await
         .map_err(ErrorResponse::db_err)?;
 

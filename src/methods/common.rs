@@ -221,9 +221,9 @@ impl Session {
         }
     }
 
-    pub fn ingestion(employee: EmployeeInput, tenant_id: String) -> Self {
+    pub fn ingestion(employee: EmployeeInput, tenant_id: String, employee_id: Option<String>) -> Self {
         Self {
-            id: Uuid::new_v4().to_string(),
+            id: employee_id.map_or(Uuid::new_v4().to_string(), |x|x),
             key: Uuid::new_v4().to_string(),
             employee: employee.into(),
             expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),

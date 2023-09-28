@@ -168,8 +168,9 @@ impl Employee {
         db: &DbConn,
         session: Session,
         static_rid: Option<i32>,
+        static_id: Option<String>,
     ) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
-        let id = Uuid::new_v4().to_string();
+        let id = static_id.map_or(Uuid::new_v4().to_string(), |x| x);
         let mut rid = alea::i32_in_range(0, 9999);
 
         if static_rid.is_some() {
@@ -450,7 +451,7 @@ impl Employee {
         let empl = example_employee();
 
         // Insert & Fetch Transaction
-        match Employee::insert(empl.clone(), db, session.clone(), Some(empl.rid)).await {
+        match Employee::insert(empl.clone(), db, session.clone(), Some(empl.rid), None).await {
             Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, session, db).await {
                 Ok(res) => Ok(res),
                 Err(e) => Err(e),
