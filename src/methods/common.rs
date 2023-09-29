@@ -267,9 +267,12 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
             },
             expiry: DateTime::from_utc(val.expiry, Utc),
         }),
-        Some((_, None)) | None => Err(DbErr::RecordNotFound(format!(
+        None => Err(DbErr::RecordNotFound(format!(
             "Record {} does not exist.",
             key
+        ))),
+        Some((_, None)) => Err(DbErr::RecordNotFound(format!(
+            "Bounded Employee does not exist for key {}", key
         ))),
     }
 }

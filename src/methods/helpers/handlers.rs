@@ -159,7 +159,7 @@ pub async fn new_tenant(
         .await
         .map_err(ErrorResponse::db_err)?;
 
-    Ok(rocket::serde::json::Json(NewTenantResponse {
+    Ok(Json(NewTenantResponse {
         tenant_id,
         api_key: session.key,
     }))
