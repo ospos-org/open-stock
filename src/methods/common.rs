@@ -222,10 +222,13 @@ impl Session {
     }
 
     pub fn ingestion(employee: EmployeeInput, tenant_id: String, employee_id: Option<String>) -> Self {
+        let mut converted_employee: EmployeeStruct = employee.into();
+        converted_employee.id = employee_id.map_or(Uuid::new_v4().to_string(), |x|x);
+
         Self {
-            id: employee_id.map_or(Uuid::new_v4().to_string(), |x|x),
+            id: Uuid::new_v4().to_string(),
             key: Uuid::new_v4().to_string(),
-            employee: employee.into(),
+            employee: converted_employee,
             expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
             tenant_id,
         }
