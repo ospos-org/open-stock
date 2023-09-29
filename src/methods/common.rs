@@ -6,7 +6,7 @@ use crate::entities::employee::Entity as Employee;
 #[cfg(feature = "process")]
 use crate::entities::session::Entity as SessionEntity;
 
-use crate::{Employee as EmployeeStruct, EmployeeInput};
+use crate::{Employee as EmployeeStruct, EmployeeInput, session};
 
 #[cfg(feature = "process")]
 use crate::entities;
@@ -20,8 +20,10 @@ use rocket::time::OffsetDateTime;
 use rocket::{http::CookieJar, serde::json::Json, Responder};
 #[cfg(feature = "process")]
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QuerySelect};
+use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use crate::session::ActiveModel;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Name {
@@ -197,6 +199,18 @@ pub struct Session {
     pub employee: EmployeeObj,
     pub expiry: DateTime<Utc>,
     pub tenant_id: String,
+}
+
+impl Into<session::ActiveModel> for Session {
+    fn into(self) -> ActiveModel {
+        ActiveModel {
+            id: Set(self.id),
+            key: Set(self.key),
+            tenant_id: Set(self.tenant_id),
+            employee_id: Set(self.employee.id),
+            expiry: Set(self.expiry.naive_utc()),
+        }
+    }
 }
 
 impl Session {

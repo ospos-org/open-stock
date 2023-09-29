@@ -10,12 +10,15 @@ use uuid::Uuid;
 use crate::{check_permissions, create_cookie, example_employee, methods::{
     cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
     Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeAuth, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access};
+}, pool::Db, All, ContactInformation, Email, EmployeeAuth, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access, session};
 use geo::VincentyDistance;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
     LatLon, PhotonApiClient, PhotonFeature,
 };
+use sea_orm::ActiveValue::Set;
+use sea_orm::EntityTrait;
+use crate::session::ActiveModel;
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![
@@ -159,10 +162,18 @@ pub async fn new_tenant(
         .await
         .map_err(ErrorResponse::db_err)?;
 
-    Ok(Json(NewTenantResponse {
-        tenant_id,
-        api_key: session.key,
-    }))
+    match session::Entity::insert::<ActiveModel>(session.clone().into())
+        .exec(db)
+        .await
+    {
+        Ok(_) => {
+            Ok(Json(NewTenantResponse {
+                tenant_id,
+                api_key: session.key,
+            }))
+        }
+        Err(reason) => Err(ErrorResponse::db_err(reason)),
+    }
 }
 
 #[post("/address", data = "<address>")]
