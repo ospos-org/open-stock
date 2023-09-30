@@ -1,5 +1,6 @@
 use std::env;
 
+use std::time::Duration;
 use chrono::{Days, Utc};
 use geo::point;
 use rocket::{get, http::CookieJar, post, routes, serde::json::Json};
@@ -10,13 +11,14 @@ use uuid::Uuid;
 use crate::{check_permissions, create_cookie, example_employee, methods::{
     cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
     Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeAuth, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access, session};
+}, pool::Db, All, ContactInformation, Email, EmployeeAuth, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access, session, get_key_cookie};
 use geo::VincentyDistance;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
     LatLon, PhotonApiClient, PhotonFeature,
 };
-use sea_orm::ActiveValue::Set;
+use rocket::http::{Cookie, SameSite};
+use rocket::time::OffsetDateTime;
 use sea_orm::EntityTrait;
 use crate::session::ActiveModel;
 
@@ -27,7 +29,8 @@ pub fn routes() -> Vec<rocket::Route> {
         distance_to_stores,
         suggest_addr,
         new_tenant,
-        distance_to_stores_from_store
+        distance_to_stores_from_store,
+        assign_session_cookie
     ]
 }
 
@@ -174,6 +177,30 @@ pub async fn new_tenant(
         }
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
+}
+
+#[get("/session", data = "<key>")]
+pub async fn assign_session_cookie(
+    conn: Connection<'_, Db>,
+    key: &str,
+    cookies: &CookieJar<'_>
+) -> Result<Json<()>, Error> {
+    let now = OffsetDateTime::now_utc();
+    let expiry = now + Duration::from_secs(10 * 60);
+
+    let hard_key = key.to_string();
+
+    let cookie = Cookie::build("key", hard_key.clone())
+        .expires(expiry)
+        .path("/")
+        .secure(true)
+        .same_site(SameSite::None)
+        .http_only(true)
+        .finish();
+
+    cookies.add(cookie);
+
+    Ok(Json(()))
 }
 
 #[post("/address", data = "<address>")]
