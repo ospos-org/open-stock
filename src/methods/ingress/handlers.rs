@@ -39,7 +39,12 @@ async fn receive_file(mut file: TempFile<'_>, tenant_id: String) -> Result<(), E
     }
 
     match file
-        .persist_to(format!("{}/{}_{}.os", path, tenant_id, current_date))
+        // We must use `copy_to` due to:
+        // https://github.com/SergioBenitez/Rocket/issues/1600
+        // Where a cross-device link is made using `link`, for the persistence
+        // of the file to a new location, which occurs cross-mount and thus
+        // will not work.
+        .copy_to(format!("{}/{}_{}.os", path, tenant_id, current_date))
         .await
     {
         Ok(_) => {
