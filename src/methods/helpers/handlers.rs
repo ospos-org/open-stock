@@ -136,7 +136,7 @@ pub async fn new_tenant(
         name: crate::Name::from_string(data.clone().name),
         level: vec![Access { action: Action::AccessAdminPanel, authority: 1 }],
         rid: 0000,
-        password: "...".to_string(),
+        password: "0000".to_string(),
         clock_history: vec![],
         contact: ContactInformation {
             name: data.clone().name,
