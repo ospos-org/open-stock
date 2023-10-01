@@ -44,18 +44,13 @@ impl Fairing for CORS {
         }
     }
 
-    async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
+    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
         let access_origin = dotenv::var("ACCESS_ORIGIN").unwrap();
 
         // Permit `localhost:3000` when DEMO mode is enabled.
-        if request.host().unwrap().domain().eq( &access_origin) {
-            response.set_header(Header::new("Access-Control-Allow-Origin", access_origin));
-        } else if request.host().unwrap().domain().eq("localhost") && !(
-            env::var("DEMO").is_err() || env::var("DEMO").unwrap() == "0"
-        ) {
-            response.set_header(Header::new("Access-Control-Allow-Origin", "localhost:3000"));
-        }
+        // `request.host().unwrap().domain().eq( &access_origin)`
 
+        response.set_header(Header::new("Access-Control-Allow-Origin", access_origin));
         response.set_header(Header::new(
             "Access-Control-Allow-Methods",
             "POST, GET, PATCH, OPTIONS",
