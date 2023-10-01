@@ -179,9 +179,9 @@ pub async fn new_tenant(
     }
 }
 
-#[get("/session", data = "<key>")]
+#[get("/session/<key>")]
 pub async fn assign_session_cookie(
-    conn: Connection<'_, Db>,
+    _conn: Connection<'_, Db>,
     key: &str,
     cookies: &CookieJar<'_>
 ) -> Result<Json<()>, Error> {
