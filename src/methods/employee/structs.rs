@@ -1,4 +1,5 @@
 use std::fmt::{self, Display};
+use strum_macros::EnumIter;
 
 use chrono::Utc;
 #[cfg(feature = "process")]
@@ -56,8 +57,11 @@ pub struct Access<T> {
     pub authority: i32,
 }
 
+use enum_iterator::{all, Sequence};
+
+
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Sequence)]
 pub enum Action {
     CreateCustomer,
     DeleteCustomer,
@@ -102,6 +106,14 @@ pub enum Action {
     SuperUserDo,
     GenerateTemplateContent,
     FetchGeoLocation,
+}
+
+#[cfg(feature = "types")]
+pub fn all_actions() -> Vec<Access<Action>> {
+    all::<Action>().map(| x | Access {
+        action: x,
+        authority: 1
+    }).collect::<Vec<_>>()
 }
 
 #[cfg(feature = "types")]
@@ -160,6 +172,7 @@ impl Display for Employee {
 
 #[cfg(feature = "process")]
 use argon2::{self, Config};
+use strum::IntoEnumIterator;
 
 #[cfg(feature = "methods")]
 impl Employee {

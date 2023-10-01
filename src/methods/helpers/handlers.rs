@@ -8,10 +8,10 @@ use sea_orm_rocket::Connection;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{check_permissions, create_cookie, example_employee, methods::{
+use crate::{check_permissions, example_employee, methods::{
     cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
     Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeAuth, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access, session, get_key_cookie};
+}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access, session, all_actions};
 use geo::VincentyDistance;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
@@ -134,7 +134,7 @@ pub async fn new_tenant(
     // Create Primary Employee
     let employee = EmployeeInput {
         name: crate::Name::from_string(data.clone().name),
-        level: vec![Access { action: Action::AccessAdminPanel, authority: 1 }],
+        level: all_actions(),
         rid: 0000,
         password: "0000".to_string(),
         clock_history: vec![],
