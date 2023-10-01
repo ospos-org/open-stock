@@ -21,6 +21,7 @@ use super::{Action, Attendance, Employee, EmployeeInput, TrackType};
 pub fn routes() -> Vec<rocket::Route> {
     routes![
         get,
+        whoami,
         get_by_name,
         get_by_rid,
         auth_rid,
@@ -33,6 +34,19 @@ pub fn routes() -> Vec<rocket::Route> {
         auth,
         get_status,
     ]
+}
+
+#[get("/")]
+pub async fn whoami(
+    conn: Connection<'_, Db>,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<Employee>, Error> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchEmployee);
+
+    Ok(Json(session.employee))
 }
 
 #[get("/<id>")]
