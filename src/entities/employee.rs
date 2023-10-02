@@ -14,6 +14,7 @@ pub struct Model {
     pub clock_history: Json,
     pub level: Json,
     pub tenant_id: String,
+    pub account_type: Json,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

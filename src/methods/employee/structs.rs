@@ -23,6 +23,13 @@ use crate::methods::convert_addr_to_geo;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum AccountType {
+    FrontLine,
+    Managerial
+}
+
+#[cfg(feature = "types")]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Employee {
     pub id: Id,
     pub rid: String,
@@ -31,6 +38,7 @@ pub struct Employee {
     pub contact: ContactInformation,
     pub clock_history: Vec<History<Attendance>>,
     pub level: Vec<Access<Action>>,
+    pub account_type: AccountType,
 }
 
 impl From<EmployeeInput> for Employee {
@@ -46,6 +54,7 @@ impl From<EmployeeInput> for Employee {
             contact: value.contact,
             clock_history: value.clock_history,
             level: value.level,
+            account_type: value.account_type
         }
     }
 }
@@ -133,6 +142,7 @@ pub struct EmployeeInput {
     pub password: String,
     pub clock_history: Vec<History<Attendance>>,
     pub level: Vec<Access<Action>>,
+    pub account_type: AccountType
 }
 
 impl Display for Employee {
@@ -204,6 +214,7 @@ impl Employee {
             clock_history: Set(json!(empl.clock_history)),
             level: Set(json!(empl.level)),
             tenant_id: Set(session.tenant_id),
+            account_type: Set(json!(empl.account_type)),
         };
 
         match Epl::insert(insert_crud).exec(db).await {
@@ -263,6 +274,7 @@ impl Employee {
             Some(e) => Ok(Employee {
                 id: e.id,
                 rid: e.rid,
+                account_type: serde_json::from_value::<AccountType>(e.account_type).unwrap(),
                 name: serde_json::from_value::<Name>(e.name).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(),
@@ -291,6 +303,7 @@ impl Employee {
             .map(|e| Employee {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
+                account_type: serde_json::from_value::<AccountType>(e.account_type.clone()).unwrap(),
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
@@ -322,6 +335,7 @@ impl Employee {
             .map(|e| Employee {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
+                account_type: serde_json::from_value::<AccountType>(e.account_type.clone()).unwrap(),
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
@@ -353,6 +367,7 @@ impl Employee {
             .map(|e| Employee {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
+                account_type: serde_json::from_value::<AccountType>(e.account_type.clone()).unwrap(),
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
@@ -384,6 +399,7 @@ impl Employee {
             .map(|e| Employee {
                 id: e.id.clone(),
                 rid: e.rid.clone(),
+                account_type: serde_json::from_value::<AccountType>(e.account_type.clone()).unwrap(),
                 name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
                 auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
@@ -447,6 +463,7 @@ impl Employee {
                     clock_history: Set(json!(empl.clock_history)),
                     level: Set(json!(empl.level)),
                     tenant_id: Set(session.clone().tenant_id),
+                    account_type: Set(json!(empl.account_type))
                 }
                 .update(db)
                 .await?;
@@ -521,6 +538,7 @@ pub fn example_employee() -> EmployeeInput {
                 lon: 174.838740,
             },
         },
+        account_type: AccountType::FrontLine,
         clock_history: vec![
             History::<Attendance> {
                 item: Attendance {

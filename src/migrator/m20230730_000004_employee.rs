@@ -29,6 +29,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Employee::Auth).json().not_null())
                     .col(ColumnDef::new(Employee::ClockHistory).json().not_null())
                     .col(ColumnDef::new(Employee::Level).json().not_null())
+                    .col(ColumnDef::new(Employee::AccountType).json().not_null())
                     .to_owned(),
             )
             .await
@@ -62,4 +63,6 @@ pub enum Employee {
     Level,
     #[iden = "tenant_id"]
     TenantId,
+    #[iden = "account_type"]
+    AccountType,
 }

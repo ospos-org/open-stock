@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{check_permissions, example_employee, methods::{
     cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
     Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access, session, all_actions};
+}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access, session, all_actions, AccountType};
 use geo::VincentyDistance;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
@@ -136,7 +136,8 @@ pub async fn new_tenant(
         name: crate::Name::from_string(data.clone().name),
         level: all_actions(),
         rid: 0000,
-        password: "0000".to_string(),
+        password: data.clone().password,
+        account_type: AccountType::Managerial,
         clock_history: vec![],
         contact: ContactInformation {
             name: data.clone().name,
@@ -159,7 +160,7 @@ pub async fn new_tenant(
         Some(employee_id.clone())
     );
 
-    Employee::insert(
+    let employee_insert_result = Employee::insert(
         employee, db, session.clone(),
         None, Some(employee_id))
         .await
@@ -173,6 +174,7 @@ pub async fn new_tenant(
             Ok(Json(NewTenantResponse {
                 tenant_id,
                 api_key: session.key,
+                employee_id: employee_insert_result.last_insert_id,
             }))
         }
         Err(reason) => Err(ErrorResponse::db_err(reason)),

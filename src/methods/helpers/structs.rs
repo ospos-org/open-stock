@@ -20,10 +20,12 @@ pub struct NewTenantInput {
     pub(crate) name: String,
     pub(crate) email: String,
     pub(crate) address: String,
+    pub(crate) password: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct NewTenantResponse {
     pub tenant_id: String,
     pub api_key: String,
+    pub employee_id: String,
 }
