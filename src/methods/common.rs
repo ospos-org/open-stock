@@ -6,12 +6,12 @@ use crate::entities::employee::Entity as Employee;
 #[cfg(feature = "process")]
 use crate::entities::session::Entity as SessionEntity;
 
-use crate::{Employee as EmployeeStruct, EmployeeInput, session};
+use crate::{AccountType, Employee as EmployeeStruct, EmployeeInput, session};
 
 #[cfg(feature = "process")]
 use crate::entities;
 use crate::methods::{stml::Order, Access, Action, Attendance, EmployeeAuth};
-use chrono::{DateTime, Days, Duration, Utc};
+use chrono::{DateTime, Days, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
 use rocket::http::{Cookie, SameSite};
@@ -275,8 +275,8 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
                     e.clock_history.clone(),
-                )
-                .unwrap(),
+                ).unwrap(),
+                account_type: serde_json::from_value::<AccountType>(e.account_type).unwrap(),
                 level: serde_json::from_value::<Vec<Access<Action>>>(e.level).unwrap(),
             },
             expiry: DateTime::from_utc(val.expiry, Utc),

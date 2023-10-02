@@ -9,7 +9,6 @@ use rocket::{
     http::Header,
     *,
 };
-use rocket::http::uri::Host;
 #[cfg(feature = "process")]
 use sea_orm_rocket::Database;
 
