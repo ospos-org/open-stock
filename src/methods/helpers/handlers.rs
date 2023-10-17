@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{check_permissions, example_employee, methods::{
     cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
     Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, Access, session, all_actions, AccountType};
+}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType};
 use geo::VincentyDistance;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
@@ -114,7 +114,7 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
 pub async fn new_tenant(
     conn: Connection<'_, Db>,
     tenant_input: Json<NewTenantInput>,
-    cookies: &CookieJar<'_>,
+    _cookies: &CookieJar<'_>,
 ) -> Result<Json<NewTenantResponse>, Error> {
     let db = conn.into_inner();
     let data = tenant_input.into_inner();

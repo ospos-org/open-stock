@@ -2,9 +2,9 @@
 use crate::{entities::prelude::Tenants, tenants};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "process")]
-use sea_orm::{DbConn, DbErr, EntityTrait, InsertResult, Set};
+use sea_orm::{DbConn, DbErr, EntityTrait, InsertResult};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+
 
 use crate::Id;
 

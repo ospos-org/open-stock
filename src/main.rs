@@ -1,6 +1,5 @@
 #![allow(ambiguous_glob_reexports)]
 
-use std::env;
 #[cfg(feature = "sql")]
 use pool::Db;
 #[cfg(feature = "sql")]

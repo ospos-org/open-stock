@@ -7,7 +7,7 @@ use crate::entities::prelude::Supplier as Suppl;
 use crate::entities::supplier;
 use crate::Session;
 
-use crate::methods::{Address, ContactInformation, Email, MobileNumber, Name, Transaction};
+use crate::methods::{ContactInformation, Name, Transaction};
 
 #[cfg(feature = "process")]
 use crate::methods::convert_addr_to_geo;

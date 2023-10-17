@@ -1,6 +1,4 @@
 use std::fmt::{self, Display};
-use strum_macros::EnumIter;
-
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "process")]
@@ -171,8 +169,6 @@ impl Display for Employee {
 
 #[cfg(feature = "process")]
 use argon2::{self, Config};
-use sea_orm::ColumnType::Date;
-use strum::IntoEnumIterator;
 
 #[cfg(feature = "methods")]
 impl Employee {
