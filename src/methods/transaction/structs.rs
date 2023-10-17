@@ -1,14 +1,13 @@
 use core::fmt;
 use std::fmt::Display;
 
-use chrono::{DateTime, Days, Duration, NaiveDateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 #[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
     *,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 #[cfg(feature = "process")]
 use tokio::task::JoinError;
 use uuid::Uuid;
@@ -22,15 +21,14 @@ use crate::entities::{
 };
 use crate::{
     methods::{
-        Address, ContactInformation, DiscountValue, Email, History, Id, Location, MobileNumber,
-        Note, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment, Payment,
-        PaymentAction, PaymentProcessor, PaymentStatus, Price, Product, ProductPurchase, Session,
-        Stock, TransitInformation, VariantInformation,
+        History, Id, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment, Payment,
+        Product, Session, Stock, VariantInformation,
     },
     PickStatus, ProductInstance,
 };
 #[cfg(feature = "process")]
 use sea_orm::DbConn;
+use crate::transaction::example::example_transaction;
 
 #[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -69,34 +67,10 @@ pub enum TransactionType {
     Quote,
 }
 
-impl From<SeaORMTType> for TransactionType {
-    fn from(value: SeaORMTType) -> Self {
-        match value {
-            SeaORMTType::In => TransactionType::In,
-            SeaORMTType::Out => TransactionType::Out,
-            SeaORMTType::PendingIn => TransactionType::PendingIn,
-            SeaORMTType::PendingOut => TransactionType::PendingOut,
-            SeaORMTType::Saved => TransactionType::Saved,
-            SeaORMTType::Quote => TransactionType::Quote,
-        }
-    }
-}
-
-impl From<TransactionType> for SeaORMTType {
-    fn from(value: TransactionType) -> Self {
-        match value {
-            TransactionType::In => SeaORMTType::In,
-            TransactionType::Out => SeaORMTType::Out,
-            TransactionType::PendingIn => SeaORMTType::PendingIn,
-            TransactionType::PendingOut => SeaORMTType::PendingOut,
-            TransactionType::Saved => SeaORMTType::Saved,
-            TransactionType::Quote => SeaORMTType::Quote,
-        }
-    }
-}
-
-// Discounts on the transaction are applied per-order - such that they are unique to each item, i.e. each item can be discounted individually where needed to close a sale.
-// A discount placed upon the payment object is an order-discount, such that it will act upon the basket:
+// Discounts on the transaction are applied per-order - such that they are unique to each item,
+// i.e. each item can be discounted individually where needed to close a sale.
+// A discount placed upon the payment object is an order-discount,
+// such that it will act upon the basket:
 
 /// **Transaction** <br />
 /// An order group is parented by a transaction, this can include 1 or more orders.
@@ -125,6 +99,9 @@ pub struct Transaction {
 
     pub salesperson: Id,
     pub kiosk: Id,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>
 }
 
 #[cfg(feature = "process")]
@@ -189,21 +166,7 @@ impl Transaction {
     ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
 
-        let insert_crud = transactions::ActiveModel {
-            id: Set(id),
-            customer: Set(json!(tsn.customer)),
-            transaction_type: Set(tsn.transaction_type.into()),
-            products: Set(json!(tsn.products)),
-            order_total: Set(tsn.order_total),
-            payment: Set(json!(tsn.payment)),
-            order_date: Set(tsn.order_date.naive_utc()),
-            order_notes: Set(json!(tsn.order_notes)),
-            salesperson: Set(session.employee.id),
-            kiosk: Set(tsn.kiosk),
-            tenant_id: Set(session.tenant_id),
-        };
-
-        match Transactions::insert(insert_crud).exec(db).await {
+        match Transactions::insert(tsn.into_active(id, session)).exec(db).await {
             Ok(res) => Ok(res),
             Err(err) => Err(err),
         }
@@ -214,21 +177,7 @@ impl Transaction {
         session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
-        let insert_crud = transactions::ActiveModel {
-            id: Set(tsn.id),
-            customer: Set(json!(tsn.customer)),
-            transaction_type: Set(tsn.transaction_type.into()),
-            products: Set(json!(tsn.products)),
-            order_total: Set(tsn.order_total),
-            payment: Set(json!(tsn.payment)),
-            order_date: Set(tsn.order_date.naive_utc()),
-            order_notes: Set(json!(tsn.order_notes)),
-            salesperson: Set(tsn.salesperson),
-            kiosk: Set(tsn.kiosk),
-            tenant_id: Set(session.tenant_id),
-        };
-
-        match Transactions::insert(insert_crud).exec(db).await {
+        match Transactions::insert(tsn.into_active(session.tenant_id)).exec(db).await {
             Ok(res) => Ok(res),
             Err(err) => Err(err),
         }
@@ -320,22 +269,7 @@ impl Transaction {
             ));
         }
 
-        let t = tsn.unwrap();
-
-        let t = Transaction {
-            id: t.id,
-            customer: serde_json::from_value::<TransactionCustomer>(t.customer).unwrap(),
-            transaction_type: t.transaction_type.into(),
-            products: serde_json::from_value::<OrderList>(t.products).unwrap(),
-            order_total: t.order_total,
-            payment: serde_json::from_value::<Vec<Payment>>(t.payment).unwrap(),
-            order_date: DateTime::from_utc(t.order_date, Utc),
-            order_notes: serde_json::from_value::<NoteList>(t.order_notes).unwrap(),
-            salesperson: t.salesperson,
-            kiosk: t.kiosk,
-        };
-
-        Ok(t)
+        Ok(tsn.unwrap().into())
     }
 
     pub async fn fetch_all_saved(session: Session, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
@@ -353,19 +287,7 @@ impl Transaction {
 
         let mapped = res
             .iter()
-            .map(|t| Transaction {
-                id: t.id.clone(),
-                customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone())
-                    .unwrap(),
-                transaction_type: t.transaction_type.clone().into(),
-                products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
-                order_total: t.order_total,
-                payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
-                order_date: DateTime::from_utc(t.order_date, Utc),
-                order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
-                salesperson: t.salesperson.clone(),
-                kiosk: t.kiosk.clone(),
-            })
+            .map(|t| t.clone().into())
             .collect();
 
         Ok(mapped)
@@ -389,19 +311,7 @@ impl Transaction {
 
         let mapped = res
             .iter()
-            .map(|t| Transaction {
-                id: t.id.clone(),
-                customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone())
-                    .unwrap(),
-                transaction_type: t.transaction_type.clone().into(),
-                products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
-                order_total: t.order_total,
-                payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
-                order_date: DateTime::from_utc(t.order_date, Utc),
-                order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
-                salesperson: t.salesperson.clone(),
-                kiosk: t.kiosk.clone(),
-            })
+            .map(|t| t.clone().into())
             .collect();
 
         Ok(mapped)
@@ -420,19 +330,7 @@ impl Transaction {
 
         let mapped = tsn
             .iter()
-            .map(|t| Transaction {
-                id: t.id.clone(),
-                customer: serde_json::from_value::<TransactionCustomer>(t.customer.clone())
-                    .unwrap(),
-                transaction_type: t.transaction_type.clone().into(),
-                products: serde_json::from_value::<OrderList>(t.products.clone()).unwrap(),
-                order_total: t.order_total,
-                payment: serde_json::from_value::<Vec<Payment>>(t.payment.clone()).unwrap(),
-                order_date: DateTime::from_utc(t.order_date, Utc),
-                order_notes: serde_json::from_value::<NoteList>(t.order_notes.clone()).unwrap(),
-                salesperson: t.salesperson.clone(),
-                kiosk: t.kiosk.clone(),
-            })
+            .map(|t| t.clone().into())
             .collect();
 
         Ok(mapped)
@@ -444,21 +342,9 @@ impl Transaction {
         id: &str,
         db: &DbConn,
     ) -> Result<Transaction, DbErr> {
-        transactions::ActiveModel {
-            id: Set(id.to_string()),
-            customer: Set(json!(tsn.customer)),
-            transaction_type: Set(tsn.transaction_type.into()),
-            products: Set(json!(tsn.products)),
-            order_total: Set(tsn.order_total),
-            payment: Set(json!(tsn.payment)),
-            order_date: Set(tsn.order_date.naive_utc()),
-            order_notes: Set(json!(tsn.order_notes)),
-            salesperson: Set(tsn.salesperson),
-            kiosk: Set(tsn.kiosk),
-            tenant_id: Set(session.clone().tenant_id),
-        }
-        .update(db)
-        .await?;
+        tsn.into_active(id.to_string(), session.clone())
+            .update(db)
+            .await?;
 
         Self::fetch_by_id(id, session, db).await
     }
@@ -469,21 +355,9 @@ impl Transaction {
         id: &str,
         db: &DbConn,
     ) -> Result<Transaction, DbErr> {
-        transactions::ActiveModel {
-            id: Set(id.to_string()),
-            customer: Set(json!(tsn.customer)),
-            transaction_type: Set(tsn.transaction_type.into()),
-            products: Set(json!(tsn.products)),
-            order_total: Set(tsn.order_total),
-            payment: Set(json!(tsn.payment)),
-            order_date: Set(tsn.order_date.naive_utc()),
-            order_notes: Set(json!(tsn.order_notes)),
-            salesperson: Set(tsn.salesperson),
-            kiosk: Set(tsn.kiosk),
-            tenant_id: Set(session.clone().tenant_id),
-        }
-        .update(db)
-        .await?;
+        tsn.into_active(session.tenant_id.clone())
+            .update(db)
+            .await?;
 
         Self::fetch_by_id(id, session, db).await
     }
@@ -763,202 +637,5 @@ impl Display for Transaction {
             notes,
             self.salesperson
         )
-    }
-}
-
-pub fn example_transaction(customer_id: &str) -> TransactionInit {
-    let torpedo7 = ContactInformation {
-        name: "Torpedo7 Mt Wellington".into(),
-        mobile: MobileNumber {
-            number: "+6421212120".into(),
-            valid: true,
-        },
-        email: Email {
-            root: "order".into(),
-            domain: "torpedo7.com".into(),
-            full: "order@torpedo7.com".into(),
-        },
-        landline: "".into(),
-        address: Address {
-            street: "315-375 Mount Wellington Highway".into(),
-            street2: "Mount Wellington".into(),
-            city: "Auckland".into(),
-            country: "New Zealand".into(),
-            po_code: "1060".into(),
-            lat: -36.915501,
-            lon: 174.838745,
-        },
-    };
-
-    let order = Order {
-        destination: Location {
-            store_code: "001".into(),
-            store_id: "628f74d7-de00-4956-a5b6-2031e0c72128".to_string(),
-            contact: torpedo7.clone(),
-        },
-        order_type: crate::methods::OrderType::Shipment,
-        origin: Location {
-            store_code: "002".into(),
-            store_id: "c4a1d88b-e8a0-4dcd-ade2-1eea82254816".to_string(),
-            contact: torpedo7.clone(),
-        },
-        products: vec![
-            ProductPurchase {
-                product_name: "Torpedo7 Nippers Kids Kayak & Paddle".to_string(),
-                product_variant_name: "1.83m Beaches".to_string(),
-                id: "PDT-KAYAK-PURCHASE-ID-1".to_string(),
-                product_sku: "".into(),
-                product_code: "54897443288214".into(),
-                discount: DiscountValue::Absolute(0),
-                product_cost: 399.99,
-                quantity: 1.0,
-                transaction_type: TransactionType::Out,
-                tags: vec!["Tee".into(), "Cotton".into(), "Organic".into()],
-                instances: vec![ProductInstance {
-                    id: "def".to_string(),
-                    fulfillment_status: crate::FulfillmentStatus {
-                        pick_status: PickStatus::Pending,
-                        pick_history: vec![],
-                        last_updated: Utc::now(),
-                        notes: vec![],
-                    },
-                }],
-            },
-            ProductPurchase {
-                product_name: "Torpedo7 Kids Voyager II Paddle Vest".to_string(),
-                product_variant_name: "Small Red (4-6y)".to_string(),
-                id: "PDT-LIFEJACKET-PURCHASE-ID-1".to_string(),
-                product_sku: "".into(),
-                product_code: "51891265958214".into(),
-                discount: DiscountValue::Absolute(0),
-                product_cost: 139.99,
-                quantity: 1.0,
-                transaction_type: TransactionType::Out,
-                tags: vec!["Tee".into(), "Cotton".into(), "Organic".into()],
-                instances: vec![ProductInstance {
-                    id: "def".to_string(),
-                    fulfillment_status: crate::FulfillmentStatus {
-                        pick_status: PickStatus::Pending,
-                        pick_history: vec![],
-                        last_updated: Utc::now(),
-                        notes: vec![],
-                    },
-                }],
-            },
-        ],
-        previous_failed_fulfillment_attempts: vec![],
-        status: OrderStatusAssignment {
-            // status: OrderStatus::Transit(
-            //     TransitInformation {
-            //         shipping_company: torpedo7.clone(),
-            //         query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
-            //         tracking_code: "1523123".into(),
-            //         assigned_products: vec!["132522-22".to_string()]
-            //     }
-            // )
-            status: OrderStatus::Fulfilled(Utc::now()),
-            assigned_products: vec!["132522-22".to_string()],
-            timestamp: Utc::now(),
-        },
-        order_history: vec![],
-        order_notes: vec![Note {
-            message: "Order shipped from warehouse.".into(),
-            timestamp: Utc::now(),
-            author: Uuid::new_v4().to_string(),
-        }],
-        reference: "TOR-19592".into(),
-        creation_date: Utc::now(),
-        id: Uuid::new_v4().to_string(),
-        status_history: vec![
-            History::<OrderStatusAssignment> {
-                item: OrderStatusAssignment {
-                    status: OrderStatus::Queued(Utc::now()),
-                    timestamp: Utc::now(),
-                    assigned_products: vec!["PDT-KAYAK-PURCHASE-ID-1".to_string()],
-                },
-                timestamp: Utc::now(),
-                reason: "Order Placed".to_string(),
-            },
-            History::<OrderStatusAssignment> {
-                item: OrderStatusAssignment {
-                    status: OrderStatus::Processing(
-                        Utc::now().checked_add_signed(Duration::hours(1)).unwrap(),
-                    ),
-                    timestamp: Utc::now().checked_add_signed(Duration::hours(1)).unwrap(),
-                    assigned_products: vec!["PDT-KAYAK-PURCHASE-ID-1".to_string()],
-                },
-                timestamp: Utc::now().checked_add_signed(Duration::hours(1)).unwrap(),
-                reason: "Order received by store crew.".to_string(),
-            },
-            History::<OrderStatusAssignment> {
-                item: OrderStatusAssignment {
-                    status: OrderStatus::Transit(Box::new(TransitInformation {
-                        shipping_company: torpedo7,
-                        query_url: "https://www.fedex.com/fedextrack/?trknbr=".into(),
-                        tracking_code: "1523123".into(),
-                        assigned_products: vec!["132522-22".to_string()],
-                    })),
-                    timestamp: Utc::now().checked_add_signed(Duration::hours(2)).unwrap(),
-                    assigned_products: vec!["132522-22".to_string()],
-                },
-                timestamp: Utc::now().checked_add_signed(Duration::hours(2)).unwrap(),
-                reason: "Order shipped from warehouse.".to_string(),
-            },
-            History::<OrderStatusAssignment> {
-                item: OrderStatusAssignment {
-                    status: OrderStatus::Fulfilled(
-                        Utc::now().checked_add_days(Days::new(2)).unwrap(),
-                    ),
-                    timestamp: Utc::now().checked_add_days(Days::new(2)).unwrap(),
-                    assigned_products: vec!["132522-22".to_string()],
-                },
-                timestamp: Utc::now().checked_add_days(Days::new(2)).unwrap(),
-                reason: "Item Delivered".to_string(),
-            },
-        ],
-        discount: DiscountValue::Absolute(0),
-    };
-
-    TransactionInit {
-        customer: TransactionCustomer {
-            customer_id: customer_id.into(),
-            customer_type: CustomerType::Individual,
-        },
-        transaction_type: TransactionType::In,
-        products: vec![order],
-        order_total: 115.00,
-        payment: vec![Payment {
-            id: Uuid::new_v4().to_string(),
-            payment_method: crate::methods::PaymentMethod::Card,
-            fulfillment_date: Utc::now(),
-            amount: Price {
-                quantity: 115.00,
-                currency: "NZD".to_string(),
-            },
-            processing_fee: Price {
-                quantity: 0.10,
-                currency: "NZD".to_string(),
-            },
-            status: PaymentStatus::Unfulfilled(String::from(
-                "Unable to fulfil payment requirements - insufficient funds.",
-            )),
-            processor: PaymentProcessor {
-                location: "001".to_string(),
-                employee: "EMPLOYEE_ID".to_string(),
-                software_version: "k0.5.2".to_string(),
-                token: Uuid::new_v4().to_string(),
-            },
-            order_ids: vec![Uuid::new_v4().to_string()],
-            delay_action: PaymentAction::Cancel,
-            delay_duration: "PT12H".to_string(),
-        }],
-        order_date: Utc::now(),
-        order_notes: vec![Note {
-            message: "Order packaged from warehouse.".into(),
-            timestamp: Utc::now(),
-            author: Uuid::new_v4().to_string(),
-        }],
-        // order_history: vec![History { item: ProductExchange { method_type: TransactionType::Out, product_code: "132522".into(), variant: vec!["22".into()], quantity: 1 }, reason: "Faulty Product".into(), timestamp: Utc::now() }],
-        kiosk: "...".into(),
     }
 }

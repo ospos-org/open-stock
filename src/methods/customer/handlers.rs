@@ -18,6 +18,7 @@ pub fn routes() -> Vec<rocket::Route> {
         get_by_name,
         get_by_phone,
         get_by_addr,
+        get_recent,
         create,
         update,
         generate,
@@ -39,6 +40,22 @@ pub async fn get(
     check_permissions!(session.clone(), Action::FetchCustomer);
 
     match Customer::fetch_by_id(id, session, db).await {
+        Ok(customers) => Ok(Json(customers)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
+}
+
+#[get("/recent")]
+pub async fn get_recent(
+    conn: Connection<'_, Db>,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<Vec<Customer>>, Error> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchCustomer);
+
+    match Customer::fetch_recent(session, db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }

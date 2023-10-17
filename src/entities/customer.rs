@@ -15,6 +15,8 @@ pub struct Model {
     pub special_pricing: Json,
     pub accepts_marketing: bool,
     pub tenant_id: String,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

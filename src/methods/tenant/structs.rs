@@ -19,6 +19,9 @@ pub struct Tenant {
 
     pub registration_date: DateTime<Utc>,
     pub settings: TenantSettings,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>
 }
 
 #[cfg(feature = "methods")]
@@ -32,15 +35,7 @@ impl Tenant {
             ));
         }
 
-        let t = tsn.unwrap();
-
-        let t = Tenant {
-            tenant_id: t.tenant_id,
-            registration_date: DateTime::from_utc(t.registration_date, Utc),
-            settings: serde_json::from_value::<TenantSettings>(t.settings).unwrap(),
-        };
-
-        Ok(t)
+        Ok(tsn.unwrap().into())
     }
 
     pub async fn generate(db: &DbConn, tenant_id: &str) -> Result<Tenant, DbErr> {
@@ -61,16 +56,7 @@ impl Tenant {
         tnt: Tenant,
         db: &DbConn,
     ) -> Result<InsertResult<tenants::ActiveModel>, DbErr> {
-        let insert_crud = tenants::ActiveModel {
-            tenant_id: Set(tnt.tenant_id),
-            registration_date: Set(tnt.registration_date.naive_utc()),
-            settings: Set(json!(tnt.settings)),
-        };
-
-        match Tenants::insert(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+        Tenants::insert(tnt.into()).exec(db).await
     }
 }
 
@@ -79,5 +65,7 @@ pub fn example_tenant(tenant_id: &str) -> Tenant {
         tenant_id: tenant_id.to_string(),
         registration_date: Utc::now(),
         settings: TenantSettings {},
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     }
 }

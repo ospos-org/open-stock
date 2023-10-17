@@ -1,3 +1,4 @@
+use async_std::prelude::StreamExt;
 use sea_orm::{EnumIter, Iterable};
 use sea_orm_migration::prelude::*;
 
@@ -41,6 +42,8 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Transactions::OrderNotes).json().not_null())
                     .col(ColumnDef::new(Transactions::Salesperson).text().not_null())
                     .col(ColumnDef::new(Transactions::Kiosk).text().not_null())
+                    .col(ColumnDef::new(Transactions::CreatedAt).date_time().not_null())
+                    .col(ColumnDef::new(Transactions::UpdatedAt).date_time().not_null())
                     .to_owned(),
             )
             .await
@@ -80,6 +83,10 @@ pub enum Transactions {
     Kiosk,
     #[iden = "tenant_id"]
     TenantId,
+    #[iden = "created_at"]
+    CreatedAt,
+    #[iden = "updated_at"]
+    UpdatedAt,
 }
 
 #[derive(Iden, EnumIter)]

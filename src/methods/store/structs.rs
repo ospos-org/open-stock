@@ -1,8 +1,10 @@
+use chrono::{DateTime, Utc};
 #[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
-    QuerySelect, RuntimeErr, Set,
+    QuerySelect, RuntimeErr,
 };
+use sea_orm::Set;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "process")]
@@ -17,14 +19,19 @@ use crate::methods::convert_addr_to_geo;
 use crate::methods::{ContactInformation, Id};
 use crate::Session;
 use serde_json::json;
+use crate::methods::store::example::example_stores;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Store {
     pub id: Id,
     pub name: String,
+
     pub contact: ContactInformation,
     pub code: String,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>
 }
 
 #[cfg(feature = "methods")]
@@ -34,13 +41,7 @@ impl Store {
         session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<store::ActiveModel>, DbErr> {
-        let insert_crud = store::ActiveModel {
-            name: Set(store.name),
-            id: Set(store.id),
-            contact: Set(json!(store.contact)),
-            code: Set(store.code),
-            tenant_id: Set(session.tenant_id),
-        };
+        let insert_crud = store.into_active(session);
 
         match StoreEntity::insert(insert_crud).exec(db).await {
             Ok(res) => Ok(res),
@@ -53,13 +54,11 @@ impl Store {
         session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<store::ActiveModel>, DbErr> {
-        let entities = stores.into_iter().map(|s| store::ActiveModel {
-            name: Set(s.name),
-            id: Set(s.id),
-            contact: Set(json!(s.contact)),
-            code: Set(s.code),
-            tenant_id: Set(session.clone().tenant_id),
-        });
+        let entities = stores
+            .into_iter()
+            .map(|s|
+                s.into_active(session.clone())
+            );
 
         match StoreEntity::insert_many(entities).exec(db).await {
             Ok(res) => Ok(res),
@@ -74,12 +73,7 @@ impl Store {
             .await?;
 
         match store {
-            Some(e) => Ok(Store {
-                id: e.id,
-                name: e.name,
-                contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(),
-                code: serde_json::from_value::<String>(serde_json::Value::String(e.code)).unwrap(),
-            }),
+            Some(e) => Ok(e.into()),
             None => Err(DbErr::RecordNotFound(id.to_string())),
         }
     }
@@ -92,12 +86,7 @@ impl Store {
             .await?;
 
         match store {
-            Some(e) => Ok(Store {
-                id: e.id,
-                name: e.name,
-                contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(),
-                code: serde_json::from_value::<String>(serde_json::Value::String(e.code)).unwrap(),
-            }),
+            Some(e) => Ok(e.into()),
             None => Err(DbErr::RecordNotFound(code.to_string())),
         }
     }
@@ -110,13 +99,7 @@ impl Store {
 
         let mapped = stores
             .iter()
-            .map(|e| Store {
-                id: e.id.clone(),
-                name: e.name.clone(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
-                code: serde_json::from_value::<String>(serde_json::Value::String(e.code.clone()))
-                    .unwrap(),
-            })
+            .map(|e| e.clone().into())
             .collect();
 
         Ok(mapped)
@@ -138,18 +121,16 @@ impl Store {
 
         match addr {
             Ok(ad) => {
-                let mut new_contact = store.contact;
+                let mut new_contact = store.contact.clone();
                 new_contact.address = ad;
 
-                store::ActiveModel {
-                    id: Set(id.to_string()),
-                    name: Set(store.name.clone()),
-                    code: Set(store.code.clone()),
-                    contact: Set(json!(new_contact)),
-                    tenant_id: Set(session.clone().tenant_id),
-                }
-                .update(db)
-                .await?;
+                let mut model = store.into_active(session.clone());
+
+                model.contact = Set(json!(new_contact));
+
+                model
+                    .update(db)
+                    .await?;
 
                 Self::fetch_by_id(id, session, db).await
             }
@@ -160,7 +141,6 @@ impl Store {
     }
 
     pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Store>, DbErr> {
-        // Create Transaction
         let stores = example_stores();
 
         match Store::insert_many(stores, session.clone(), db).await {
@@ -171,90 +151,4 @@ impl Store {
             Err(e) => Err(e),
         }
     }
-}
-
-fn example_stores() -> Vec<Store> {
-    vec![
-        Store {
-            id: "628f74d7-de00-4956-a5b6-2031e0c72128".to_string(),
-            name: "Mt Wellington".to_string(),
-            contact: ContactInformation {
-                name: "Torpedo7 Mt Wellington".into(),
-                mobile: MobileNumber {
-                    number: "+6421212120".into(),
-                    valid: true,
-                },
-                email: Email {
-                    root: "order".into(),
-                    domain: "torpedo7.com".into(),
-                    full: "order@torpedo7.com".into(),
-                },
-                landline: "".into(),
-                address: Address {
-                    street: "315-375 Mount Wellington Highway".into(),
-                    street2: "Mount Wellington".into(),
-                    city: "Auckland".into(),
-                    country: "New Zealand".into(),
-                    po_code: "1060".into(),
-                    lat: -36.915501,
-                    lon: 174.838745,
-                },
-            },
-            code: "001".to_string(),
-        },
-        Store {
-            id: "c4a1d88b-e8a0-4dcd-ade2-1eea82254816".to_string(),
-            name: "Westfield".to_string(),
-            contact: ContactInformation {
-                name: "Torpedo7 Westfield".into(),
-                mobile: MobileNumber {
-                    number: "+6421212120".into(),
-                    valid: true,
-                },
-                email: Email {
-                    root: "order".into(),
-                    domain: "torpedo7.com".into(),
-                    full: "order@torpedo7.com".into(),
-                },
-                landline: "".into(),
-                address: Address {
-                    street: "309 Broadway, Westfield Shopping Centre".into(),
-                    street2: "Newmarket".into(),
-                    city: "Auckland".into(),
-                    country: "New Zealand".into(),
-                    po_code: "1023".into(),
-                    lat: -36.871820,
-                    lon: 174.776730,
-                },
-            },
-            code: "002".to_string(),
-        },
-        Store {
-            id: "a91509fa-2783-43ae-8c3c-5d5bc5cb6c95".to_string(),
-            name: "Albany".to_string(),
-            contact: ContactInformation {
-                name: "Torpedo7 Albany".into(),
-                mobile: MobileNumber {
-                    number: "+6421212120".into(),
-                    valid: true,
-                },
-                email: Email {
-                    root: "order".into(),
-                    domain: "torpedo7.com".into(),
-                    full: "order@torpedo7.com".into(),
-                },
-                landline: "".into(),
-                address: Address {
-                    street: "6 Mercari Way".into(),
-                    street2: "Albany".into(),
-                    city: "Auckland".into(),
-                    country: "New Zealand".into(),
-                    po_code: "0632".into(),
-                    lat: -36.7323515,
-                    lon: 174.7082982,
-                },
-            },
-            code: "003".to_string(),
-        },
-    ]
 }

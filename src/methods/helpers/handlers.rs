@@ -125,6 +125,8 @@ pub async fn new_tenant(
         tenant_id: tenant_id.clone(),
         settings: TenantSettings::default(),
         registration_date: Utc::now(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     };
 
     Tenant::insert(tenant, db)

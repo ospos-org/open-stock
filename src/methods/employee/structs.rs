@@ -1,7 +1,8 @@
 use std::fmt::{self, Display};
 use strum_macros::EnumIter;
 
-use chrono::Utc;
+
+use chrono::{DateTime, Utc};
 #[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
@@ -34,29 +35,16 @@ pub struct Employee {
     pub id: Id,
     pub rid: String,
     pub name: Name,
+
     pub auth: EmployeeAuth,
     pub contact: ContactInformation,
     pub clock_history: Vec<History<Attendance>>,
+
     pub level: Vec<Access<Action>>,
     pub account_type: AccountType,
-}
 
-impl From<EmployeeInput> for Employee {
-    fn from(value: EmployeeInput) -> Self {
-        let id = Uuid::new_v4().to_string();
-        Employee {
-            id,
-            rid: value.rid.to_string(),
-            name: value.name,
-            auth: EmployeeAuth {
-                hash: String::new(),
-            },
-            contact: value.contact,
-            clock_history: value.clock_history,
-            level: value.level,
-            account_type: value.account_type
-        }
-    }
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>
 }
 
 #[cfg(feature = "types")]
@@ -127,7 +115,8 @@ pub fn all_actions() -> Vec<Access<Action>> {
 
 #[cfg(feature = "types")]
 /// Stores a password hash, signed as a key using the users login ID.
-/// Upon logging in using a client portal, the pre-sign object is signed using the provided ID - if the hash matches that which is given, authentication can be approved.
+/// Upon logging in using a client portal, the pre-sign object is signed using the provided ID -
+/// if the hash matches that which is given, authentication can be approved.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EmployeeAuth {
     pub hash: String,
@@ -182,6 +171,7 @@ impl Display for Employee {
 
 #[cfg(feature = "process")]
 use argon2::{self, Config};
+use sea_orm::ColumnType::Date;
 use strum::IntoEnumIterator;
 
 #[cfg(feature = "methods")]
@@ -200,22 +190,12 @@ impl Employee {
             rid = static_rid.unwrap();
         }
 
-        let password = empl.password;
+        let password = empl.password.clone();
         let salt = b"randomsalt";
         let config = Config::default();
         let hash = argon2::hash_encoded(password.as_bytes(), salt, &config).unwrap();
 
-        let insert_crud = employee::ActiveModel {
-            id: Set(id),
-            rid: Set(format!("{:0>#4}", rid)),
-            name: Set(json!(empl.name)),
-            auth: Set(json!(EmployeeAuth { hash })),
-            contact: Set(json!(empl.contact)),
-            clock_history: Set(json!(empl.clock_history)),
-            level: Set(json!(empl.level)),
-            tenant_id: Set(session.tenant_id),
-            account_type: Set(json!(empl.account_type)),
-        };
+        let insert_crud = empl.into_active(id, rid, session.tenant_id, hash);
 
         match Epl::insert(insert_crud).exec(db).await {
             Ok(res) => Ok(res),
@@ -229,8 +209,11 @@ impl Employee {
         pass: &str,
         db: &DbConn,
     ) -> Result<bool, DbErr> {
-        let empl = Self::fetch_by_id(id, session, db).await?;
-        let is_valid = argon2::verify_encoded(&empl.auth.hash, pass.as_bytes()).unwrap();
+        let employee = Self::fetch_by_id(id, session, db).await?;
+
+        let is_valid = argon2::verify_encoded(
+            &employee.auth.hash, pass.as_bytes()
+        ).unwrap();
 
         Ok(is_valid)
     }
@@ -241,12 +224,14 @@ impl Employee {
         pass: &str,
         db: &DbConn,
     ) -> Result<Employee, DbErr> {
-        let empl = Self::fetch_by_rid(rid, session, db).await?;
+        let employee = Self::fetch_by_rid(rid, session, db).await?;
 
         let mut valid_user: Option<Employee> = None;
 
-        for employee in empl {
-            let is_valid = argon2::verify_encoded(&employee.auth.hash, pass.as_bytes()).unwrap();
+        for employee in employee {
+            let is_valid = argon2::verify_encoded(
+                &employee.auth.hash, pass.as_bytes()
+            ).unwrap();
 
             if is_valid && valid_user.is_none() {
                 valid_user = Some(employee);
@@ -271,17 +256,7 @@ impl Employee {
             .await?;
 
         match empl {
-            Some(e) => Ok(Employee {
-                id: e.id,
-                rid: e.rid,
-                account_type: serde_json::from_value::<AccountType>(e.account_type).unwrap(),
-                name: serde_json::from_value::<Name>(e.name).unwrap(),
-                auth: serde_json::from_value::<EmployeeAuth>(e.auth).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact).unwrap(),
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(e.clock_history)
-                    .unwrap(),
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level).unwrap(),
-            }),
+            Some(e) => Ok(e.into()),
             None => Err(DbErr::RecordNotFound(id.to_string())),
         }
     }
@@ -300,19 +275,7 @@ impl Employee {
 
         let mapped = res
             .iter()
-            .map(|e| Employee {
-                id: e.id.clone(),
-                rid: e.rid.clone(),
-                account_type: serde_json::from_value::<AccountType>(e.account_type.clone()).unwrap(),
-                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
-                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
-                    e.clock_history.clone(),
-                )
-                .unwrap(),
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
-            })
+            .map(|e| e.clone().into())
             .collect();
 
         Ok(mapped)
@@ -332,19 +295,7 @@ impl Employee {
 
         let mapped = res
             .iter()
-            .map(|e| Employee {
-                id: e.id.clone(),
-                rid: e.rid.clone(),
-                account_type: serde_json::from_value::<AccountType>(e.account_type.clone()).unwrap(),
-                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
-                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
-                    e.clock_history.clone(),
-                )
-                .unwrap(),
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
-            })
+            .map(|e| e.clone().into())
             .collect();
 
         Ok(mapped)
@@ -364,19 +315,7 @@ impl Employee {
 
         let mapped = res
             .iter()
-            .map(|e| Employee {
-                id: e.id.clone(),
-                rid: e.rid.clone(),
-                account_type: serde_json::from_value::<AccountType>(e.account_type.clone()).unwrap(),
-                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
-                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
-                    e.clock_history.clone(),
-                )
-                .unwrap(),
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
-            })
+            .map(|e| e.clone().into())
             .collect();
 
         Ok(mapped)
@@ -396,19 +335,7 @@ impl Employee {
 
         let mapped = res
             .iter()
-            .map(|e| Employee {
-                id: e.id.clone(),
-                rid: e.rid.clone(),
-                account_type: serde_json::from_value::<AccountType>(e.account_type.clone()).unwrap(),
-                name: serde_json::from_value::<Name>(e.name.clone()).unwrap(),
-                auth: serde_json::from_value::<EmployeeAuth>(e.auth.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
-                clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
-                    e.clock_history.clone(),
-                )
-                .unwrap(),
-                level: serde_json::from_value::<Vec<Access<Action>>>(e.level.clone()).unwrap(),
-            })
+            .map(|e| e.clone().into())
             .collect();
 
         Ok(mapped)
@@ -454,6 +381,12 @@ impl Employee {
                 let mut new_contact = empl.contact;
                 new_contact.address = ad;
 
+                // A hand-written conversion is used here,
+                // as it is more explicit and less generalisable.
+                //
+                // When given time, re-write the track for the `update` API
+                // to remove this as a limitation as this may become future
+                // technical debt.
                 employee::ActiveModel {
                     id: Set(id.to_string()),
                     rid: Set(empl.rid),
@@ -463,7 +396,9 @@ impl Employee {
                     clock_history: Set(json!(empl.clock_history)),
                     level: Set(json!(empl.level)),
                     tenant_id: Set(session.clone().tenant_id),
-                    account_type: Set(json!(empl.account_type))
+                    account_type: Set(json!(empl.account_type)),
+                    created_at: Set(empl.created_at.naive_utc()),
+                    updated_at: Set(empl.updated_at.naive_utc())
                 }
                 .update(db)
                 .await?;
@@ -477,10 +412,7 @@ impl Employee {
     }
 
     pub async fn generate(db: &DbConn, session: Session) -> Result<Employee, DbErr> {
-        // Create Transaction
         let empl = example_employee();
-
-        // Insert & Fetch Transaction
         match Employee::insert(empl.clone(), db, session.clone(), Some(empl.rid), None).await {
             Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, session, db).await {
                 Ok(res) => Ok(res),

@@ -11,6 +11,8 @@ pub struct Model {
     pub contact: Json,
     pub transaction_history: Json,
     pub tenant_id: String,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

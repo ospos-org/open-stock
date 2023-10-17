@@ -278,6 +278,8 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
                 ).unwrap(),
                 account_type: serde_json::from_value::<AccountType>(e.account_type).unwrap(),
                 level: serde_json::from_value::<Vec<Access<Action>>>(e.level).unwrap(),
+                created_at: Default::default(),
+                updated_at: Default::default(),
             },
             expiry: DateTime::from_utc(val.expiry, Utc),
         }),

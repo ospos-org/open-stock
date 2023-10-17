@@ -9,6 +9,8 @@ pub struct Model {
     pub tenant_id: String,
     pub registration_date: DateTime,
     pub settings: Json,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

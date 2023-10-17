@@ -30,6 +30,8 @@ impl MigrationTrait for Migration {
                             .json()
                             .not_null(),
                     )
+                    .col(ColumnDef::new(Supplier::CreatedAt).date_time().not_null())
+                    .col(ColumnDef::new(Supplier::UpdatedAt).date_time().not_null())
                     .to_owned(),
             )
             .await
@@ -57,4 +59,8 @@ pub enum Supplier {
     TransactionHistory,
     #[iden = "tenant_id"]
     TenantId,
+    #[iden = "created_at"]
+    CreatedAt,
+    #[iden = "updated_at"]
+    UpdatedAt,
 }

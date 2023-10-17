@@ -28,6 +28,8 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(ColumnDef::new(Tenants::Settings).json().not_null())
+                    .col(ColumnDef::new(Tenants::CreatedAt).date_time().not_null())
+                    .col(ColumnDef::new(Tenants::UpdatedAt).date_time().not_null())
                     .to_owned(),
             )
             .await
@@ -51,4 +53,8 @@ pub enum Tenants {
     RegistrationDate,
     #[iden = "settings"]
     Settings,
+    #[iden = "created_at"]
+    CreatedAt,
+    #[iden = "updated_at"]
+    UpdatedAt,
 }

@@ -21,6 +21,8 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Store::Name).text().not_null())
                     .col(ColumnDef::new(Store::Contact).json().not_null())
                     .col(ColumnDef::new(Store::Code).text().not_null())
+                    .col(ColumnDef::new(Store::CreatedAt).date_time().not_null())
+                    .col(ColumnDef::new(Store::UpdatedAt).date_time().not_null())
                     .to_owned(),
             )
             .await
@@ -48,4 +50,8 @@ pub enum Store {
     Code,
     #[iden = "tenant_id"]
     TenantId,
+    #[iden = "created_at"]
+    CreatedAt,
+    #[iden = "updated_at"]
+    UpdatedAt,
 }

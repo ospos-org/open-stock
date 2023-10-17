@@ -37,6 +37,8 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Products::DescriptionLong).text().not_null())
                     .col(ColumnDef::new(Products::Specifications).json().not_null())
                     .col(ColumnDef::new(Products::Visible).json().not_null())
+                    .col(ColumnDef::new(Products::CreatedAt).date_time().not_null())
+                    .col(ColumnDef::new(Products::UpdatedAt).date_time().not_null())
                     .to_owned(),
             )
             .await?;
@@ -87,4 +89,8 @@ pub enum Products {
     Visible,
     #[iden = "tenant_id"]
     TenantId,
+    #[iden = "created_at"]
+    CreatedAt,
+    #[iden = "updated_at"]
+    UpdatedAt,
 }

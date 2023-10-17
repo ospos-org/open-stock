@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use chrono::{DateTime, Utc};
 
 #[cfg(feature = "process")]
 use crate::entities::prelude::Supplier as Suppl;
@@ -14,19 +15,25 @@ use crate::methods::convert_addr_to_geo;
 #[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
-    QuerySelect, RuntimeErr, Set,
+    QuerySelect, RuntimeErr,
 };
+use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
+use crate::methods::supplier::example::example_supplier;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Supplier {
     pub id: String,
     pub name: Name,
+
     pub contact: ContactInformation,
     pub transaction_history: Vec<Transaction>,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>
 }
 
 #[cfg(feature = "types")]
@@ -46,15 +53,9 @@ impl Supplier {
     ) -> Result<InsertResult<supplier::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
 
-        let insert_crud = supplier::ActiveModel {
-            id: Set(id),
-            name: Set(json!(suppl.name)),
-            contact: Set(json!(suppl.contact)),
-            transaction_history: Set(json!(suppl.transaction_history)),
-            tenant_id: Set(session.tenant_id),
-        };
-
-        match Suppl::insert(insert_crud).exec(db).await {
+        match Suppl::insert(
+            suppl.into_active(id, session.tenant_id.clone())
+        ).exec(db).await {
             Ok(res) => Ok(res),
             Err(err) => Err(err),
         }
@@ -67,13 +68,7 @@ impl Supplier {
             .await?;
         let s = suppl.unwrap();
 
-        Ok(Supplier {
-            id: s.id,
-            name: serde_json::from_value::<Name>(s.name).unwrap(),
-            contact: serde_json::from_value::<ContactInformation>(s.contact).unwrap(),
-            transaction_history: serde_json::from_value::<Vec<Transaction>>(s.transaction_history)
-                .unwrap(),
-        })
+        Ok(s.into())
     }
 
     pub async fn fetch_by_name(
@@ -90,15 +85,7 @@ impl Supplier {
 
         let mapped = res
             .iter()
-            .map(|s| Supplier {
-                id: s.id.clone(),
-                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(s.contact.clone()).unwrap(),
-                transaction_history: serde_json::from_value::<Vec<Transaction>>(
-                    s.transaction_history.clone(),
-                )
-                .unwrap(),
-            })
+            .map(|s| s.clone().into())
             .collect();
 
         Ok(mapped)
@@ -118,15 +105,7 @@ impl Supplier {
 
         let mapped = res
             .iter()
-            .map(|s| Supplier {
-                id: s.id.clone(),
-                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(s.contact.clone()).unwrap(),
-                transaction_history: serde_json::from_value::<Vec<Transaction>>(
-                    s.transaction_history.clone(),
-                )
-                .unwrap(),
-            })
+            .map(|s| s.clone().into())
             .collect();
 
         Ok(mapped)
@@ -146,15 +125,7 @@ impl Supplier {
 
         let mapped = res
             .iter()
-            .map(|s| Supplier {
-                id: s.id.clone(),
-                name: serde_json::from_value::<Name>(s.name.clone()).unwrap(),
-                contact: serde_json::from_value::<ContactInformation>(s.contact.clone()).unwrap(),
-                transaction_history: serde_json::from_value::<Vec<Transaction>>(
-                    s.transaction_history.clone(),
-                )
-                .unwrap(),
-            })
+            .map(|s| s.clone().into())
             .collect();
 
         Ok(mapped)
@@ -187,18 +158,15 @@ impl Supplier {
 
         match addr {
             Ok(ad) => {
-                let mut new_contact = suppl.contact;
+                let mut new_contact = suppl.contact.clone();
                 new_contact.address = ad;
 
-                supplier::ActiveModel {
-                    id: Set(id.to_string()),
-                    name: Set(json!(suppl.name)),
-                    contact: Set(json!(new_contact)),
-                    transaction_history: Set(json!(suppl.transaction_history)),
-                    tenant_id: Set(session.clone().tenant_id),
-                }
-                .update(db)
-                .await?;
+                let mut supplier = suppl.into_active(
+                    id.to_string(),session.tenant_id.clone()
+                );
+                supplier.contact = Set(json!(new_contact));
+
+                supplier.update(db).await?;
 
                 Self::fetch_by_id(id, session, db).await
             }
@@ -239,33 +207,5 @@ impl Display for Supplier {
             self.contact.email.full,
             order_history,
         )
-    }
-}
-
-pub fn example_supplier() -> SupplierInput {
-    let customer = ContactInformation {
-        name: "Carl Kennith".into(),
-        mobile: MobileNumber::from("021212120".to_string()),
-        email: Email::from("carl@kennith.com".to_string()),
-        landline: "".into(),
-        address: Address {
-            street: "315-375 Mount Wellington Highway".into(),
-            street2: "Mount Wellington".into(),
-            city: "Auckland".into(),
-            country: "New Zealand".into(),
-            po_code: "1060".into(),
-            lat: -36.915501,
-            lon: 174.838745,
-        },
-    };
-
-    SupplierInput {
-        name: Name {
-            first: "".into(),
-            middle: "".into(),
-            last: "".into(),
-        },
-        contact: customer,
-        transaction_history: vec![],
     }
 }

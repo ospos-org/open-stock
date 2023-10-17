@@ -15,6 +15,8 @@ pub struct Model {
     pub level: Json,
     pub tenant_id: String,
     pub account_type: Json,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

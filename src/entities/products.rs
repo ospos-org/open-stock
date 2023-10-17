@@ -22,6 +22,9 @@ pub struct Model {
     pub name_long: String,
     pub description_long: String,
     pub tenant_id: String,
+
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

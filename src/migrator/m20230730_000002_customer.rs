@@ -33,6 +33,8 @@ impl MigrationTrait for Migration {
                             .boolean()
                             .not_null(),
                     )
+                    .col(ColumnDef::new(Customer::CreatedAt).date_time().not_null())
+                    .col(ColumnDef::new(Customer::UpdatedAt).date_time().not_null())
                     .to_owned(),
             )
             .await
@@ -66,4 +68,8 @@ pub enum Customer {
     AcceptsMarketing,
     #[iden = "tenant_id"]
     TenantId,
+    #[iden = "created_at"]
+    CreatedAt,
+    #[iden = "updated_at"]
+    UpdatedAt,
 }
