@@ -4,7 +4,7 @@ use std::{env, fs, sync::Arc, time::Duration};
 use crate::entities::{session, transactions};
 #[cfg(feature = "process")]
 use crate::migrator::Migrator;
-use crate::{example_employee, Customer, Product, Session, Store, Transaction};
+use crate::{example_employee, Customer, Product, Session, Store, Transaction, Kiosk};
 #[cfg(feature = "process")]
 use async_trait::async_trait;
 use chrono::{Days, Duration as ChronoDuration, Utc};
@@ -136,7 +136,7 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
         return;
     }
 
-    let objectified: (Vec<Product>, Vec<Customer>, Vec<Transaction>, Vec<Store>) =
+    let objectified: (Vec<Product>, Vec<Customer>, Vec<Transaction>, Vec<Store>, Vec<Kiosk>) =
         serde_json::from_str(&to_ingest.unwrap()).unwrap();
 
     let tenant_id = file_path.split('/').last();
@@ -175,6 +175,10 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
 
     for transaction in objectified.2 {
         let _ = Transaction::insert_raw(transaction, session.clone(), db).await;
+    }
+
+    for kiosk in objectified.4 {
+        let _ = Kiosk::insert_raw(kiosk, session.clone(), db).await;
     }
 }
 

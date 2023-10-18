@@ -3,7 +3,7 @@ use crate::entities::prelude::Kiosk as Ksk;
 #[cfg(feature = "process")]
 use crate::{entities::authrecord::ActiveModel as AuthRecord, entities::kiosk::ActiveModel};
 #[cfg(feature = "process")]
-use crate::{entities::kiosk, Session};
+use crate::{entities::kiosk, entities::kiosk::ActiveModel as KioskModel, Session};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "process")]
 use sea_orm::{
@@ -13,6 +13,7 @@ use sea_orm::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
+use crate::entities::kiosk::Model;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone)]
@@ -114,6 +115,17 @@ impl Kiosk {
         };
 
         match Ksk::insert(insert_crud).exec(db).await {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err),
+        }
+    }
+
+    pub async fn insert_raw(
+        kiosk: Kiosk,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Model, DbErr> {
+        match kiosk.into_active(session).insert(db).await {
             Ok(res) => Ok(res),
             Err(err) => Err(err),
         }
