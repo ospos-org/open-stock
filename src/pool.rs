@@ -139,17 +139,13 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
     let objectified: (Vec<Product>, Vec<Customer>, Vec<Transaction>, Vec<Store>, Vec<Kiosk>) =
         serde_json::from_str(&to_ingest.unwrap()).unwrap();
 
-    let tenant_id = file_path.split('/').last();
+    let file_ending = file_path.split('/').last();
 
-    if tenant_id.is_none() {
+    if file_ending.is_none() {
         return;
     }
 
-    let tenant_id = tenant_id.unwrap().split('_').last();
-
-    if tenant_id.is_none() {
-        return;
-    }
+    let (tenant_id, _date_saved) = file_ending.unwrap().split_once('_').unwrap();
 
     let default_employee = example_employee();
 
@@ -158,7 +154,7 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
         key: String::new(),
         employee: default_employee.into(),
         expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
-        tenant_id: tenant_id.unwrap().to_string().clone(),
+        tenant_id: tenant_id.to_string().clone(),
     };
 
     for store in objectified.3 {
