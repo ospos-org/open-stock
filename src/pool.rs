@@ -70,7 +70,7 @@ pub struct RocketDbPool {
 
 #[cfg(feature = "process")]
 #[async_trait]
-impl sea_orm_rocket::Pool for RocketDbPool {
+impl rocket_db_pools::Pool for RocketDbPool {
     type Connection = sea_orm::DatabaseConnection;
 
     type Error = sea_orm::DbErr;
@@ -114,8 +114,12 @@ impl sea_orm_rocket::Pool for RocketDbPool {
         Ok(RocketDbPool { conn })
     }
 
-    fn borrow(&self) -> &Self::Connection {
-        &self.conn
+    async fn get(&self) -> Result<Self::Connection, Self::Error> {
+        Ok(self.conn.clone())
+    }
+
+    async fn close(&self) {
+        self.conn.close().await.unwrap();
     }
 }
 

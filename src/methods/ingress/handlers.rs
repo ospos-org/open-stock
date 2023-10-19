@@ -4,7 +4,7 @@ use crate::{
 use chrono::Utc;
 
 use rocket::{fs::TempFile, http::CookieJar, post, routes};
-use sea_orm_rocket::Connection;
+use rocket_db_pools::Connection;
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![upload]
@@ -15,7 +15,7 @@ pub fn routes() -> Vec<rocket::Route> {
 /// curl -X POST -H "Content-Type: text/plain" -d "@/to/file/location/" http://127.0.0.1:8000/api/ingress/upload
 #[post("/upload", format = "plain", data = "<file>")]
 async fn upload(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     file: TempFile<'_>,
     cookies: &CookieJar<'_>,
 ) -> Result<(), Error> {

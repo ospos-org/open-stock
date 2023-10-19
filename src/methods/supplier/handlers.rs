@@ -6,7 +6,7 @@ use rocket::get;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::{post, routes};
-use sea_orm_rocket::Connection;
+use rocket_db_pools::Connection;
 
 use super::{Supplier, SupplierInput};
 
@@ -24,7 +24,7 @@ pub fn routes() -> Vec<rocket::Route> {
 
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Supplier>, Error> {
@@ -41,7 +41,7 @@ pub async fn get(
 
 #[get("/name/<name>")]
 pub async fn get_by_name(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Supplier>>, Error> {
@@ -58,7 +58,7 @@ pub async fn get_by_name(
 
 #[get("/phone/<phone>")]
 pub async fn get_by_phone(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     phone: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Supplier>>, Error> {
@@ -75,7 +75,7 @@ pub async fn get_by_phone(
 
 #[get("/addr/<addr>")]
 pub async fn get_by_addr(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     addr: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Supplier>>, Error> {
@@ -92,7 +92,7 @@ pub async fn get_by_addr(
 
 #[post("/generate")]
 async fn generate(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Supplier>, Error> {
     let db = conn.into_inner();
@@ -108,7 +108,7 @@ async fn generate(
 
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<SupplierInput>,
@@ -127,7 +127,7 @@ async fn update(
 
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
     input_data: Json<SupplierInput>,
 ) -> Result<Json<Supplier>, Error> {

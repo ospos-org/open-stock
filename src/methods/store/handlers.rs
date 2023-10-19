@@ -1,5 +1,5 @@
 use rocket::{get, http::CookieJar, post, routes, serde::json::Json};
-use sea_orm_rocket::Connection;
+use rocket_db_pools::Connection;
 
 use crate::{
     check_permissions,
@@ -15,7 +15,7 @@ pub fn routes() -> Vec<rocket::Route> {
 
 #[get("/")]
 pub async fn get_all(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Store>>, Error> {
     let db = conn.into_inner();
@@ -31,7 +31,7 @@ pub async fn get_all(
 
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Store>, Error> {
@@ -48,7 +48,7 @@ pub async fn get(
 
 #[get("/code/<code>")]
 pub async fn get_by_code(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     code: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Store>, Error> {
@@ -65,7 +65,7 @@ pub async fn get_by_code(
 
 #[post("/generate")]
 async fn generate(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Store>>, Error> {
     let db = conn.into_inner();
@@ -81,7 +81,7 @@ async fn generate(
 
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<Store>,

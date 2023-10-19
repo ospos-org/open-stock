@@ -4,7 +4,6 @@ use std::time::Duration;
 use chrono::{Days, Utc};
 use geo::point;
 use rocket::{get, http::CookieJar, post, routes, serde::json::Json};
-use sea_orm_rocket::Connection;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -19,6 +18,7 @@ use photon_geocoding::{
 };
 use rocket::http::{Cookie, SameSite};
 use rocket::time::OffsetDateTime;
+use rocket_db_pools::Connection;
 use sea_orm::EntityTrait;
 use crate::session::ActiveModel;
 
@@ -36,7 +36,7 @@ pub fn routes() -> Vec<rocket::Route> {
 
 /// This route does not require authentication, but is not enabled in release mode.
 #[post("/generate")]
-pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Error> {
+pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error> {
     if env::var("DEMO").is_err() || env::var("DEMO").unwrap() == "0" {
         return Err(Error::DemoDisabled(
             "OpenStock is not in DEMO mode.".to_string(),
@@ -112,7 +112,7 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
 /// Unprotected route, does not require a cookie
 #[post("/new", data = "<tenant_input>")]
 pub async fn new_tenant(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     tenant_input: Json<NewTenantInput>,
     _cookies: &CookieJar<'_>,
 ) -> Result<Json<NewTenantResponse>, Error> {
@@ -185,7 +185,7 @@ pub async fn new_tenant(
 
 #[get("/session/<key>")]
 pub async fn assign_session_cookie(
-    _conn: Connection<'_, Db>,
+    _conn: Connection<Db>,
     key: &str,
     cookies: &CookieJar<'_>
 ) -> Result<Json<()>, Error> {
@@ -209,7 +209,7 @@ pub async fn assign_session_cookie(
 
 #[post("/address", data = "<address>")]
 pub async fn address_to_geolocation(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     address: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Address>, Error> {
@@ -287,7 +287,7 @@ pub fn convert_addresses_to_geo(address: &str, origin: LatLon) -> Result<Vec<Add
 
 #[post("/suggest", data = "<address>")]
 pub async fn suggest_addr(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     address: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Address>>, Error> {
@@ -316,7 +316,7 @@ pub struct Distance {
 
 #[get("/distance/<id>")]
 pub async fn distance_to_stores(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Distance>>, Error> {
@@ -355,7 +355,7 @@ pub async fn distance_to_stores(
 
 #[get("/distance/store/<store_id>")]
 pub async fn distance_to_stores_from_store(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     store_id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Distance>>, Error> {

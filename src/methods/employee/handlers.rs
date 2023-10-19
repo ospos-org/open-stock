@@ -10,8 +10,8 @@ use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::time::OffsetDateTime;
 use rocket::{post, routes};
+use rocket_db_pools::Connection;
 use sea_orm::{EntityTrait, Set};
-use sea_orm_rocket::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -38,7 +38,7 @@ pub fn routes() -> Vec<rocket::Route> {
 
 #[get("/")]
 pub async fn whoami(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
@@ -51,7 +51,7 @@ pub async fn whoami(
 
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
@@ -72,7 +72,7 @@ pub async fn get(
 
 #[get("/rid/<rid>")]
 pub async fn get_by_rid(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     rid: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Employee>>, Error> {
@@ -89,7 +89,7 @@ pub async fn get_by_rid(
 
 #[get("/name/<name>")]
 pub async fn get_by_name(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Employee>>, Error> {
@@ -106,7 +106,7 @@ pub async fn get_by_name(
 
 #[get("/!name", data = "<name>")]
 pub async fn get_by_name_exact(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: Json<Name>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Employee>>, Error> {
@@ -128,7 +128,7 @@ pub async fn get_by_name_exact(
 
 #[get("/level/<level>")]
 pub async fn get_by_level(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     level: i32,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Employee>>, Error> {
@@ -145,7 +145,7 @@ pub async fn get_by_level(
 
 #[post("/generate")]
 async fn generate(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
@@ -161,7 +161,7 @@ async fn generate(
 
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<Employee>,
@@ -201,7 +201,7 @@ pub struct Auth {
 #[post("/auth/<id>", data = "<input_data>")]
 pub async fn auth(
     id: &str,
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<Auth>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<String>, Error> {
@@ -280,7 +280,7 @@ pub async fn auth(
 #[post("/auth/rid/<rid>", data = "<input_data>")]
 pub async fn auth_rid(
     rid: &str,
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<Auth>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<String>, Error> {
@@ -384,7 +384,7 @@ pub async fn auth_rid(
 
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<EmployeeInput>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
@@ -418,7 +418,7 @@ pub struct LogRequest {
 
 #[post("/log/<id>", data = "<input_data>")]
 pub async fn log(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<LogRequest>,
     id: &str,
     cookies: &CookieJar<'_>,
@@ -465,7 +465,7 @@ pub async fn log(
 
 #[get("/log/<id>")]
 pub async fn get_status(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<History<Attendance>>, Error> {

@@ -4,7 +4,7 @@ use crate::{AuthenticationLog, Kiosk, KioskInit, KioskPreferences};
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::{get, post, routes};
-use sea_orm_rocket::Connection;
+use rocket_db_pools::Connection;
 
 use crate::{
     check_permissions,
@@ -25,7 +25,7 @@ pub fn routes() -> Vec<rocket::Route> {
 
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Kiosk>, Error> {
@@ -42,7 +42,7 @@ pub async fn get(
 
 #[post("/", data = "<input_data>")]
 pub async fn initialize(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<KioskInit>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Kiosk>, Error> {
@@ -63,7 +63,7 @@ pub async fn initialize(
 
 #[post("/<id>", data = "<input_data>")]
 pub async fn update(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     input_data: Json<KioskInit>,
     cookies: &CookieJar<'_>,
@@ -82,7 +82,7 @@ pub async fn update(
 
 #[post("/preferences/<id>", data = "<input_data>")]
 pub async fn update_preferences(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     input_data: Json<KioskPreferences>,
     cookies: &CookieJar<'_>,
@@ -101,7 +101,7 @@ pub async fn update_preferences(
 
 #[post("/online/<id>")]
 pub async fn update_online_status(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Kiosk>, Error> {
@@ -118,7 +118,7 @@ pub async fn update_online_status(
 
 #[post("/delete/<id>")]
 pub async fn delete(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<(), Error> {
@@ -135,7 +135,7 @@ pub async fn delete(
 
 #[post("/log/<id>", data = "<input_data>")]
 pub async fn auth_log(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     input_data: Json<AuthenticationLog>,
     cookies: &CookieJar<'_>,

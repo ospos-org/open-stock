@@ -8,7 +8,7 @@ use rocket::get;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::{post, routes};
-use sea_orm_rocket::Connection;
+use rocket_db_pools::Connection;
 
 use super::{Customer, CustomerInput};
 
@@ -30,7 +30,7 @@ pub fn routes() -> Vec<rocket::Route> {
 
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Customer>, Error> {
@@ -47,7 +47,7 @@ pub async fn get(
 
 #[get("/recent")]
 pub async fn get_recent(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
@@ -63,7 +63,7 @@ pub async fn get_recent(
 
 #[get("/name/<name>")]
 pub async fn get_by_name(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Customer>>, Error> {
@@ -81,7 +81,7 @@ pub async fn get_by_name(
 /// Will search by both name, phone and email.
 #[get("/search/<query>")]
 pub async fn search_query(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     query: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<CustomerWithTransactionsOut>>, Error> {
@@ -98,7 +98,7 @@ pub async fn search_query(
 
 #[get("/transactions/<id>")]
 pub async fn find_related_transactions(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Transaction>>, Error> {
@@ -115,7 +115,7 @@ pub async fn find_related_transactions(
 
 #[get("/phone/<phone>")]
 pub async fn get_by_phone(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     phone: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Customer>>, Error> {
@@ -131,7 +131,7 @@ pub async fn get_by_phone(
 
 #[get("/addr/<addr>")]
 pub async fn get_by_addr(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     addr: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Customer>>, Error> {
@@ -148,7 +148,7 @@ pub async fn get_by_addr(
 
 #[post("/generate")]
 async fn generate(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Customer>, Error> {
     let db = conn.into_inner();
@@ -164,7 +164,7 @@ async fn generate(
 
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<CustomerInput>,
@@ -183,7 +183,7 @@ async fn update(
 
 #[post("/contact/<id>", data = "<input_data>")]
 async fn update_contact_info(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<ContactInformation>,
@@ -202,7 +202,7 @@ async fn update_contact_info(
 
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
     input_data: Json<CustomerInput>,
 ) -> Result<Json<Customer>, Error> {
