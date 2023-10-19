@@ -6,6 +6,7 @@ use sea_orm::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use rocket_okapi::JsonSchema;
 
 #[cfg(feature = "process")]
 use crate::entities::prelude::Promotion as Promotions;
@@ -28,14 +29,14 @@ type VariantId = String;
 pub type VariantCategoryList = Vec<VariantCategory>;
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub struct VariantCategory {
     pub category: String,
     pub variants: Vec<Variant>,
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 /// #### Information for a Variant.
 /// This includes its name, identification, stock information and quantities, prices, etc.
 pub struct VariantInformation {
@@ -80,7 +81,7 @@ pub struct VariantInformation {
     /// Further identification methods, such as isbn, sku, ...
     pub identification: ProductIdentification,
 
-    // If `stock_tracking` is false, the product will never be considered 'out of stock'.
+    /// If `stock_tracking` is false, the product will never be considered 'out of stock'.
     pub stock_tracking: bool,
 }
 
@@ -95,7 +96,7 @@ impl Display for VariantInformation {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub struct Promotion {
     pub id: Id,
     pub name: String,
@@ -106,7 +107,7 @@ pub struct Promotion {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub struct PromotionInput {
     name: String,
     buy: PromotionBuy,
@@ -116,7 +117,7 @@ pub struct PromotionInput {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub enum PromotionBuy {
     // This(quantity), Specific((id, quantity)), Any(quantity)
     Specific((String, f32)),
@@ -125,7 +126,7 @@ pub enum PromotionBuy {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub enum PromotionGet {
     /// `SoloThis(discount)` <br />
     /// *Represents the individual product.* <br /> <br />
@@ -310,7 +311,7 @@ impl Promotion {
 
 /// Represents all sub-variant types; i.e. All 'White' variants, whether small, long-sleeve, ... it represents the sub-group of all which are 'White'.
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct Variant {
     pub name: String,
     pub images: Vec<Url>,
@@ -320,7 +321,7 @@ pub struct Variant {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub struct StockInformation {
     pub stock_group: String,
     pub sales_group: String,

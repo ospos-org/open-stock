@@ -2,6 +2,7 @@ use core::fmt;
 use std::fmt::Display;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
+use schemars::JsonSchema;
 #[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
@@ -57,7 +58,7 @@ pub struct QuantityAlterationIntent {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub enum TransactionType {
     In,
     Out,

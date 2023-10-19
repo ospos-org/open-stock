@@ -8,6 +8,7 @@ use rocket::{
     http::Header,
     *,
 };
+use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
 #[cfg(feature = "process")]
 use sea_orm_rocket::Database;
 
@@ -63,7 +64,7 @@ impl Fairing for CORS {
 fn rocket() -> _ {
     dotenv::dotenv().ok();
 
-    rocket::build()
+    build()
         .attach(Db::init())
         .attach(CORS)
         .mount("/api/product", methods::product::handlers::routes())
@@ -74,6 +75,13 @@ fn rocket() -> _ {
         .mount("/api/supplier", methods::supplier::handlers::routes())
         .mount("/api/store", methods::store::handlers::routes())
         .mount("/api/helpers", methods::helpers::handlers::routes())
+        .mount(
+            "/api/docs",
+            make_swagger_ui(&SwaggerUIConfig {
+                url: "../openapi.json".to_owned(),
+                ..Default::default()
+            }),
+        )
 }
 
 #[cfg(not(feature = "process"))]

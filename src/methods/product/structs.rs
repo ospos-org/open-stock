@@ -31,10 +31,11 @@ use crate::{
 };
 #[cfg(feature = "process")]
 use futures::future::join_all;
+use schemars::JsonSchema;
 use crate::product::example::example_products;
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub enum ProductVisibility {
     AlwaysShown,
     AlwaysHidden,
@@ -42,7 +43,7 @@ pub enum ProductVisibility {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, Default)]
+#[derive(Deserialize, Serialize, Clone, Default, JsonSchema)]
 pub struct ProductIdentification {
     pub sku: String,
     pub ean: String,
@@ -52,7 +53,7 @@ pub struct ProductIdentification {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 /// A product, containing a list of `Vec<Variant>`, an identifiable `sku` along with identifying information such as `tags`, `description` and `specifications`.
 /// > Stock-relevant information about a product is kept under each variant, thus allowing for modularity of different variants and a fine-grained control over your inventory.
 pub struct Product {
@@ -81,7 +82,7 @@ pub struct Product {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub struct ProductWPromotion {
     pub product: Product,
     pub promotions: Vec<Promotion>,
@@ -616,7 +617,7 @@ pub enum PickStatus {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct ProductExchange {
     pub method_type: TransactionType,
     pub product_code: ProductCode,

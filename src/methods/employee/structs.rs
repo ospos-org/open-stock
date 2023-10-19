@@ -21,14 +21,14 @@ use crate::Session;
 use crate::methods::convert_addr_to_geo;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub enum AccountType {
     FrontLine,
     Managerial
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct Employee {
     pub id: Id,
     pub rid: String,
@@ -46,7 +46,7 @@ pub struct Employee {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct Access<T> {
     pub action: T,
     pub authority: i32,
@@ -56,7 +56,7 @@ use enum_iterator::{all, Sequence};
 
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Sequence)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Sequence, JsonSchema)]
 pub enum Action {
     CreateCustomer,
     DeleteCustomer,
@@ -115,7 +115,7 @@ pub fn all_actions() -> Vec<Access<Action>> {
 /// Stores a password hash, signed as a key using the users login ID.
 /// Upon logging in using a client portal, the pre-sign object is signed using the provided ID -
 /// if the hash matches that which is given, authentication can be approved.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct EmployeeAuth {
     pub hash: String,
 }
@@ -169,6 +169,7 @@ impl Display for Employee {
 
 #[cfg(feature = "process")]
 use argon2::{self, Config};
+use schemars::JsonSchema;
 
 #[cfg(feature = "methods")]
 impl Employee {
@@ -420,14 +421,14 @@ impl Employee {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct Attendance {
     pub track_type: TrackType,
     pub kiosk: Id,
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub enum TrackType {
     In,
     Out,

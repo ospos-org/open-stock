@@ -4,13 +4,14 @@ use crate::pool::Db;
 use rocket::get;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
-use rocket::{post, routes};
-use sea_orm_rocket::Connection;
+use rocket::{post};
+use rocket_okapi::{openapi, openapi_get_routes};
+use rocket_db_pools::Connection;
 
 use super::{Product, ProductWPromotion, Promotion, PromotionInput};
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![
+    openapi_get_routes![
         get,
         get_with_associated_promotions,
         get_by_name,
@@ -28,9 +29,10 @@ pub fn routes() -> Vec<rocket::Route> {
     ]
 }
 
+#[openapi(tag = "Product")]
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: i32,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Product>, Error> {
@@ -45,9 +47,10 @@ pub async fn get(
     }
 }
 
+#[openapi(tag = "Product")]
 #[get("/with_promotions/<id>")]
 pub async fn get_with_associated_promotions(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: i32,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<ProductWPromotion>, Error> {
@@ -62,9 +65,10 @@ pub async fn get_with_associated_promotions(
     }
 }
 
+#[openapi(tag = "Product")]
 #[get("/name/<name>")]
 pub async fn get_by_name(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Product>>, Error> {
@@ -80,9 +84,10 @@ pub async fn get_by_name(
 }
 
 /// References exact name
+#[openapi(tag = "Product")]
 #[get("/!name/<name>")]
 pub async fn get_by_name_exact(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Product>>, Error> {
@@ -98,9 +103,10 @@ pub async fn get_by_name_exact(
 }
 
 /// Will search by both name, phone and email.
+#[openapi(tag = "Product")]
 #[get("/search/<query>")]
 pub async fn search_query(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     query: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Product>>, Error> {
@@ -115,9 +121,10 @@ pub async fn search_query(
     }
 }
 
+#[openapi(tag = "Product")]
 #[get("/search/with_promotions/<query>")]
 pub async fn search_with_associated_promotions(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     query: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<ProductWPromotion>>, Error> {
@@ -132,9 +139,10 @@ pub async fn search_with_associated_promotions(
     }
 }
 
+#[openapi(tag = "Product")]
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     input_data: Json<Product>,
     cookies: &CookieJar<'_>,
@@ -151,9 +159,10 @@ async fn update(
     }
 }
 
+#[openapi(tag = "Product")]
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<Product>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Product>, Error> {
@@ -178,9 +187,10 @@ pub async fn create(
     }
 }
 
+#[openapi(tag = "Product")]
 #[post("/generate")]
 async fn generate(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Product>>, Error> {
     let db = conn.into_inner();
@@ -194,9 +204,10 @@ async fn generate(
     }
 }
 
+#[openapi(tag = "Product")]
 #[get("/promotion/<id>")]
 pub async fn get_promotion(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: i32,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Promotion>, Error> {
@@ -211,9 +222,10 @@ pub async fn get_promotion(
     Ok(Json(product))
 }
 
+#[openapi(tag = "Product")]
 #[get("/promotion/search/<query>")]
 pub async fn get_promotion_by_query(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     query: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Promotion>>, Error> {
@@ -226,9 +238,10 @@ pub async fn get_promotion_by_query(
     Ok(Json(product))
 }
 
+#[openapi(tag = "Product")]
 #[post("/promotion/<id>", data = "<input_data>")]
 async fn update_promotion(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     input_data: Json<PromotionInput>,
     cookies: &CookieJar<'_>,
@@ -245,9 +258,10 @@ async fn update_promotion(
     }
 }
 
+#[openapi(tag = "Product")]
 #[post("/promotion", data = "<input_data>")]
 pub async fn create_promotion(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<PromotionInput>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Promotion>, Error> {
@@ -272,9 +286,10 @@ pub async fn create_promotion(
     }
 }
 
+#[openapi(tag = "Product")]
 #[post("/generate/promotion")]
 async fn generate_promotion(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Promotion>>, Error> {
     let db = conn.into_inner();
