@@ -393,7 +393,7 @@ impl Product {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct ProductPurchase {
     // Is the barcode of the product.
     pub id: String,
@@ -580,7 +580,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ProductInstance {
     pub id: String,
     #[serde(default = "default_fulfillment")]
@@ -597,7 +597,7 @@ fn default_fulfillment() -> FulfillmentStatus {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct FulfillmentStatus {
     pub pick_status: PickStatus,
     pub pick_history: Vec<History<PickStatus>>,
@@ -606,7 +606,7 @@ pub struct FulfillmentStatus {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub enum PickStatus {
     Pending,
     Picked,

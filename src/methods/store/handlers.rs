@@ -1,5 +1,8 @@
+use okapi::openapi3::OpenApi;
 use rocket::{get, http::CookieJar, post, routes, serde::json::Json};
 use rocket_db_pools::Connection;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
+use rocket_okapi::settings::OpenApiSettings;
 
 use crate::{
     check_permissions,
@@ -9,10 +12,13 @@ use crate::{
 
 use super::Store;
 
-pub fn routes() -> Vec<rocket::Route> {
-    routes![get, get_all, get_by_code, generate, update]
+pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![
+        settings: get, get_all, get_by_code, generate, update
+    ]
 }
 
+#[openapi(tag = "Store")]
 #[get("/")]
 pub async fn get_all(
     conn: Connection<Db>,
@@ -20,15 +26,16 @@ pub async fn get_all(
 ) -> Result<Json<Vec<Store>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    match Store::fetch_all(session, db).await {
+    match Store::fetch_all(session, &db).await {
         Ok(stores) => Ok(Json(stores)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Store")]
 #[get("/<id>")]
 pub async fn get(
     conn: Connection<Db>,
@@ -37,15 +44,16 @@ pub async fn get(
 ) -> Result<Json<Store>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    match Store::fetch_by_id(id, session, db).await {
+    match Store::fetch_by_id(id, session, &db).await {
         Ok(store) => Ok(Json(store)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Store")]
 #[get("/code/<code>")]
 pub async fn get_by_code(
     conn: Connection<Db>,
@@ -54,15 +62,16 @@ pub async fn get_by_code(
 ) -> Result<Json<Store>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchStore);
 
-    match Store::fetch_by_code(code, session, db).await {
+    match Store::fetch_by_code(code, session, &db).await {
         Ok(store) => Ok(Json(store)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Store")]
 #[post("/generate")]
 async fn generate(
     conn: Connection<Db>,
@@ -70,15 +79,16 @@ async fn generate(
 ) -> Result<Json<Vec<Store>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Store::generate(session, db).await {
+    match Store::generate(session, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Store")]
 #[post("/<id>", data = "<input_data>")]
 async fn update(
     conn: Connection<Db>,
@@ -89,7 +99,7 @@ async fn update(
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyStore);
 
     if session
@@ -102,7 +112,7 @@ async fn update(
         .authority
         >= 1
     {
-        match Store::update(input_data, session, id, db).await {
+        match Store::update(input_data, session, id, &db).await {
             Ok(res) => Ok(Json(res)),
             Err(reason) => Err(ErrorResponse::db_err(reason)),
         }

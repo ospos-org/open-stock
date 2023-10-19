@@ -32,14 +32,14 @@ use sea_orm::DbConn;
 use crate::transaction::example::example_transaction;
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct TransactionCustomer {
     pub customer_type: CustomerType,
     pub customer_id: String,
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub enum CustomerType {
     Store,
     Individual,
@@ -47,7 +47,7 @@ pub enum CustomerType {
 }
 
 #[cfg(feature = "process")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct QuantityAlterationIntent {
     pub variant_code: String,
     pub product_sku: String,
@@ -84,7 +84,7 @@ pub enum TransactionType {
 /// `IN:`     As a purchase order it's transaction type takes the form of "In", the customer object will be treated as the company bought from and the payment as an outward payment in exchange for the goods. <br />
 /// `OUT:`    A sale - It can occur in-store or online and is comprised of the sale of goods outlined in the order list.
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Transaction {
     pub id: Id,
 
@@ -107,7 +107,7 @@ pub struct Transaction {
 
 #[cfg(feature = "process")]
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, FromQueryResult)]
+#[derive(Serialize, Deserialize, Clone, FromQueryResult, JsonSchema)]
 pub struct DerivableTransaction {
     pub id: Id,
 
@@ -126,7 +126,7 @@ pub struct DerivableTransaction {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, JsonSchema)]
 pub struct TransactionInput {
     pub customer: TransactionCustomer,
     pub transaction_type: TransactionType,
@@ -143,7 +143,7 @@ pub struct TransactionInput {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, JsonSchema)]
 pub struct TransactionInit {
     pub customer: TransactionCustomer,
     pub transaction_type: TransactionType,

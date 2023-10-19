@@ -121,7 +121,7 @@ pub struct EmployeeAuth {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct EmployeeInput {
     pub name: Name,
     pub rid: i32,

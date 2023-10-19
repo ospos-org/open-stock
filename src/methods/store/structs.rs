@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 #[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
@@ -22,7 +23,7 @@ use serde_json::json;
 use crate::methods::store::example::example_stores;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct Store {
     pub id: Id,
     pub name: String,

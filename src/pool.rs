@@ -65,15 +65,15 @@ impl<'r> OpenApiFromRequest<'r> for Db {
 #[cfg(feature = "process")]
 #[derive(Debug, Clone, OpenApiFromRequest)]
 pub struct RocketDbPool {
-    pub conn: sea_orm::DatabaseConnection,
+    pub conn: DatabaseConnection,
 }
 
 #[cfg(feature = "process")]
 #[async_trait]
 impl rocket_db_pools::Pool for RocketDbPool {
-    type Connection = &'static sea_orm::DatabaseConnection;
+    type Connection = DatabaseConnection;
 
-    type Error = sea_orm::DbErr;
+    type Error = DbErr;
 
     async fn init(_: &Figment) -> Result<Self, Self::Error> {
         dotenv().ok();
@@ -115,11 +115,11 @@ impl rocket_db_pools::Pool for RocketDbPool {
     }
 
     async fn get(&self) -> Result<Self::Connection, Self::Error> {
-        Ok(&self.conn)
+        Ok(self.conn.clone())
     }
 
     async fn close(&self) {
-        self.conn.close().await.unwrap();
+        self.conn.to_owned().close().await.unwrap();
     }
 }
 

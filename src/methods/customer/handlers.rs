@@ -1,3 +1,4 @@
+use okapi::openapi3::OpenApi;
 use crate::check_permissions;
 use crate::methods::{
     cookie_status_wrapper, Action, ContactInformation, CustomerWithTransactionsOut, Error,
@@ -9,11 +10,14 @@ use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::{post, routes};
 use rocket_db_pools::Connection;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
+use rocket_okapi::settings::OpenApiSettings;
 
 use super::{Customer, CustomerInput};
 
-pub fn routes() -> Vec<rocket::Route> {
-    routes![
+pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![
+        settings:
         get,
         get_by_name,
         get_by_phone,
@@ -28,6 +32,7 @@ pub fn routes() -> Vec<rocket::Route> {
     ]
 }
 
+#[openapi(tag = "Customer")]
 #[get("/<id>")]
 pub async fn get(
     conn: Connection<Db>,
@@ -36,15 +41,16 @@ pub async fn get(
 ) -> Result<Json<Customer>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_id(id, session, db).await {
+    match Customer::fetch_by_id(id, session, &db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[get("/recent")]
 pub async fn get_recent(
     conn: Connection<Db>,
@@ -52,15 +58,16 @@ pub async fn get_recent(
 ) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_recent(session, db).await {
+    match Customer::fetch_recent(session, &db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[get("/name/<name>")]
 pub async fn get_by_name(
     conn: Connection<Db>,
@@ -69,16 +76,17 @@ pub async fn get_by_name(
 ) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_name(name, session, db).await {
+    match Customer::fetch_by_name(name, session, &db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
 /// Will search by both name, phone and email.
+#[openapi(tag = "Customer")]
 #[get("/search/<query>")]
 pub async fn search_query(
     conn: Connection<Db>,
@@ -87,15 +95,16 @@ pub async fn search_query(
 ) -> Result<Json<Vec<CustomerWithTransactionsOut>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::search(query, session, db).await {
+    match Customer::search(query, session, &db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[get("/transactions/<id>")]
 pub async fn find_related_transactions(
     conn: Connection<Db>,
@@ -104,15 +113,16 @@ pub async fn find_related_transactions(
 ) -> Result<Json<Vec<Transaction>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Transaction::fetch_by_client_id(id, session, db).await {
+    match Transaction::fetch_by_client_id(id, session, &db).await {
         Ok(transactions) => Ok(Json(transactions)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[get("/phone/<phone>")]
 pub async fn get_by_phone(
     conn: Connection<Db>,
@@ -120,15 +130,16 @@ pub async fn get_by_phone(
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_phone(phone, session, db).await {
+    match Customer::fetch_by_phone(phone, session, &db).await {
         Ok(customer) => Ok(Json(customer)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[get("/addr/<addr>")]
 pub async fn get_by_addr(
     conn: Connection<Db>,
@@ -137,15 +148,16 @@ pub async fn get_by_addr(
 ) -> Result<Json<Vec<Customer>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_addr(addr, session, db).await {
+    match Customer::fetch_by_addr(addr, session, &db).await {
         Ok(customers) => Ok(Json(customers)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[post("/generate")]
 async fn generate(
     conn: Connection<Db>,
@@ -153,15 +165,16 @@ async fn generate(
 ) -> Result<Json<Customer>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Customer::generate(session, db).await {
+    match Customer::generate(session, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[post("/<id>", data = "<input_data>")]
 async fn update(
     conn: Connection<Db>,
@@ -172,15 +185,16 @@ async fn update(
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyCustomer);
 
-    match Customer::update(input_data, session, id, db).await {
+    match Customer::update(input_data, session, id, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[post("/contact/<id>", data = "<input_data>")]
 async fn update_contact_info(
     conn: Connection<Db>,
@@ -190,16 +204,17 @@ async fn update_contact_info(
 ) -> Result<Json<Customer>, Error> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
 
     check_permissions!(session.clone(), Action::ModifyCustomer);
 
-    match Customer::update_contact_information(input_data, id, session, db).await {
+    match Customer::update_contact_information(input_data, id, session, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
+#[openapi(tag = "Customer")]
 #[post("/", data = "<input_data>")]
 pub async fn create(
     conn: Connection<Db>,
@@ -209,20 +224,23 @@ pub async fn create(
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateCustomer);
 
-    match Customer::insert(new_transaction, session.clone(), db).await {
-        Ok(data) => match Customer::fetch_by_id(&data.last_insert_id, session, db).await {
-            Ok(res) => Ok(Json(res)),
-            Err(reason) => {
-                println!("[dberr]: {}", reason);
-                Err(ErrorResponse::create_error(&format!(
-                    "Fetch for customer failed, reason: {}",
-                    reason
-                )))
-            }
-        },
+    match Customer::insert(new_transaction, session.clone(), &db).await {
+        Ok(data) =>
+            match Customer::fetch_by_id(
+                &data.last_insert_id, session, &db
+            ).await {
+                Ok(res) => Ok(Json(res)),
+                Err(reason) => {
+                    println!("[dberr]: {}", reason);
+                    Err(ErrorResponse::create_error(&format!(
+                        "Fetch for customer failed, reason: {}",
+                        reason
+                    )))
+                }
+            },
         Err(reason) => {
             println!("[dberr]: {}", reason);
             Err(ErrorResponse::input_error())

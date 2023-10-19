@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 
 #[cfg(feature = "process")]
 use crate::entities::prelude::Supplier as Suppl;
@@ -24,7 +25,7 @@ use uuid::Uuid;
 use crate::methods::supplier::example::example_supplier;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Supplier {
     pub id: String,
     pub name: Name,
@@ -37,7 +38,7 @@ pub struct Supplier {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct SupplierInput {
     pub name: Name,
     pub contact: ContactInformation,

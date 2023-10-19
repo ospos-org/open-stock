@@ -3,8 +3,9 @@ use crate::entities::prelude::Kiosk as Ksk;
 #[cfg(feature = "process")]
 use crate::{entities::authrecord::ActiveModel as AuthRecord, entities::kiosk::ActiveModel};
 #[cfg(feature = "process")]
-use crate::{entities::kiosk, entities::kiosk::ActiveModel as KioskModel, Session};
+use crate::{entities::kiosk, Session};
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 #[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, InsertResult,
@@ -16,20 +17,20 @@ use uuid::Uuid;
 use crate::entities::kiosk::Model;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct KioskPreferences {
     pub printer_id: String,
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct AuthenticationLog {
     pub employee_id: String,
     pub successful: bool,
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Kiosk {
     /// Standard Unique Identification
     pub id: String,
@@ -51,7 +52,7 @@ pub struct Kiosk {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct KioskInit {
     name: String,
     store_id: String,

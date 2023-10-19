@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Payment {
     pub id: String,
     pub payment_method: PaymentMethod,
@@ -23,14 +24,14 @@ pub struct Payment {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Price {
     pub quantity: f32,
     pub currency: String,
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct PaymentProcessor {
     pub location: String,
     pub employee: String,
@@ -58,7 +59,7 @@ impl PaymentProcessor {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub enum Processable {
     /// CardDetails() (CardTransaction)
     CardDetails(Box<CardDetails>),
@@ -67,7 +68,7 @@ pub enum Processable {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub enum PaymentStatus {
     Unfulfilled(String),
     Pending(String),
@@ -77,7 +78,7 @@ pub enum PaymentStatus {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub enum PaymentAction {
     Cancel,
     Complete,
@@ -85,7 +86,7 @@ pub enum PaymentAction {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct CardDetails {
     pub card_brand: String,
     pub last_4: String,
@@ -105,14 +106,14 @@ pub struct CardDetails {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct PaymentTimeline {
     pub authorized_at: String,
     pub captured_at: String,
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub enum PaymentMethod {
     Card,
     Cash,

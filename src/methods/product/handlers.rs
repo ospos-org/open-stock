@@ -1,3 +1,4 @@
+use okapi::openapi3::OpenApi;
 use crate::check_permissions;
 use crate::methods::{cookie_status_wrapper, Action, Error, ErrorResponse};
 use crate::pool::Db;
@@ -5,13 +6,15 @@ use rocket::get;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::{post};
-use rocket_okapi::{openapi, openapi_get_routes};
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_db_pools::Connection;
+use rocket_okapi::settings::OpenApiSettings;
 
 use super::{Product, ProductWPromotion, Promotion, PromotionInput};
 
-pub fn routes() -> Vec<rocket::Route> {
-    openapi_get_routes![
+pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![
+        settings:
         get,
         get_with_associated_promotions,
         get_by_name,
@@ -38,10 +41,10 @@ pub async fn get(
 ) -> Result<Json<Product>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::fetch_by_id(&id.to_string(), session, db).await {
+    match Product::fetch_by_id(&id.to_string(), session, &db).await {
         Ok(product) => Ok(Json(product)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -56,10 +59,10 @@ pub async fn get_with_associated_promotions(
 ) -> Result<Json<ProductWPromotion>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::fetch_by_id_with_promotion(&id.to_string(), session, db).await {
+    match Product::fetch_by_id_with_promotion(&id.to_string(), session, &db).await {
         Ok(product) => Ok(Json(product)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -74,10 +77,10 @@ pub async fn get_by_name(
 ) -> Result<Json<Vec<Product>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::fetch_by_name(name, session, db).await {
+    match Product::fetch_by_name(name, session, &db).await {
         Ok(products) => Ok(Json(products)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -93,10 +96,10 @@ pub async fn get_by_name_exact(
 ) -> Result<Json<Vec<Product>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::fetch_by_name_exact(name, session, db).await {
+    match Product::fetch_by_name_exact(name, session, &db).await {
         Ok(products) => Ok(Json(products)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -112,10 +115,10 @@ pub async fn search_query(
 ) -> Result<Json<Vec<Product>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::search(query, session, db).await {
+    match Product::search(query, session, &db).await {
         Ok(products) => Ok(Json(products)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -130,10 +133,10 @@ pub async fn search_with_associated_promotions(
 ) -> Result<Json<Vec<ProductWPromotion>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    match Product::search_with_promotion(query, session, db).await {
+    match Product::search_with_promotion(query, session, &db).await {
         Ok(products) => Ok(Json(products)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -150,10 +153,10 @@ async fn update(
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyProduct);
 
-    match Product::update(input_data, session, id, db).await {
+    match Product::update(input_data, session, id, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -169,17 +172,20 @@ pub async fn create(
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateProduct);
 
-    match Product::insert(new_transaction, session.clone(), db).await {
-        Ok(data) => match Product::fetch_by_id(&data.last_insert_id, session, db).await {
-            Ok(res) => Ok(Json(res)),
-            Err(reason) => {
-                println!("[dberr]: {}", reason);
-                Err(ErrorResponse::db_err(reason))
-            }
-        },
+    match Product::insert(new_transaction, session.clone(), &db).await {
+        Ok(data) =>
+            match Product::fetch_by_id(
+                &data.last_insert_id, session, &db
+            ).await {
+                Ok(res) => Ok(Json(res)),
+                Err(reason) => {
+                    println!("[dberr]: {}", reason);
+                    Err(ErrorResponse::db_err(reason))
+                }
+            },
         Err(reason) => {
             println!("[dberr]: {}", reason);
             Err(ErrorResponse::db_err(reason))
@@ -195,10 +201,10 @@ async fn generate(
 ) -> Result<Json<Vec<Product>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Product::generate(session, db).await {
+    match Product::generate(session, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
@@ -213,10 +219,10 @@ pub async fn get_promotion(
 ) -> Result<Json<Promotion>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let product = Promotion::fetch_by_id(&id.to_string(), session, db)
+    let product = Promotion::fetch_by_id(&id.to_string(), session, &db)
         .await
         .unwrap();
     Ok(Json(product))
@@ -231,10 +237,10 @@ pub async fn get_promotion_by_query(
 ) -> Result<Json<Vec<Promotion>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchProduct);
 
-    let product = Promotion::fetch_by_query(query, session, db).await.unwrap();
+    let product = Promotion::fetch_by_query(query, session, &db).await.unwrap();
     Ok(Json(product))
 }
 
@@ -249,10 +255,10 @@ async fn update_promotion(
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyProduct);
 
-    match Promotion::update(input_data, session, id, db).await {
+    match Promotion::update(input_data, session, id, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
@@ -268,17 +274,20 @@ pub async fn create_promotion(
     let new_promotion = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateProduct);
 
-    match Promotion::insert(new_promotion, session.clone(), db).await {
-        Ok(data) => match Promotion::fetch_by_id(&data.last_insert_id, session, db).await {
-            Ok(res) => Ok(Json(res)),
-            Err(reason) => {
-                println!("[dberr]: {}", reason);
-                Err(ErrorResponse::db_err(reason))
-            }
-        },
+    match Promotion::insert(new_promotion, session.clone(), &db).await {
+        Ok(data) =>
+            match Promotion::fetch_by_id(
+                &data.last_insert_id, session, &db
+            ).await {
+                Ok(res) => Ok(Json(res)),
+                Err(reason) => {
+                    println!("[dberr]: {}", reason);
+                    Err(ErrorResponse::db_err(reason))
+                }
+            },
         Err(reason) => {
             println!("[dberr]: {}", reason);
             Err(ErrorResponse::db_err(reason))
@@ -294,10 +303,10 @@ async fn generate_promotion(
 ) -> Result<Json<Vec<Promotion>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Promotion::generate(session, db).await {
+    match Promotion::generate(session, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
