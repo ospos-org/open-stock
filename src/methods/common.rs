@@ -401,8 +401,8 @@ pub enum Error {
     DemoDisabled(String),
 }
 
-// impl OpenApiResponder for Error {
-//     fn responses(gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
-//         gen.
-//     }
-// }
+impl OpenApiResponderInner for Error {
+    fn responses(gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
+        Ok(Responses::default())
+    }
+}
