@@ -13,11 +13,16 @@ use crate::entities;
 use crate::methods::{stml::Order, Access, Action, Attendance, EmployeeAuth};
 use chrono::{DateTime, Days, Utc};
 use lazy_static::lazy_static;
+use okapi::openapi3::Responses;
 use regex::Regex;
 use rocket::http::{Cookie, SameSite};
 use rocket::time::OffsetDateTime;
 #[cfg(feature = "process")]
 use rocket::{http::CookieJar, serde::json::Json, Responder};
+use rocket_okapi::gen::OpenApiGenerator;
+
+use rocket_okapi::response::OpenApiResponderInner;
+use schemars::JsonSchema;
 #[cfg(feature = "process")]
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QuerySelect};
 use sea_orm::ActiveValue::Set;
@@ -25,7 +30,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::session::ActiveModel;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 pub struct Name {
     pub first: String,
     pub middle: String,
@@ -44,7 +49,7 @@ impl Name {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct ContactInformation {
     pub name: String,
     pub mobile: MobileNumber,
@@ -53,7 +58,7 @@ pub struct ContactInformation {
     pub address: Address,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct MobileNumber {
     pub number: String,
     pub valid: bool,
@@ -103,14 +108,14 @@ pub type OrderList = Vec<Order>;
 pub type NoteList = Vec<Note>;
 pub type HistoryList = Vec<History<ProductExchange>>;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct History<T> {
     pub item: T,
     pub reason: String,
     pub timestamp: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct Email {
     pub root: String,
     pub domain: String,
@@ -140,7 +145,7 @@ impl Email {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Note {
     pub message: String,
     pub author: String,
@@ -158,7 +163,7 @@ impl Display for Note {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct Address {
     pub street: String,
     pub street2: String,
@@ -169,7 +174,7 @@ pub struct Address {
     pub lon: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Location {
     pub store_code: String,
     pub store_id: String,
@@ -184,7 +189,7 @@ pub type TagList = Vec<Tag>;
 pub type Tag = String;
 pub type Id = String;
 
-#[derive(Debug)]
+#[derive(Debug, JsonSchema)]
 pub struct SessionRaw {
     pub id: String,
     pub key: String,
@@ -192,7 +197,7 @@ pub struct SessionRaw {
     pub expiry: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, JsonSchema)]
 pub struct Session {
     pub id: String,
     pub key: String,
@@ -379,6 +384,8 @@ impl ErrorResponse {
     }
 }
 
+
+
 #[cfg(feature = "process")]
 #[derive(Debug, Responder)]
 pub enum Error {
@@ -392,4 +399,10 @@ pub enum Error {
     DbError(Json<ErrorResponse>),
     #[response(status = 500, content_type = "text")]
     DemoDisabled(String),
+}
+
+impl OpenApiResponderInner for Error {
+    fn responses(_gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
+        Ok(Responses::default())
+    }
 }

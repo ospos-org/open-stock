@@ -8,8 +8,10 @@ use rocket::{
     http::Header,
     *,
 };
+use rocket_db_pools::Database;
+use rocket_okapi::mount_endpoints_and_merged_docs;
+use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
 #[cfg(feature = "process")]
-use sea_orm_rocket::Database;
 
 #[cfg(feature = "process")]
 pub mod entities;
@@ -63,17 +65,34 @@ impl Fairing for CORS {
 fn rocket() -> _ {
     dotenv::dotenv().ok();
 
-    rocket::build()
+    // All non-documented items attached here.
+    let mut launcher = build()
         .attach(Db::init())
         .attach(CORS)
-        .mount("/api/product", methods::product::handlers::routes())
-        .mount("/api/customer", methods::customer::handlers::routes())
-        .mount("/api/employee", methods::employee::handlers::routes())
-        .mount("/api/transaction", methods::transaction::handlers::routes())
-        .mount("/api/ingress", methods::ingress::handlers::routes())
-        .mount("/api/supplier", methods::supplier::handlers::routes())
-        .mount("/api/store", methods::store::handlers::routes())
-        .mount("/api/helpers", methods::helpers::handlers::routes())
+        .mount(
+            "/docs",
+            make_swagger_ui(&SwaggerUIConfig {
+                url: "../openapi.json".to_owned(),
+                ..Default::default()
+            }),
+        );
+
+    let openapi_settings = rocket_okapi::settings::OpenApiSettings::default();
+
+    mount_endpoints_and_merged_docs! {
+        launcher, "/".to_owned(), openapi_settings,
+        "/api/store" => methods::store::handlers::documented_routes(&openapi_settings),
+        "/api/kiosk" => methods::kiosk::handlers::documented_routes(&openapi_settings),
+        "/api/ingress" => methods::ingress::handlers::documented_routes(&openapi_settings),
+        "/api/product" => methods::product::handlers::documented_routes(&openapi_settings),
+        "/api/customer" => methods::customer::handlers::documented_routes(&openapi_settings),
+        "/api/employee" => methods::employee::handlers::documented_routes(&openapi_settings),
+        "/api/supplier" => methods::supplier::handlers::documented_routes(&openapi_settings),
+        "/api/helpers" => methods::helpers::handlers::documented_routes(&openapi_settings),
+        "/api/transaction" => methods::transaction::handlers::documented_routes(&openapi_settings),
+    }
+
+    launcher
 }
 
 #[cfg(not(feature = "process"))]

@@ -1,8 +1,11 @@
+use okapi::openapi3::OpenApi;
 use rocket::get;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
-use rocket::{post, routes};
-use sea_orm_rocket::Connection;
+use rocket::{post};
+use rocket_db_pools::Connection;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
+use rocket_okapi::settings::OpenApiSettings;
 
 use super::{Transaction, TransactionInit, TransactionInput};
 use crate::methods::employee::Action;
@@ -10,8 +13,9 @@ use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, QuantityAltera
 use crate::pool::Db;
 use crate::{apply_discount, check_permissions, Order, OrderStatus, PickStatus};
 
-pub fn routes() -> Vec<rocket::Route> {
-    routes![
+pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![
+        settings:
         get,
         get_by_name,
         get_all_saved,
@@ -26,109 +30,116 @@ pub fn routes() -> Vec<rocket::Route> {
     ]
 }
 
+#[openapi(tag = "Transaction")]
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: String,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_by_id(&id, session, db).await {
+    match Transaction::fetch_by_id(&id, session, &db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[get("/saved")]
 pub async fn get_all_saved(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Transaction>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_all_saved(session, db).await {
+    match Transaction::fetch_all_saved(session, &db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[get("/ref/<name>")]
 pub async fn get_by_name(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Transaction>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_by_ref(name, session, db).await {
+    match Transaction::fetch_by_ref(name, session, &db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[get("/product/<sku>")]
 pub async fn get_by_product_sku(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     sku: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Transaction>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_by_ref(sku, session, db).await {
+    match Transaction::fetch_by_ref(sku, session, &db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[get("/deliverables/<store_id>")]
 pub async fn deliverables_search(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     store_id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Order>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_deliverable_jobs(store_id, session, db).await {
+    match Transaction::fetch_deliverable_jobs(store_id, session, &db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[get("/receivables/<store_id>")]
 pub async fn receivables_search(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     store_id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Order>>, Error> {
     let db = conn.into_inner();
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchTransaction);
 
-    match Transaction::fetch_receivable_jobs(store_id, session, db).await {
+    match Transaction::fetch_receivable_jobs(store_id, session, &db).await {
         Ok(transaction) => Ok(Json(transaction)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     input_data: Json<TransactionInput>,
     cookies: &CookieJar<'_>,
@@ -136,18 +147,19 @@ async fn update(
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyTransaction);
 
-    match Transaction::update(input_data, session, id, db).await {
+    match Transaction::update(input_data, session, id, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[post("/status/order/<refer>", data = "<status>")]
 async fn update_order_status(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     refer: &str,
     status: Json<OrderStatus>,
     cookies: &CookieJar<'_>,
@@ -155,23 +167,24 @@ async fn update_order_status(
     let status = status.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyTransaction);
 
-    let tsn = Transaction::fetch_by_ref(refer, session.clone(), db)
+    let tsn = Transaction::fetch_by_ref(refer, session.clone(), &db)
         .await
         .unwrap();
     let id = tsn.get(0).unwrap().id.as_str();
 
-    match Transaction::update_order_status(id, refer, status, session, db).await {
+    match Transaction::update_order_status(id, refer, status, session, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[post("/status/product/<refer>/<pid>/<iid>", data = "<status>")]
 async fn update_product_status(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     refer: &str,
     pid: &str,
     iid: &str,
@@ -180,10 +193,10 @@ async fn update_product_status(
 ) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyTransaction);
 
-    let tsn = Transaction::fetch_by_ref(refer, session.clone(), db)
+    let tsn = Transaction::fetch_by_ref(refer, session.clone(), &db)
         .await
         .unwrap();
     let id = tsn.get(0).unwrap().id.as_str();
@@ -197,40 +210,42 @@ async fn update_product_status(
         _ => return Err(ErrorResponse::input_error()),
     };
 
-    match Transaction::update_product_status(id, refer, pid, iid, product_status, session, db).await
+    match Transaction::update_product_status(id, refer, pid, iid, product_status, session, &db).await
     {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[post("/generate/<customer_id>")]
 async fn generate(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     customer_id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Transaction::generate(db, customer_id, session).await {
+    match Transaction::generate(&db, customer_id, session).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<TransactionInit>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Transaction>, Error> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateTransaction);
 
     let mut quantity_alteration_intents: Vec<QuantityAlterationIntent> = vec![];
@@ -280,11 +295,11 @@ pub async fn create(
         ));
     }
 
-    match Transaction::insert(new_transaction, session.clone(), db).await {
+    match Transaction::insert(new_transaction, session.clone(), &db).await {
         Ok(data) => {
-            Transaction::process_intents(session.clone(), db, quantity_alteration_intents).await;
+            Transaction::process_intents(session.clone(), &db, quantity_alteration_intents).await;
 
-            match Transaction::fetch_by_id(&data.last_insert_id, session, db).await {
+            match Transaction::fetch_by_id(&data.last_insert_id, session, &db).await {
                 Ok(res) => Ok(Json(res)),
                 Err(reason) => Err(ErrorResponse::db_err(reason)),
             }
@@ -293,14 +308,15 @@ pub async fn create(
     }
 }
 
+#[openapi(tag = "Transaction")]
 #[post("/delete/<id>")]
-async fn delete(conn: Connection<'_, Db>, id: &str, cookies: &CookieJar<'_>) -> Result<(), Error> {
+async fn delete(conn: Connection<Db>, id: &str, cookies: &CookieJar<'_>) -> Result<(), Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::DeleteTransaction);
 
-    match Transaction::delete(id, session, db).await {
+    match Transaction::delete(id, session, &db).await {
         Ok(_res) => Ok(()),
         Err(_) => Err(ErrorResponse::input_error()),
     }

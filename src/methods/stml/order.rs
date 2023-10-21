@@ -5,10 +5,11 @@ use crate::methods::{
     ProductPurchaseList, Store, Url,
 };
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Order {
     pub id: Id,
 
@@ -32,7 +33,7 @@ pub struct Order {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderType {
     Direct,
@@ -58,7 +59,7 @@ pub struct OrderState {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct OrderStatusAssignment {
     pub status: OrderStatus,
     pub assigned_products: Vec<Id>,
@@ -66,7 +67,7 @@ pub struct OrderStatusAssignment {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(tag = "type", content = "value")]
 #[serde(rename_all = "lowercase")]
 pub enum OrderStatus {
@@ -136,7 +137,7 @@ impl Display for OrderStatusAssignment {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct TransitInformation {
     pub shipping_company: ContactInformation,
     pub query_url: Url,

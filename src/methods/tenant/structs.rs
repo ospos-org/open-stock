@@ -1,6 +1,7 @@
 #[cfg(feature = "process")]
 use crate::{entities::prelude::Tenants, tenants};
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 #[cfg(feature = "process")]
 use sea_orm::{DbConn, DbErr, EntityTrait, InsertResult};
 use serde::{Deserialize, Serialize};
@@ -9,11 +10,11 @@ use serde::{Deserialize, Serialize};
 use crate::Id;
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 pub struct TenantSettings {}
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Tenant {
     pub tenant_id: Id,
 

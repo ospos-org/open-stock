@@ -5,21 +5,26 @@ use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name}
 use crate::pool::Db;
 use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie};
 use chrono::{Days, Duration as ChronoDuration, Utc};
+use okapi::openapi3::OpenApi;
 use rocket::get;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::time::OffsetDateTime;
-use rocket::{post, routes};
+use rocket::{post};
+use rocket_db_pools::Connection;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
+use rocket_okapi::settings::OpenApiSettings;
+use schemars::JsonSchema;
 use sea_orm::{EntityTrait, Set};
-use sea_orm_rocket::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
 use super::{Action, Attendance, Employee, EmployeeInput, TrackType};
 
-pub fn routes() -> Vec<rocket::Route> {
-    routes![
+pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![
+        settings:
         get,
         whoami,
         get_by_name,
@@ -36,132 +41,140 @@ pub fn routes() -> Vec<rocket::Route> {
     ]
 }
 
+#[openapi(tag = "Employee")]
 #[get("/")]
 pub async fn whoami(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
     Ok(Json(session.employee))
 }
 
+#[openapi(tag = "Employee")]
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
     if session.employee.id == id {
         Ok(Json(session.employee))
     } else {
-        match Employee::fetch_by_id(id, session, db).await {
+        match Employee::fetch_by_id(id, session, &db).await {
             Ok(employee) => Ok(Json(employee)),
             Err(err) => Err(ErrorResponse::db_err(err)),
         }
     }
 }
 
+#[openapi(tag = "Employee")]
 #[get("/rid/<rid>")]
 pub async fn get_by_rid(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     rid: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Employee>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Employee::fetch_by_rid(rid, session, db).await {
+    match Employee::fetch_by_rid(rid, session, &db).await {
         Ok(employee) => Ok(Json(employee)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Employee")]
 #[get("/name/<name>")]
 pub async fn get_by_name(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Employee>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Employee::fetch_by_name(name, session, db).await {
+    match Employee::fetch_by_name(name, session, &db).await {
         Ok(employees) => Ok(Json(employees)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Employee")]
 #[get("/!name", data = "<name>")]
 pub async fn get_by_name_exact(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     name: Json<Name>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Employee>>, Error> {
     let db = conn.into_inner();
     let new_transaction = name.clone().into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
     if session.employee.name == new_transaction {
         Ok(Json(vec![session.employee]))
     } else {
-        match Employee::fetch_by_name_exact(json!(new_transaction), session, db).await {
+        match Employee::fetch_by_name_exact(json!(new_transaction), session, &db).await {
             Ok(employees) => Ok(Json(employees)),
             Err(reason) => Err(ErrorResponse::db_err(reason)),
         }
     }
 }
 
+#[openapi(tag = "Employee")]
 #[get("/level/<level>")]
 pub async fn get_by_level(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     level: i32,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Employee>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Employee::fetch_by_level(level, session, db).await {
+    match Employee::fetch_by_level(level, session, &db).await {
         Ok(employees) => Ok(Json(employees)),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
 
+#[openapi(tag = "Employee")]
 #[post("/generate")]
 async fn generate(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Employee::generate(db, session).await {
+    match Employee::generate(&db, session).await {
         Ok(res) => Ok(Json(res)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
 
+#[openapi(tag = "Employee")]
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
     input_data: Json<Employee>,
@@ -169,7 +182,7 @@ async fn update(
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyEmployee);
 
     if session
@@ -182,7 +195,7 @@ async fn update(
         .authority
         >= 1
     {
-        match Employee::update(input_data, session, id, db).await {
+        match Employee::update(input_data, session, id, &db).await {
             Ok(res) => Ok(Json(res)),
             Err(_) => Err(ErrorResponse::input_error()),
         }
@@ -191,17 +204,18 @@ async fn update(
     }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema)]
 pub struct Auth {
     pub pass: String,
     pub kiosk_id: String,
     pub tenant_id: String,
 }
 
+#[openapi(tag = "Employee")]
 #[post("/auth/<id>", data = "<input_data>")]
 pub async fn auth(
     id: &str,
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<Auth>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<String>, Error> {
@@ -220,7 +234,7 @@ pub async fn auth(
             tenant_id: input_data.tenant_id.clone(),
         },
         &input.pass,
-        db,
+        &db,
     )
     .await
     {
@@ -238,7 +252,7 @@ pub async fn auth(
                     .unwrap();
 
                 let tenant_data = match tenants::Entity::find_by_id(input.tenant_id.clone())
-                    .one(db)
+                    .one(&db)
                     .await
                 {
                     Ok(optional_data) => match optional_data {
@@ -259,7 +273,7 @@ pub async fn auth(
                     expiry: Set(exp.naive_utc()),
                     tenant_id: Set(tenant_data.tenant_id),
                 })
-                .exec(db)
+                .exec(&db)
                 .await
                 {
                     Ok(_) => {
@@ -277,10 +291,11 @@ pub async fn auth(
     }
 }
 
+#[openapi(tag = "Employee")]
 #[post("/auth/rid/<rid>", data = "<input_data>")]
 pub async fn auth_rid(
     rid: &str,
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<Auth>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<String>, Error> {
@@ -296,7 +311,7 @@ pub async fn auth_rid(
         tenant_id: input_data.tenant_id.clone(),
     };
 
-    match Employee::verify_with_rid(rid, session.clone(), &input.pass, db).await {
+    match Employee::verify_with_rid(rid, session.clone(), &input.pass, &db).await {
         Ok(data) => {
             Kiosk::auth_log(
                 &input.kiosk_id,
@@ -305,7 +320,7 @@ pub async fn auth_rid(
                     employee_id: data.id.to_string(),
                     successful: true,
                 },
-                db,
+                &db,
             )
             .await
             .map_err(ErrorResponse::db_err)?;
@@ -318,7 +333,7 @@ pub async fn auth_rid(
                 .unwrap();
 
             let tenant_data = match tenants::Entity::find_by_id(input.tenant_id.clone())
-                .one(db)
+                .one(&db)
                 .await
             {
                 Ok(optional_data) => match optional_data {
@@ -339,7 +354,7 @@ pub async fn auth_rid(
                 expiry: Set(exp.naive_utc()),
                 tenant_id: Set(tenant_data.tenant_id),
             })
-            .exec(db)
+            .exec(&db)
             .await
             {
                 Ok(_) => {
@@ -369,7 +384,7 @@ pub async fn auth_rid(
                     employee_id: rid.to_string(),
                     successful: false,
                 },
-                db,
+                &db,
             )
             .await
             .map_err(ErrorResponse::db_err)?;
@@ -382,26 +397,32 @@ pub async fn auth_rid(
     }
 }
 
+#[openapi(tag = "Employee")]
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<EmployeeInput>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
     let new_transaction = input_data.clone().into_inner();
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateEmployee);
 
-    match Employee::insert(new_transaction, db, session.clone(), None, None).await {
-        Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, session, db).await {
-            Ok(res) => Ok(Json(res)),
-            Err(reason) => {
-                println!("[dberr]: {}", reason);
-                Err(ErrorResponse::db_err(reason))
-            }
-        },
+    match Employee::insert(
+        new_transaction, &db, session.clone(), None, None
+    ).await {
+        Ok(data) =>
+            match Employee::fetch_by_id(
+                &data.last_insert_id, session, &db
+            ).await {
+                Ok(res) => Ok(Json(res)),
+                Err(reason) => {
+                    println!("[dberr]: {}", reason);
+                    Err(ErrorResponse::db_err(reason))
+                }
+            },
         Err(reason) => {
             println!("[dberr]: {}", reason);
             Err(ErrorResponse::input_error())
@@ -409,16 +430,17 @@ pub async fn create(
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct LogRequest {
     pub kiosk: String,
     pub reason: String,
     pub in_or_out: String,
 }
 
+#[openapi(tag = "Employee")]
 #[post("/log/<id>", data = "<input_data>")]
 pub async fn log(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     input_data: Json<LogRequest>,
     id: &str,
     cookies: &CookieJar<'_>,
@@ -426,7 +448,7 @@ pub async fn log(
     let db = conn.into_inner();
     let data = input_data.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
     let track_type = if data.in_or_out.to_lowercase() == "in" {
@@ -444,11 +466,11 @@ pub async fn log(
         timestamp: Utc::now(),
     };
 
-    match Employee::fetch_by_id(id, session.clone(), db).await {
+    match Employee::fetch_by_id(id, session.clone(), &db).await {
         Ok(mut data) => {
             data.clock_history.push(new_attendance);
 
-            match Employee::update_no_geom(data, session, id, db).await {
+            match Employee::update_no_geom(data, session, id, &db).await {
                 Ok(data) => Ok(Json(data)),
                 Err(reason) => {
                     println!("[dberr]: {}", reason);
@@ -463,18 +485,19 @@ pub async fn log(
     }
 }
 
+#[openapi(tag = "Employee")]
 #[get("/log/<id>")]
 pub async fn get_status(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<History<Attendance>>, Error> {
     let db = conn.into_inner();
 
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Employee::fetch_by_id(id, session, db).await {
+    match Employee::fetch_by_id(id, session, &db).await {
         Ok(mut data) => {
             // First time employee is just considered "clocked out"
             if data.clock_history.is_empty() {

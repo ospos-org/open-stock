@@ -3,8 +3,7 @@ use std::env;
 use std::time::Duration;
 use chrono::{Days, Utc};
 use geo::point;
-use rocket::{get, http::CookieJar, post, routes, serde::json::Json};
-use sea_orm_rocket::Connection;
+use rocket::{get, http::CookieJar, post, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,17 +12,22 @@ use crate::{check_permissions, example_employee, methods::{
     Promotion, Session, Store, Transaction,
 }, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType};
 use geo::VincentyDistance;
+use okapi::openapi3::OpenApi;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
     LatLon, PhotonApiClient, PhotonFeature,
 };
 use rocket::http::{Cookie, SameSite};
 use rocket::time::OffsetDateTime;
+use rocket_db_pools::Connection;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
+use rocket_okapi::settings::OpenApiSettings;
+use schemars::JsonSchema;
 use sea_orm::EntityTrait;
 use crate::session::ActiveModel;
 
-pub fn routes() -> Vec<rocket::Route> {
-    routes![
+pub fn documented_routes(_settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![
         generate_template,
         address_to_geolocation,
         distance_to_stores,
@@ -35,8 +39,9 @@ pub fn routes() -> Vec<rocket::Route> {
 }
 
 /// This route does not require authentication, but is not enabled in release mode.
+#[openapi(tag = "Helpers")]
 #[post("/generate")]
-pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Error> {
+pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error> {
     if env::var("DEMO").is_err() || env::var("DEMO").unwrap() == "0" {
         return Err(Error::DemoDisabled(
             "OpenStock is not in DEMO mode.".to_string(),
@@ -64,26 +69,26 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
         tenant_id: tenant_id2.to_string().clone(),
     };
 
-    let tenant = Tenant::generate(db, tenant_id).await.unwrap();
-    let tenant2 = Tenant::generate(db, tenant_id2).await.unwrap();
+    let tenant = Tenant::generate(&db, tenant_id).await.unwrap();
+    let tenant2 = Tenant::generate(&db, tenant_id2).await.unwrap();
 
-    let employee = Employee::generate(db, session.clone()).await.unwrap();
-    let _employee2 = Employee::generate(db, session2.clone()).await.unwrap();
+    let employee = Employee::generate(&db, session.clone()).await.unwrap();
+    let _employee2 = Employee::generate(&db, session2.clone()).await.unwrap();
 
-    let stores = Store::generate(session.clone(), db).await.unwrap();
-    let products = Product::generate(session.clone(), db).await.unwrap();
-    let customer = Customer::generate(session.clone(), db).await.unwrap();
+    let stores = Store::generate(session.clone(), &db).await.unwrap();
+    let products = Product::generate(session.clone(), &db).await.unwrap();
+    let customer = Customer::generate(session.clone(), &db).await.unwrap();
 
-    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), db)
+    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), &db)
         .await
         .unwrap();
 
-    let _kiosk2 = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133622", session2.clone(), db)
+    let _kiosk2 = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133622", session2.clone(), &db)
         .await
         .unwrap();
 
     let transaction = Transaction::generate(
-        db,
+        &db,
         &customer.id,
         Session {
             id: Uuid::new_v4().to_string(),
@@ -95,9 +100,9 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
     )
     .await
     .unwrap();
-    let promotions = Promotion::generate(session, db).await.unwrap();
+    let promotions = Promotion::generate(session, &db).await.unwrap();
 
-    Ok(rocket::serde::json::Json(All {
+    Ok(Json(All {
         employee,
         tenants: vec![tenant, tenant2],
         stores,
@@ -110,9 +115,10 @@ pub async fn generate_template(conn: Connection<'_, Db>) -> Result<Json<All>, Er
 }
 
 /// Unprotected route, does not require a cookie
+#[openapi(tag = "Helpers")]
 #[post("/new", data = "<tenant_input>")]
 pub async fn new_tenant(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     tenant_input: Json<NewTenantInput>,
     _cookies: &CookieJar<'_>,
 ) -> Result<Json<NewTenantResponse>, Error> {
@@ -129,7 +135,7 @@ pub async fn new_tenant(
         updated_at: Utc::now(),
     };
 
-    Tenant::insert(tenant, db)
+    Tenant::insert(tenant, &db)
         .await
         .map_err(ErrorResponse::db_err)?;
 
@@ -163,13 +169,13 @@ pub async fn new_tenant(
     );
 
     let employee_insert_result = Employee::insert(
-        employee, db, session.clone(),
+        employee, &db, session.clone(),
         None, Some(employee_id))
         .await
         .map_err(ErrorResponse::db_err)?;
 
     match session::Entity::insert::<ActiveModel>(session.clone().into())
-        .exec(db)
+        .exec(&db)
         .await
     {
         Ok(_) => {
@@ -183,9 +189,10 @@ pub async fn new_tenant(
     }
 }
 
+#[openapi(tag = "Helpers")]
 #[get("/session/<key>")]
 pub async fn assign_session_cookie(
-    _conn: Connection<'_, Db>,
+    _conn: Connection<Db>,
     key: &str,
     cookies: &CookieJar<'_>
 ) -> Result<Json<()>, Error> {
@@ -207,14 +214,15 @@ pub async fn assign_session_cookie(
     Ok(Json(()))
 }
 
+#[openapi(tag = "Helpers")]
 #[post("/address", data = "<address>")]
 pub async fn address_to_geolocation(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     address: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Address>, Error> {
     let db = conn.into_inner();
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session, Action::FetchGeoLocation);
 
     match convert_addr_to_geo(address) {
@@ -285,14 +293,15 @@ pub fn convert_addresses_to_geo(address: &str, origin: LatLon) -> Result<Vec<Add
     Ok(mapped)
 }
 
+#[openapi(tag = "Helpers")]
 #[post("/suggest", data = "<address>")]
 pub async fn suggest_addr(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     address: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Address>>, Error> {
     let db = conn.into_inner();
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchGeoLocation);
 
     match convert_addresses_to_geo(
@@ -307,29 +316,30 @@ pub async fn suggest_addr(
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct Distance {
     store_id: String,
     store_code: String,
     distance: f64,
 }
 
+#[openapi(tag = "Helpers")]
 #[get("/distance/<id>")]
 pub async fn distance_to_stores(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Distance>>, Error> {
     let db = conn.into_inner();
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchGeoLocation);
 
-    let customer = match Customer::fetch_by_id(id, session.clone(), db).await {
+    let customer = match Customer::fetch_by_id(id, session.clone(), &db).await {
         Ok(c) => c,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
 
-    let stores = match Store::fetch_all(session, db).await {
+    let stores = match Store::fetch_all(session, &db).await {
         Ok(s) => s,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
@@ -343,7 +353,8 @@ pub async fn distance_to_stores(
                 let stor = point!(x: store.contact.address.lat, y: store.contact.address.lon);
 
                 Distance {
-                    /// Defaults to the diameter of the earth, i.e. longest distance between two points (minimizes priority if incorrect data is provided)
+                    /// Defaults to the diameter of the earth, i.e. longest distance between two
+                    /// points (minimizes priority if incorrect data is provided)
                     distance: stor.vincenty_distance(&cust).unwrap_or(12756000.01),
                     store_id: store.id,
                     store_code: store.code,
@@ -353,22 +364,23 @@ pub async fn distance_to_stores(
     ))
 }
 
+#[openapi(tag = "Helpers")]
 #[get("/distance/store/<store_id>")]
 pub async fn distance_to_stores_from_store(
-    conn: Connection<'_, Db>,
+    conn: Connection<Db>,
     store_id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Vec<Distance>>, Error> {
     let db = conn.into_inner();
-    let session = cookie_status_wrapper(db, cookies).await?;
+    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchGeoLocation);
 
-    let store_ = match Store::fetch_by_id(store_id, session.clone(), db).await {
+    let store_ = match Store::fetch_by_id(store_id, session.clone(), &db).await {
         Ok(c) => c,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
 
-    let stores = match Store::fetch_all(session, db).await {
+    let stores = match Store::fetch_all(session, &db).await {
         Ok(s) => s,
         Err(reason) => return Err(ErrorResponse::db_err(reason)),
     };
@@ -382,7 +394,8 @@ pub async fn distance_to_stores_from_store(
                 let stor = point!(x: store.contact.address.lat, y: store.contact.address.lon);
 
                 Distance {
-                    /// Defaults to the diameter of the earth, i.e. longest distance between two points (minimizes priority if incorrect data is provided)
+                    /// Defaults to the diameter of the earth, i.e. longest distance between two
+                    /// points (minimizes priority if incorrect data is provided)
                     distance: stor.vincenty_distance(&cust).unwrap_or(12756000.01),
                     store_id: store.id,
                     store_code: store.code,

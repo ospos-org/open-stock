@@ -1,9 +1,10 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{Customer, Employee, Kiosk, Product, Promotion, Store, Tenant, Transaction};
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct All {
     pub employee: Employee,
     pub stores: Vec<Store>,
@@ -15,7 +16,7 @@ pub struct All {
     pub kiosk: Kiosk,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct NewTenantInput {
     pub(crate) name: String,
     pub(crate) email: String,
@@ -23,7 +24,7 @@ pub struct NewTenantInput {
     pub(crate) password: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct NewTenantResponse {
     pub tenant_id: String,
     pub api_key: String,

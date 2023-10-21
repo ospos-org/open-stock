@@ -7,10 +7,13 @@ license = "MIT"
 description = "An Inventory Management Database Interface Layer for MySQL"
 
 [dependencies]
+# Core Utils
 tokio = { version = "1.28.2", features = ["rt"], optional = true }
 rocket = { version = "0.5.0-rc.3", features = [
   "json", "secrets", "tls"
 ], optional = true }
+
+# ORM
 sea-orm-rocket = { version = "0.5.2", optional = true }
 sea-orm-migration = { version = "0.12.1", optional = true }
 sea-orm = { version = "0.12.1", features = [
@@ -19,6 +22,7 @@ sea-orm = { version = "0.12.1", features = [
   "sqlx-mysql"
 ], optional = true}
 
+# Traits & Futures
 async-std = { version = "^1.9", features = [ "attributes", "std" ], optional = true }
 async-trait = { version = "0.1.58", optional = true  }
 async-stream = { version = "^0.3", optional = true  }
@@ -26,26 +30,39 @@ futures-util = { version = "^0.3", optional = true  }
 futures = { version = "^0.3", optional = true  }
 futures-cpupool = { version = "0.1.8", optional = true }
 
+# Positioning
 geo = { version = "0.23.1", optional = true }
 photon-geocoding = { version = "1.1.0", optional = true  }
 
+# Passwords
 rust-argon2 = { version = "1.0", optional = true }
 alea = { version = "0.2", optional = true }
 
+# Environment
 dotenv = { version = "0.15.0", optional = true }
-rand = { version = "0.8.5", optional = true }
 
+# Misc.
 lazy_static = { version = "1.4.0" }
 regex = { version = "1.5.4" }
 chrono = { version = "0.4.23", features = ["serde"]  }
 uuid = { version = "1.2.2", features = [ "v4", "fast-rng", "serde" ] }
+rand = { version = "0.8.5", optional = true }
 
+# Parsing
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+# Enum Mods
 strum = "0.25.0"
 strum_macros = { version = "0.25.2", features = [] }
 enum-iterator = "1.4.1"
+
+# Documentation
+rocket_db_pools = { version = "0.1.0-rc.3" }
+rocket_dyn_templates = { version = "0.1.0-rc.3", features = ["handlebars", "tera"]}
+rocket_okapi = { version = "0.8.0-rc.3", features = ["uuid", "swagger", "rocket_db_pools", "rocket_dyn_templates"] }
+schemars = { version = "0.8.15" , features = ["chrono"]}
+okapi = { version = "0.7.0-rc.1", features = ["impl_json_schema"] }
 
 [dev-dependencies]
 reqwest = "0.11.13"

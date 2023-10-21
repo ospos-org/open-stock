@@ -10,34 +10,70 @@ use async_trait::async_trait;
 use chrono::{Days, Duration as ChronoDuration, Utc};
 #[cfg(feature = "process")]
 use dotenv::dotenv;
+use rocket::request;
 #[cfg(feature = "process")]
 use rocket::tokio;
+use rocket_okapi::gen::OpenApiGenerator;
+use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 #[cfg(feature = "process")]
 use sea_orm::{ColumnTrait, ConnectOptions, DbConn, EntityTrait, QuerySelect};
 #[cfg(feature = "process")]
 use sea_orm_migration::prelude::*;
 #[cfg(feature = "process")]
-use sea_orm_rocket::{rocket::figment::Figment, Database};
+use sea_orm_rocket::{rocket::figment::Figment};
+use rocket_db_pools::Database;
 #[cfg(feature = "process")]
 use tokio::sync::Mutex;
+use rocket::request::FromRequest;
+use sea_orm::DatabaseConnection;
 
 #[cfg(feature = "process")]
 #[derive(Database, Debug)]
 #[database("stock")]
 pub struct Db(RocketDbPool);
 
+#[rocket::async_trait]
+impl<'a> FromRequest<'a> for RocketDbPool {
+    type Error = &'static str;
+    async fn from_request(
+        _request: &'a request::Request<'_>,
+    ) -> request::Outcome<Self, Self::Error> {
+        request::Outcome::Success(RocketDbPool { conn: DatabaseConnection::Disconnected })
+    }
+}
+
+#[rocket::async_trait]
+impl<'a> FromRequest<'a> for Db {
+    type Error = &'static str;
+    async fn from_request(
+        _request: &'a request::Request<'_>,
+    ) -> request::Outcome<Self, Self::Error> {
+        request::Outcome::Success(Db(RocketDbPool { conn: DatabaseConnection::Disconnected }))
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for Db {
+     fn from_request_input(
+         _gen: &mut OpenApiGenerator,
+         _name: String,
+        _required: bool,
+     ) -> rocket_okapi::Result<RequestHeaderInput> {
+         Ok(RequestHeaderInput::None)
+     }
+}
+
 #[cfg(feature = "process")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, OpenApiFromRequest)]
 pub struct RocketDbPool {
-    pub conn: sea_orm::DatabaseConnection,
+    pub conn: DatabaseConnection,
 }
 
 #[cfg(feature = "process")]
 #[async_trait]
-impl sea_orm_rocket::Pool for RocketDbPool {
-    type Error = sea_orm::DbErr;
+impl rocket_db_pools::Pool for RocketDbPool {
+    type Connection = DatabaseConnection;
 
-    type Connection = sea_orm::DatabaseConnection;
+    type Error = DbErr;
 
     async fn init(_: &Figment) -> Result<Self, Self::Error> {
         dotenv().ok();
@@ -78,8 +114,12 @@ impl sea_orm_rocket::Pool for RocketDbPool {
         Ok(RocketDbPool { conn })
     }
 
-    fn borrow(&self) -> &Self::Connection {
-        &self.conn
+    async fn get(&self) -> Result<Self::Connection, Self::Error> {
+        Ok(self.conn.clone())
+    }
+
+    async fn close(&self) {
+        self.conn.to_owned().close().await.unwrap();
     }
 }
 

@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 
 #[cfg(feature = "process")]
 use crate::entities::customer;
@@ -23,7 +24,7 @@ use crate::entities::customer::ActiveModel;
 use crate::Session;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Customer {
     pub id: Id,
     pub name: String,
@@ -40,7 +41,7 @@ pub struct Customer {
 }
 
 #[cfg(feature = "process")]
-#[derive(Serialize, Deserialize, Clone, FromQueryResult)]
+#[derive(Serialize, Deserialize, Clone, FromQueryResult, JsonSchema)]
 pub struct CustomerWithTransactions {
     pub id: Id,
     pub name: String,
@@ -56,7 +57,7 @@ pub struct CustomerWithTransactions {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct CustomerWithTransactionsOut {
     pub id: Id,
     pub name: String,
@@ -72,7 +73,7 @@ pub struct CustomerWithTransactionsOut {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct CustomerInput {
     pub name: String,
 
