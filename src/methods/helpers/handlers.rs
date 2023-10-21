@@ -3,7 +3,7 @@ use std::env;
 use std::time::Duration;
 use chrono::{Days, Utc};
 use geo::point;
-use rocket::{get, http::CookieJar, post, routes, serde::json::Json};
+use rocket::{get, http::CookieJar, post, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -26,7 +26,7 @@ use schemars::JsonSchema;
 use sea_orm::EntityTrait;
 use crate::session::ActiveModel;
 
-pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+pub fn documented_routes(_settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
         generate_template,
         address_to_geolocation,

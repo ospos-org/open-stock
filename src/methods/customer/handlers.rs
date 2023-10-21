@@ -8,7 +8,7 @@ use crate::pool::Db;
 use rocket::get;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
-use rocket::{post, routes};
+use rocket::{post};
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;

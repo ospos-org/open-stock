@@ -20,7 +20,7 @@ use rocket::time::OffsetDateTime;
 #[cfg(feature = "process")]
 use rocket::{http::CookieJar, serde::json::Json, Responder};
 use rocket_okapi::gen::OpenApiGenerator;
-use rocket_okapi::OpenApiFromRequest;
+
 use rocket_okapi::response::OpenApiResponderInner;
 use schemars::JsonSchema;
 #[cfg(feature = "process")]
@@ -384,7 +384,7 @@ impl ErrorResponse {
     }
 }
 
-use rocket_okapi::response::OpenApiResponder;
+
 
 #[cfg(feature = "process")]
 #[derive(Debug, Responder)]
@@ -402,7 +402,7 @@ pub enum Error {
 }
 
 impl OpenApiResponderInner for Error {
-    fn responses(gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
+    fn responses(_gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
         Ok(Responses::default())
     }
 }

@@ -88,7 +88,7 @@ fn rocket() -> _ {
         "/api/customer" => methods::customer::handlers::documented_routes(&openapi_settings),
         "/api/employee" => methods::employee::handlers::documented_routes(&openapi_settings),
         "/api/supplier" => methods::supplier::handlers::documented_routes(&openapi_settings),
-        "/api/helpers" => methods::transaction::handlers::documented_routes(&openapi_settings),
+        "/api/helpers" => methods::helpers::handlers::documented_routes(&openapi_settings),
         "/api/transaction" => methods::transaction::handlers::documented_routes(&openapi_settings),
     }
 

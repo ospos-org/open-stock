@@ -4,7 +4,7 @@ use crate::{
 use chrono::Utc;
 use okapi::openapi3::OpenApi;
 
-use rocket::{fs::TempFile, http::CookieJar, post, routes};
+use rocket::{fs::TempFile, http::CookieJar, post};
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;

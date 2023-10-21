@@ -1,5 +1,5 @@
 use okapi::openapi3::OpenApi;
-use rocket::{get, http::CookieJar, post, routes, serde::json::Json};
+use rocket::{get, http::CookieJar, post, serde::json::Json};
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
