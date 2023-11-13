@@ -31,7 +31,11 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(ColumnDef::new(Transactions::Products).json().not_null())
-                    .col(ColumnDef::new(Transactions::OrderTotal).float().not_null())
+                    .col(
+                        ColumnDef::new(Transactions::OrderTotal)
+                            .decimal_len(24, 8)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Transactions::Payment).json().not_null())
                     .col(
                         ColumnDef::new(Transactions::OrderDate)
@@ -41,8 +45,16 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Transactions::OrderNotes).json().not_null())
                     .col(ColumnDef::new(Transactions::Salesperson).text().not_null())
                     .col(ColumnDef::new(Transactions::Kiosk).text().not_null())
-                    .col(ColumnDef::new(Transactions::CreatedAt).date_time().not_null())
-                    .col(ColumnDef::new(Transactions::UpdatedAt).date_time().not_null())
+                    .col(
+                        ColumnDef::new(Transactions::CreatedAt)
+                            .date_time()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(Transactions::UpdatedAt)
+                            .date_time()
+                            .not_null(),
+                    )
                     .to_owned(),
             )
             .await

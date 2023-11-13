@@ -26,7 +26,11 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Customer::TenantId).string().not_null())
                     .col(ColumnDef::new(Customer::Contact).json().not_null())
                     .col(ColumnDef::new(Customer::CustomerNotes).json().not_null())
-                    .col(ColumnDef::new(Customer::Balance).float().not_null())
+                    .col(
+                        ColumnDef::new(Customer::Balance)
+                            .decimal_len(24, 8)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Customer::SpecialPricing).json().not_null())
                     .col(
                         ColumnDef::new(Customer::AcceptsMarketing)
