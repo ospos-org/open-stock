@@ -11,6 +11,8 @@ pub mod methods;
 #[cfg(feature = "process")]
 pub mod migrator;
 pub mod pool;
+pub mod catchers;
+pub mod guards;
 
 #[cfg(feature = "process")]
 pub use self::entities::*;

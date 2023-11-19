@@ -26,6 +26,7 @@ pub use entities::*;
 pub use methods::*;
 #[cfg(feature = "sql")]
 pub use migrator::*;
+use open_stock::{catchers, guards};
 
 #[cfg(feature = "sql")]
 extern crate argon2;
@@ -67,6 +68,12 @@ fn rocket() -> _ {
 
     // All non-documented items attached here.
     let mut launcher = build()
+        .register("/", catchers![
+            catchers::not_authorized,
+            catchers::internal_server_error,
+            catchers::not_found,
+            catchers::unprocessable_entry
+        ])
         .attach(Db::init())
         .attach(CORS)
         .mount(
