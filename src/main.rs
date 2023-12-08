@@ -84,19 +84,19 @@ fn rocket() -> _ {
             }),
         );
 
-    let openapi_settings = rocket_okapi::settings::OpenApiSettings::default();
+    let openapi_settings = rocket_okapi::settings::OpenApiSettings::new();
 
     mount_endpoints_and_merged_docs! {
-        launcher, "/".to_owned(), openapi_settings,
-        "/api/store" => methods::store::handlers::documented_routes(&openapi_settings),
-        "/api/kiosk" => methods::kiosk::handlers::documented_routes(&openapi_settings),
-        "/api/ingress" => methods::ingress::handlers::documented_routes(&openapi_settings),
-        "/api/product" => methods::product::handlers::documented_routes(&openapi_settings),
-        "/api/customer" => methods::customer::handlers::documented_routes(&openapi_settings),
-        "/api/employee" => methods::employee::handlers::documented_routes(&openapi_settings),
-        "/api/supplier" => methods::supplier::handlers::documented_routes(&openapi_settings),
-        "/api/helpers" => methods::helpers::handlers::documented_routes(&openapi_settings),
-        "/api/transaction" => methods::transaction::handlers::documented_routes(&openapi_settings),
+        launcher, "/api".to_owned(), openapi_settings,
+        "/store" => methods::store::handlers::documented_routes(&openapi_settings),
+        "/kiosk" => methods::kiosk::handlers::documented_routes(&openapi_settings),
+        "/ingress" => methods::ingress::handlers::documented_routes(&openapi_settings),
+        "/product" => methods::product::handlers::documented_routes(&openapi_settings),
+        "/customer" => methods::customer::handlers::documented_routes(&openapi_settings),
+        "/employee" => methods::employee::handlers::documented_routes(&openapi_settings),
+        "/supplier" => methods::supplier::handlers::documented_routes(&openapi_settings),
+        "/helpers" => methods::helpers::handlers::documented_routes(&openapi_settings),
+        "/transaction" => methods::transaction::handlers::documented_routes(&openapi_settings),
     }
 
     launcher
