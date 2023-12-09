@@ -11,7 +11,7 @@ pub struct Model {
     pub name: String,
     pub contact: Json,
     pub customer_notes: Json,
-    pub balance: f32,
+    pub balance: u32,
     pub special_pricing: Json,
     pub accepts_marketing: bool,
     pub tenant_id: String,
