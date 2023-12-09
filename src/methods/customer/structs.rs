@@ -31,7 +31,7 @@ pub struct Customer {
     pub contact: ContactInformation,
 
     pub customer_notes: NoteList,
-    pub balance: f32,
+    pub balance: u32,
 
     pub special_pricing: String,
     pub accepts_marketing: bool,
@@ -49,7 +49,7 @@ pub struct CustomerWithTransactions {
     pub contact: JsonValue,
     pub customer_notes: JsonValue,
 
-    pub balance: f32,
+    pub balance: u32,
     pub special_pricing: JsonValue,
 
     pub transactions: Option<String>,
@@ -65,7 +65,7 @@ pub struct CustomerWithTransactionsOut {
     pub contact: ContactInformation,
     pub customer_notes: NoteList,
 
-    pub balance: f32,
+    pub balance: u32,
     pub special_pricing: String,
 
     pub transactions: Option<String>,
@@ -81,7 +81,7 @@ pub struct CustomerInput {
     pub customer_notes: NoteList,
 
     pub special_pricing: String,
-    pub balance: f32,
+    pub balance: u32,
 
     pub accepts_marketing: bool,
 }
@@ -381,7 +381,7 @@ pub fn example_customer() -> CustomerInput {
         contact: customer,
         special_pricing: "".into(),
         customer_notes: vec![],
-        balance: 0.0,
+        balance: 0,
         accepts_marketing: true,
     }
 }
