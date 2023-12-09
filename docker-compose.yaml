@@ -121,7 +121,7 @@ services:
       - DATABASE_URL=mysql://root:root@database/stock
       # Set the following to whichever URL you host open-pos. This is passed into the CORS policy.
       # Accessing open-stock from any other origin will result in an error message.
-      - ACCESS_ORIGIN=http://localhost:3000
+      - ACCESS_ORIGIN=http://localhost:3001
       # Change this to your own value, the current value is used only as an example key.
       - ROCKET_SECRET_KEY=e5c63abf90fb076d7037a32d8dc2951c4b402e7357ca84b0da8e03595f84b30f
       # Change this to 1 to enable demo.
@@ -132,6 +132,7 @@ services:
       - ROCKET_ADDRESS=0.0.0.0
       # You may customise the port for open-stock to run on, note; this port must be handled correctly.
       - ROCKET_PORT=8000
+      - RELEASE_TYPE=dev
 
   # open-pos:
   #   # Note: If you are running ARM, you are in luck! We support the linux/arm64 platform.

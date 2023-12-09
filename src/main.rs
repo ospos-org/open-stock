@@ -8,6 +8,7 @@ use rocket::{
     http::Header,
     *,
 };
+use rocket::http::{Method, Status};
 use rocket_db_pools::Database;
 use rocket_okapi::mount_endpoints_and_merged_docs;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
@@ -45,7 +46,7 @@ impl Fairing for CORS {
         }
     }
 
-    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
+    async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
         let access_origin = dotenv::var("ACCESS_ORIGIN").unwrap();
 
         // Permit `localhost:3000` when DEMO mode is enabled.
@@ -57,7 +58,13 @@ impl Fairing for CORS {
             "POST, GET, PATCH, OPTIONS",
         ));
         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(Header::new("Access-Control-Expose-Headers", "*"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+
+        if request.method() == Method::Options {
+            response.set_status(Status::Ok);
+            response.set_header(Header::new("Access-Control-Allow-Headers", "Content-Type, Referer, *"));
+        }
     }
 }
 
@@ -79,7 +86,7 @@ fn rocket() -> _ {
         .mount(
             "/docs",
             make_swagger_ui(&SwaggerUIConfig {
-                url: "../openapi.json".to_owned(),
+                url: "../api/openapi.json".to_owned(),
                 ..Default::default()
             }),
         );
