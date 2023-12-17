@@ -11,7 +11,7 @@ pub struct Model {
     pub customer: Json,
     pub transaction_type: TransactionType,
     pub products: Json,
-    pub order_total: f32,
+    pub order_total: i64,
     pub payment: Json,
     pub order_date: DateTime,
     pub order_notes: Json,

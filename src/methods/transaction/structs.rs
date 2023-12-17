@@ -92,7 +92,7 @@ pub struct Transaction {
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
-    pub order_total: f32,
+    pub order_total: i64,
     pub payment: Vec<Payment>,
 
     pub order_date: DateTime<Utc>,
@@ -115,7 +115,7 @@ pub struct DerivableTransaction {
     pub transaction_type: SeaORMTType,
 
     pub products: JsonValue,
-    pub order_total: f32,
+    pub order_total: i64,
     pub payment: JsonValue,
 
     pub order_date: NaiveDateTime,
@@ -132,7 +132,7 @@ pub struct TransactionInput {
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
-    pub order_total: f32,
+    pub order_total: i64,
     pub payment: Vec<Payment>,
 
     pub order_date: DateTime<Utc>,
@@ -149,7 +149,7 @@ pub struct TransactionInit {
     pub transaction_type: TransactionType,
 
     pub products: OrderList,
-    pub order_total: f32,
+    pub order_total: i64,
     pub payment: Vec<Payment>,
 
     pub order_date: DateTime<Utc>,

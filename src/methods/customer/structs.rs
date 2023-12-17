@@ -31,7 +31,7 @@ pub struct Customer {
     pub contact: ContactInformation,
 
     pub customer_notes: NoteList,
-    pub balance: u32,
+    pub balance: i64,
 
     pub special_pricing: String,
     pub accepts_marketing: bool,
@@ -81,7 +81,7 @@ pub struct CustomerInput {
     pub customer_notes: NoteList,
 
     pub special_pricing: String,
-    pub balance: u32,
+    pub balance: i64,
 
     pub accepts_marketing: bool,
 }

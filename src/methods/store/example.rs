@@ -1,3 +1,4 @@
+use chrono::Utc;
 use crate::{Address, ContactInformation, Email, MobileNumber, Store};
 
 pub fn example_stores() -> Vec<Store> {
@@ -28,8 +29,8 @@ pub fn example_stores() -> Vec<Store> {
                 },
             },
             code: "001".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         },
         Store {
             id: "c4a1d88b-e8a0-4dcd-ade2-1eea82254816".to_string(),
@@ -57,8 +58,8 @@ pub fn example_stores() -> Vec<Store> {
                 },
             },
             code: "002".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         },
         Store {
             id: "a91509fa-2783-43ae-8c3c-5d5bc5cb6c95".to_string(),
@@ -86,8 +87,8 @@ pub fn example_stores() -> Vec<Store> {
                 },
             },
             code: "003".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         },
     ]
 }

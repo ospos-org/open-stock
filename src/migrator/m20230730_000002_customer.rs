@@ -28,7 +28,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Customer::CustomerNotes).json().not_null())
                     .col(
                         ColumnDef::new(Customer::Balance)
-                            .decimal_len(24, 8)
+                            .big_integer()
                             .not_null(),
                     )
                     .col(ColumnDef::new(Customer::SpecialPricing).json().not_null())

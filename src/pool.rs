@@ -226,7 +226,7 @@ pub async fn session_garbage_collector(db: &DbConn) {
         interval.tick().await;
 
         match session::Entity::find()
-            .having(session::Column::Expiry.lt(Utc::now().naive_utc()))
+            .having(session::Column::Expiry.lte(Utc::now().naive_utc()))
             .all(db)
             .await
         {
@@ -234,7 +234,9 @@ pub async fn session_garbage_collector(db: &DbConn) {
                 for model in data {
                     // Delete all model instances of sessions which have surpassed their existence time-frame.
                     match session::Entity::delete_by_id(model.id).exec(db).await {
-                        Ok(_data) => {}
+                        Ok(data) => {
+                            println!("[log]: Culled session {:?}", data)
+                        }
                         Err(err) => {
                             println!("[err]: Error in scheduled cron task: {:?}", err)
                         }

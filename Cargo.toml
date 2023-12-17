@@ -19,7 +19,8 @@ sea-orm-migration = { version = "0.12.1", optional = true }
 sea-orm = { version = "0.12.1", features = [
   "macros",
   "runtime-tokio-native-tls",
-  "sqlx-mysql"
+  "sqlx-mysql",
+  "rust_decimal"
 ], optional = true}
 
 # Traits & Futures

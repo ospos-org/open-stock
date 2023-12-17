@@ -21,8 +21,8 @@ impl Product {
             name_long: Set(self.name_long),
             description_long: Set(self.description_long),
             tenant_id: Set(session.tenant_id),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            created_at: Set(self.created_at.naive_utc()),
+            updated_at: Set(self.created_at.naive_utc()),
         }
     }
 }

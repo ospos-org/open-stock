@@ -33,7 +33,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Transactions::Products).json().not_null())
                     .col(
                         ColumnDef::new(Transactions::OrderTotal)
-                            .decimal_len(24, 8)
+                            .big_integer()
                             .not_null(),
                     )
                     .col(ColumnDef::new(Transactions::Payment).json().not_null())

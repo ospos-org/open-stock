@@ -24,6 +24,7 @@ use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
 use schemars::JsonSchema;
 use sea_orm::EntityTrait;
+use serde_json::json;
 use crate::session::ActiveModel;
 
 pub fn documented_routes(_settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
@@ -69,23 +70,32 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
         tenant_id: tenant_id2.to_string().clone(),
     };
 
-    let tenant = Tenant::generate(&db, tenant_id).await.unwrap();
-    let tenant2 = Tenant::generate(&db, tenant_id2).await.unwrap();
+    // Add Tenants
+    let tenant = Tenant::generate(&db, tenant_id).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
+    let tenant2 = Tenant::generate(&db, tenant_id2).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
 
-    let employee = Employee::generate(&db, session.clone()).await.unwrap();
-    let _employee2 = Employee::generate(&db, session2.clone()).await.unwrap();
+    // Add Employees
+    let employee = Employee::generate(&db, session.clone()).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
+    let _employee2 = Employee::generate(&db, session2.clone()).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
 
-    let stores = Store::generate(session.clone(), &db).await.unwrap();
-    let products = Product::generate(session.clone(), &db).await.unwrap();
-    let customer = Customer::generate(session.clone(), &db).await.unwrap();
+    // Add other items (aggregated)
+    let stores = Store::generate(session.clone(), &db).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
+    let products = Product::generate(session.clone(), &db).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
+    let customer = Customer::generate(session.clone(), &db).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
 
-    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), &db)
-        .await
-        .unwrap();
+    // Add Kiosks
+    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), &db).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
 
-    let _kiosk2 = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133622", session2.clone(), &db)
-        .await
-        .unwrap();
+    let _kiosk2 = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133622", session2.clone(), &db).await
+        .map_err(|e| ErrorResponse::db_err(e))?;
 
     let transaction = Transaction::generate(
         &db,
@@ -97,10 +107,9 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
             expiry: Utc::now(),
             tenant_id: tenant_id.to_string(),
         },
-    )
-    .await
-    .unwrap();
-    let promotions = Promotion::generate(session, &db).await.unwrap();
+    ).await.map_err(|e| ErrorResponse::db_err(e))?;
+
+    let promotions = Promotion::generate(session, &db).await.map_err(|e| ErrorResponse::db_err(e))?;
 
     Ok(Json(All {
         employee,

@@ -162,7 +162,7 @@ pub fn example_transaction(customer_id: &str) -> TransactionInit {
         },
         transaction_type: TransactionType::In,
         products: vec![order],
-        order_total: 115.00,
+        order_total: 115_i64,
         payment: vec![Payment {
             id: Uuid::new_v4().to_string(),
             payment_method: crate::methods::PaymentMethod::Card,

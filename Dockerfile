@@ -23,7 +23,7 @@ COPY ./Rocket.toml ./
 ARG RELEASE_TYPE
 
 # build for release or dev depending on what is desired
-RUN if [ ${RELEASE_TYPE} = "dev" ]; then cargo build --locked --jobs 1 ; else ROCKET_ENV=prod cargo build --release --locked ; fi
+RUN if [ ${RELEASE_TYPE} = "dev" ]; then cargo build --locked --jobs 1 ; else ROCKET_ENV=prod cargo build --release --locked --jobs 8 ; fi
 
 # move that file up the tree
 RUN if [ ${RELEASE_TYPE} = "dev" ]; then cp /open-stock/target/debug/open-stock . ; else cp /open-stock/target/release/open-stock . ; fi
