@@ -14,23 +14,24 @@ use sea_orm::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
+use validator::Validate;
 use crate::entities::kiosk::Model;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct KioskPreferences {
     pub printer_id: String,
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Validate)]
 pub struct AuthenticationLog {
     pub employee_id: String,
     pub successful: bool,
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct Kiosk {
     /// Standard Unique Identification
     pub id: String,
@@ -52,7 +53,7 @@ pub struct Kiosk {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct KioskInit {
     name: String,
     store_id: String,

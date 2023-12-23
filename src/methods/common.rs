@@ -28,9 +28,10 @@ use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QuerySelect};
 use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use validator::Validate;
 use crate::session::ActiveModel;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema, Validate)]
 pub struct Name {
     pub first: String,
     pub middle: String,
@@ -49,7 +50,7 @@ impl Name {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema, Validate)]
 pub struct ContactInformation {
     pub name: String,
     pub mobile: MobileNumber,
@@ -58,7 +59,7 @@ pub struct ContactInformation {
     pub address: Address,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema, Validate)]
 pub struct MobileNumber {
     pub number: String,
     pub valid: bool,
@@ -108,14 +109,14 @@ pub type OrderList = Vec<Order>;
 pub type NoteList = Vec<Note>;
 pub type HistoryList = Vec<History<ProductExchange>>;
 
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct History<T> {
     pub item: T,
     pub reason: String,
     pub timestamp: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema, Validate)]
 pub struct Email {
     pub root: String,
     pub domain: String,
@@ -145,7 +146,7 @@ impl Email {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
 pub struct Note {
     pub message: String,
     pub author: String,
@@ -163,7 +164,7 @@ impl Display for Note {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema, Validate)]
 pub struct Address {
     pub street: String,
     pub street2: String,
@@ -174,7 +175,7 @@ pub struct Address {
     pub lon: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
 pub struct Location {
     pub store_code: String,
     pub store_id: String,
@@ -189,7 +190,7 @@ pub type TagList = Vec<Tag>;
 pub type Tag = String;
 pub type Id = String;
 
-#[derive(Debug, JsonSchema)]
+#[derive(Debug, JsonSchema, Validate)]
 pub struct SessionRaw {
     pub id: String,
     pub key: String,
@@ -197,7 +198,7 @@ pub struct SessionRaw {
     pub expiry: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, JsonSchema)]
+#[derive(Debug, Clone, JsonSchema, Validate)]
 pub struct Session {
     pub id: String,
     pub key: String,
@@ -220,18 +221,16 @@ impl Into<session::ActiveModel> for Session {
 
 impl Session {
     pub fn has_permission(self, permission: Action) -> bool {
-        let action = match self
+        let action = self
             .employee
             .level
             .into_iter()
-            .find(|x| x.action == permission)
-        {
-            Some(e) => e,
-            None => Access {
+            .find(|x| x.action == permission).unwrap_or_else(||
+                Access {
                 action: permission,
                 authority: 0,
-            },
-        };
+            }
+        );
 
         if action.action == Action::GenerateTemplateContent {
             true
@@ -349,6 +348,7 @@ pub async fn cookie_status_wrapper(
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ErrorResponse {
     message: String,
+    code: String
 }
 
 #[cfg(feature = "process")]
@@ -356,30 +356,35 @@ impl ErrorResponse {
     pub fn create_error(message: &str) -> Error {
         Error::StandardError(Json(ErrorResponse {
             message: message.to_string(),
+            code: "error.custom".to_string()
         }))
     }
 
     pub fn input_error() -> Error {
         Error::InputError(Json(ErrorResponse {
             message: "Unable to update fields due to malformed inputs".to_string(),
+            code: "error.input".to_string()
         }))
     }
 
     pub fn unauthorized(action: Action) -> Error {
         Error::Unauthorized(Json(ErrorResponse {
             message: format!("User lacks {:?} permission.", action),
+            code: "error.unauthorized".to_string()
         }))
     }
 
     pub fn custom_unauthorized(message: &str) -> Error {
         Error::Unauthorized(Json(ErrorResponse {
             message: message.to_string(),
+            code: "error.unauthorized.custom".to_string()
         }))
     }
 
-    pub fn db_err(message: sea_orm::DbErr) -> Error {
+    pub fn db_err(message: DbErr) -> Error {
         Error::DbError(Json(ErrorResponse {
             message: format!("SQL error, reason: {}", message),
+            code: "error.database.query".to_string()
         }))
     }
 }

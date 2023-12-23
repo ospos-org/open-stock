@@ -20,11 +20,12 @@ use sea_orm::{
 use sea_orm::QueryOrder;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use validator::Validate;
 use crate::entities::customer::ActiveModel;
 use crate::Session;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct Customer {
     pub id: Id,
     pub name: String,
@@ -41,7 +42,7 @@ pub struct Customer {
 }
 
 #[cfg(feature = "process")]
-#[derive(Serialize, Deserialize, Clone, FromQueryResult, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, FromQueryResult, JsonSchema, Validate)]
 pub struct CustomerWithTransactions {
     pub id: Id,
     pub name: String,
@@ -60,7 +61,7 @@ pub struct CustomerWithTransactions {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct CustomerWithTransactionsOut {
     pub id: Id,
     pub name: String,
@@ -79,7 +80,7 @@ pub struct CustomerWithTransactionsOut {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct CustomerInput {
     pub name: String,
 

@@ -18,6 +18,7 @@ use crate::products;
 use crate::{ProductIdentification, Session};
 use serde_json::json;
 use uuid::Uuid;
+use validator::Validate;
 
 #[cfg(feature = "types")]
 pub type VariantIdTag = Vec<VariantId>;
@@ -29,14 +30,14 @@ type VariantId = String;
 pub type VariantCategoryList = Vec<VariantCategory>;
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 pub struct VariantCategory {
     pub category: String,
     pub variants: Vec<Variant>,
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 /// #### Information for a Variant.
 /// This includes its name, identification, stock information and quantities, prices, etc.
 pub struct VariantInformation {
@@ -96,7 +97,7 @@ impl Display for VariantInformation {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 pub struct Promotion {
     pub id: Id,
     pub name: String,
@@ -107,7 +108,7 @@ pub struct Promotion {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 pub struct PromotionInput {
     name: String,
     buy: PromotionBuy,
@@ -311,7 +312,7 @@ impl Promotion {
 
 /// Represents all sub-variant types; i.e. All 'White' variants, whether small, long-sleeve, ... it represents the sub-group of all which are 'White'.
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema, Validate)]
 pub struct Variant {
     pub name: String,
     pub images: Vec<Url>,
@@ -321,7 +322,7 @@ pub struct Variant {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 pub struct StockInformation {
     pub stock_group: String,
     pub sales_group: String,

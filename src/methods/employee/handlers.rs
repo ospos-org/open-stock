@@ -1,10 +1,11 @@
-use std::time::Duration;
-
 use crate::entities::session;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
 use crate::pool::Db;
-use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie};
+use crate::catchers::Validated;
+use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie, LogRequest};
 use chrono::{Days, Duration as ChronoDuration, Utc};
+use std::time::Duration;
+
 use okapi::openapi3::OpenApi;
 use rocket::get;
 use rocket::http::{Cookie, CookieJar, SameSite};
@@ -401,10 +402,10 @@ pub async fn auth_rid(
 #[post("/", data = "<input_data>")]
 pub async fn create(
     conn: Connection<Db>,
-    input_data: Json<EmployeeInput>,
+    input_data: Validated<Json<EmployeeInput>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
-    let new_transaction = input_data.clone().into_inner();
+    let new_transaction = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -428,13 +429,6 @@ pub async fn create(
             Err(ErrorResponse::input_error())
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
-pub struct LogRequest {
-    pub kiosk: String,
-    pub reason: String,
-    pub in_or_out: String,
 }
 
 #[openapi(tag = "Employee")]

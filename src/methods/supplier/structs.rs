@@ -22,10 +22,11 @@ use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
+use validator::Validate;
 use crate::methods::supplier::example::example_supplier;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct Supplier {
     pub id: String,
     pub name: Name,
@@ -38,7 +39,7 @@ pub struct Supplier {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct SupplierInput {
     pub name: Name,
     pub contact: ContactInformation,

@@ -1,5 +1,6 @@
 use rocket_okapi::JsonSchema;
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 use crate::methods::Location;
 
@@ -7,14 +8,14 @@ use crate::methods::Location;
 pub type StockList = Vec<Stock>;
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 pub struct Stock {
     pub store: Location,
     pub quantity: Quantity,
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 pub struct Quantity {
     pub quantity_sellable: f32,
     pub quantity_unsellable: f32,

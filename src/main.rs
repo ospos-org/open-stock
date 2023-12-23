@@ -27,7 +27,7 @@ pub use entities::*;
 pub use methods::*;
 #[cfg(feature = "sql")]
 pub use migrator::*;
-use open_stock::{catchers, guards};
+use open_stock::{catchers};
 
 #[cfg(feature = "sql")]
 extern crate argon2;
@@ -48,9 +48,6 @@ impl Fairing for CORS {
 
     async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
         let access_origin = dotenv::var("ACCESS_ORIGIN").unwrap();
-
-        // Permit `localhost:3000` when DEMO mode is enabled.
-        // `request.host().unwrap().domain().eq( &access_origin)`
 
         response.set_header(Header::new("Access-Control-Allow-Origin", access_origin));
         response.set_header(Header::new(
@@ -79,7 +76,8 @@ fn rocket() -> _ {
             catchers::not_authorized,
             catchers::internal_server_error,
             catchers::not_found,
-            catchers::unprocessable_entry
+            catchers::unprocessable_entry,
+            catchers::general_catcher,
         ])
         .attach(Db::init())
         .attach(CORS)

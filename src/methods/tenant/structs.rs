@@ -5,16 +5,17 @@ use schemars::JsonSchema;
 #[cfg(feature = "process")]
 use sea_orm::{DbConn, DbErr, EntityTrait, InsertResult};
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 
 use crate::Id;
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema, Validate)]
 pub struct TenantSettings {}
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct Tenant {
     pub tenant_id: Id,
 

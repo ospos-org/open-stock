@@ -27,8 +27,15 @@ pub enum AccountType {
     Managerial
 }
 
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
+pub struct LogRequest {
+    pub kiosk: String,
+    pub reason: String,
+    pub in_or_out: String,
+}
+
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Validate)]
 pub struct Employee {
     pub id: Id,
     pub rid: String,
@@ -46,7 +53,7 @@ pub struct Employee {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Validate)]
 pub struct Access<T> {
     pub action: T,
     pub authority: i32,
@@ -115,13 +122,13 @@ pub fn all_actions() -> Vec<Access<Action>> {
 /// Stores a password hash, signed as a key using the users login ID.
 /// Upon logging in using a client portal, the pre-sign object is signed using the provided ID -
 /// if the hash matches that which is given, authentication can be approved.
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Validate)]
 pub struct EmployeeAuth {
     pub hash: String,
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct EmployeeInput {
     pub name: Name,
     pub rid: i32,
@@ -170,6 +177,7 @@ impl Display for Employee {
 #[cfg(feature = "process")]
 use argon2::{self, Config};
 use schemars::JsonSchema;
+use validator::Validate;
 
 #[cfg(feature = "methods")]
 impl Employee {
@@ -421,7 +429,7 @@ impl Employee {
 }
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Validate)]
 pub struct Attendance {
     pub track_type: TrackType,
     pub kiosk: Id,

@@ -4,13 +4,12 @@ use std::time::Duration;
 use chrono::{Days, Utc};
 use geo::point;
 use rocket::{get, http::CookieJar, post, serde::json::Json};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{check_permissions, example_employee, methods::{
     cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
     Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType};
+}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType, Distance};
 use geo::VincentyDistance;
 use okapi::openapi3::OpenApi;
 use photon_geocoding::{
@@ -323,13 +322,6 @@ pub async fn suggest_addr(
         Ok(val) => Ok(Json(val)),
         Err(status) => Err(status),
     }
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct Distance {
-    store_id: String,
-    store_code: String,
-    distance: f64,
 }
 
 #[openapi(tag = "Helpers")]
