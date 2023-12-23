@@ -175,8 +175,6 @@ pub fn unprocessable_entry(req: &Request) -> Value {
 
     let mut message =  "Failed to service request, structure parsing failed.".to_string();
 
-    println!("PARSE?:({:?}), VALID?:({:?})", possible_parse_violation, validation_errors);
-
     if validation_errors.is_some() {
         message.clear();
 
