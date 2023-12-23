@@ -20,10 +20,11 @@ use crate::methods::convert_addr_to_geo;
 use crate::methods::{ContactInformation, Id};
 use crate::Session;
 use serde_json::json;
+use validator::Validate;
 use crate::methods::store::example::example_stores;
 
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Validate)]
 pub struct Store {
     pub id: Id,
     pub name: String,

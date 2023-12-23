@@ -4,13 +4,12 @@ use std::time::Duration;
 use chrono::{Days, Utc};
 use geo::point;
 use rocket::{get, http::CookieJar, post, serde::json::Json};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{check_permissions, example_employee, methods::{
     cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
     Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType};
+}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType, Distance};
 use geo::VincentyDistance;
 use okapi::openapi3::OpenApi;
 use photon_geocoding::{
@@ -22,9 +21,8 @@ use rocket::time::OffsetDateTime;
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
-use schemars::JsonSchema;
 use sea_orm::EntityTrait;
-use serde_json::json;
+use crate::catchers::Validated;
 use crate::session::ActiveModel;
 
 pub fn documented_routes(_settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
@@ -128,11 +126,11 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
 #[post("/new", data = "<tenant_input>")]
 pub async fn new_tenant(
     conn: Connection<Db>,
-    tenant_input: Json<NewTenantInput>,
+    tenant_input: Validated<Json<NewTenantInput>>,
     _cookies: &CookieJar<'_>,
 ) -> Result<Json<NewTenantResponse>, Error> {
     let db = conn.into_inner();
-    let data = tenant_input.into_inner();
+    let data = tenant_input.0.into_inner();
 
     // Create new Tenant
     let tenant_id = Uuid::new_v4().to_string();
@@ -323,13 +321,6 @@ pub async fn suggest_addr(
         Ok(val) => Ok(Json(val)),
         Err(status) => Err(status),
     }
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct Distance {
-    store_id: String,
-    store_code: String,
-    distance: f64,
 }
 
 #[openapi(tag = "Helpers")]

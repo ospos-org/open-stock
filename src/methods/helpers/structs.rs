@@ -1,10 +1,18 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 use crate::{Customer, Employee, Kiosk, Product, Promotion, Store, Tenant, Transaction};
 
+#[derive(Serialize, Deserialize, JsonSchema, Validate)]
+pub struct Distance {
+    pub store_id: String,
+    pub store_code: String,
+    pub distance: f64,
+}
+
 #[cfg(feature = "types")]
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema, Validate)]
 pub struct All {
     pub employee: Employee,
     pub stores: Vec<Store>,
@@ -16,7 +24,7 @@ pub struct All {
     pub kiosk: Kiosk,
 }
 
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct NewTenantInput {
     pub(crate) name: String,
     pub(crate) email: String,
@@ -24,7 +32,7 @@ pub struct NewTenantInput {
     pub(crate) password: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct NewTenantResponse {
     pub tenant_id: String,
     pub api_key: String,

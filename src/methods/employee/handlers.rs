@@ -1,10 +1,11 @@
-use std::time::Duration;
-
 use crate::entities::session;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
 use crate::pool::Db;
-use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie};
+use crate::catchers::Validated;
+use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie, LogRequest, Auth};
 use chrono::{Days, Duration as ChronoDuration, Utc};
+use std::time::Duration;
+
 use okapi::openapi3::OpenApi;
 use rocket::get;
 use rocket::http::{Cookie, CookieJar, SameSite};
@@ -14,9 +15,7 @@ use rocket::{post};
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
-use schemars::JsonSchema;
 use sea_orm::{EntityTrait, Set};
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -177,9 +176,9 @@ async fn update(
     conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
-    input_data: Json<Employee>,
+    input_data: Validated<Json<Employee>>,
 ) -> Result<Json<Employee>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -204,22 +203,15 @@ async fn update(
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
-pub struct Auth {
-    pub pass: String,
-    pub kiosk_id: String,
-    pub tenant_id: String,
-}
-
 #[openapi(tag = "Employee")]
 #[post("/auth/<id>", data = "<input_data>")]
 pub async fn auth(
     id: &str,
     conn: Connection<Db>,
-    input_data: Json<Auth>,
+    input_data: Validated<Json<Auth>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<String>, Error> {
-    let input = input_data.clone().into_inner();
+    let input = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let default_employee = example_employee();
@@ -231,7 +223,7 @@ pub async fn auth(
             key: String::new(),
             employee: default_employee.into(),
             expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
-            tenant_id: input_data.tenant_id.clone(),
+            tenant_id: input.tenant_id.clone(),
         },
         &input.pass,
         &db,
@@ -296,10 +288,10 @@ pub async fn auth(
 pub async fn auth_rid(
     rid: &str,
     conn: Connection<Db>,
-    input_data: Json<Auth>,
+    input_data: Validated<Json<Auth>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<String>, Error> {
-    let input = input_data.clone().into_inner();
+    let input = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let default_employee = example_employee();
@@ -308,7 +300,7 @@ pub async fn auth_rid(
         key: String::new(),
         employee: default_employee.into(),
         expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
-        tenant_id: input_data.tenant_id.clone(),
+        tenant_id: input.tenant_id.clone(),
     };
 
     match Employee::verify_with_rid(rid, session.clone(), &input.pass, &db).await {
@@ -401,10 +393,10 @@ pub async fn auth_rid(
 #[post("/", data = "<input_data>")]
 pub async fn create(
     conn: Connection<Db>,
-    input_data: Json<EmployeeInput>,
+    input_data: Validated<Json<EmployeeInput>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
-    let new_transaction = input_data.clone().into_inner();
+    let new_transaction = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -430,23 +422,16 @@ pub async fn create(
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
-pub struct LogRequest {
-    pub kiosk: String,
-    pub reason: String,
-    pub in_or_out: String,
-}
-
 #[openapi(tag = "Employee")]
 #[post("/log/<id>", data = "<input_data>")]
 pub async fn log(
     conn: Connection<Db>,
-    input_data: Json<LogRequest>,
+    input_data: Validated<Json<LogRequest>>,
     id: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
-    let data = input_data.into_inner();
+    let data = input_data.0.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);

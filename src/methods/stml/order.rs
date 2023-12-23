@@ -7,9 +7,10 @@ use crate::methods::{
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
 pub struct Order {
     pub id: Id,
 
@@ -59,7 +60,7 @@ pub struct OrderState {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
 pub struct OrderStatusAssignment {
     pub status: OrderStatus,
     pub assigned_products: Vec<Id>,
@@ -137,7 +138,7 @@ impl Display for OrderStatusAssignment {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, Validate)]
 pub struct TransitInformation {
     pub shipping_company: ContactInformation,
     pub query_url: Url,

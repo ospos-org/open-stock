@@ -4,7 +4,6 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
-use rocket::serde::json::Json;
 
 #[cfg(feature = "process")]
 pub mod entities;

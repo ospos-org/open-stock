@@ -14,6 +14,7 @@ use rocket::{post};
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
+use crate::catchers::Validated;
 
 use super::{Customer, CustomerInput};
 
@@ -178,9 +179,9 @@ async fn update(
     conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
-    input_data: Json<Customer>,
+    input_data: Validated<Json<Customer>>,
 ) -> Result<Json<Customer>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -197,9 +198,9 @@ async fn update_contact_info(
     conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
-    input_data: Json<ContactInformation>,
+    input_data: Validated<Json<ContactInformation>>,
 ) -> Result<Json<Customer>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
     let session = cookie_status_wrapper(&db, cookies).await?;
 
@@ -216,9 +217,9 @@ async fn update_contact_info(
 pub async fn create(
     conn: Connection<Db>,
     cookies: &CookieJar<'_>,
-    input_data: Json<CustomerInput>,
+    input_data: Validated<Json<CustomerInput>>,
 ) -> Result<Json<Customer>, Error> {
-    let new_transaction = input_data.clone().into_inner();
+    let new_transaction = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;

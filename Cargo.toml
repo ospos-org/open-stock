@@ -64,6 +64,8 @@ rocket_dyn_templates = { version = "0.1.0-rc.3", features = ["handlebars", "tera
 rocket_okapi = { version = "0.8.0-rc.3", features = ["uuid", "swagger", "rocket_db_pools", "rocket_dyn_templates"] }
 schemars = { version = "0.8.15" , features = ["chrono"]}
 okapi = { version = "0.7.0-rc.1", features = ["impl_json_schema"] }
+rocket-validation = "0.1.3"
+validator="0.16.1"
 
 [dev-dependencies]
 reqwest = "0.11.13"

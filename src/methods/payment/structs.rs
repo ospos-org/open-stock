@@ -3,9 +3,10 @@ use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct Payment {
     pub id: String,
     pub payment_method: PaymentMethod,
@@ -24,14 +25,14 @@ pub struct Payment {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct Price {
     pub quantity: f32,
     pub currency: String,
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct PaymentProcessor {
     pub location: String,
     pub employee: String,
@@ -86,7 +87,7 @@ pub enum PaymentAction {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct CardDetails {
     pub card_brand: String,
     pub last_4: String,
@@ -106,7 +107,7 @@ pub struct CardDetails {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct PaymentTimeline {
     pub authorized_at: String,
     pub captured_at: String,

@@ -10,6 +10,7 @@ use rocket::{post};
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
+use crate::catchers::Validated;
 
 use super::{Supplier, SupplierInput};
 
@@ -121,9 +122,9 @@ async fn update(
     conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
-    input_data: Json<SupplierInput>,
+    input_data: Validated<Json<SupplierInput>>,
 ) -> Result<Json<Supplier>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;

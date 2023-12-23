@@ -32,6 +32,7 @@ use crate::{
 #[cfg(feature = "process")]
 use futures::future::join_all;
 use schemars::JsonSchema;
+use validator::Validate;
 use crate::product::example::example_products;
 
 #[cfg(feature = "types")]
@@ -43,7 +44,7 @@ pub enum ProductVisibility {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, Default, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, Default, JsonSchema, Validate)]
 pub struct ProductIdentification {
     pub sku: String,
     pub ean: String,
@@ -53,7 +54,7 @@ pub struct ProductIdentification {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 /// A product, containing a list of `Vec<Variant>`, an identifiable `sku` along with identifying information such as `tags`, `description` and `specifications`.
 /// > Stock-relevant information about a product is kept under each variant, thus allowing for modularity of different variants and a fine-grained control over your inventory.
 pub struct Product {
@@ -82,7 +83,7 @@ pub struct Product {
 }
 
 #[cfg(feature = "types")]
-#[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
 pub struct ProductWPromotion {
     pub product: Product,
     pub promotions: Vec<Promotion>,
@@ -393,7 +394,7 @@ impl Product {
     }
 }
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Validate)]
 pub struct ProductPurchase {
     // Is the barcode of the product.
     pub id: String,
@@ -580,7 +581,7 @@ impl<'de> Deserialize<'de> for ProductPurchase {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
 pub struct ProductInstance {
     pub id: String,
     #[serde(default = "default_fulfillment")]
@@ -597,7 +598,7 @@ fn default_fulfillment() -> FulfillmentStatus {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct FulfillmentStatus {
     pub pick_status: PickStatus,
     pub pick_history: Vec<History<PickStatus>>,
@@ -617,7 +618,7 @@ pub enum PickStatus {
 }
 
 #[cfg(feature = "types")]
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct ProductExchange {
     pub method_type: TransactionType,
     pub product_code: ProductCode,
