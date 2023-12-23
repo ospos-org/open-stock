@@ -118,10 +118,9 @@ pub async fn find_related_transactions(
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Transaction::fetch_by_client_id(id, session, &db).await {
-        Ok(transactions) => Ok(Json(transactions)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Ok(Json(
+        Transaction::fetch_by_client_id(id, session, &db).await?
+    ))
 }
 
 #[openapi(tag = "Customer")]
@@ -135,10 +134,9 @@ pub async fn get_by_phone(
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_phone(phone, session, &db).await {
-        Ok(customer) => Ok(Json(customer)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Ok(Json(
+        Customer::fetch_by_phone(phone, session, &db).await?
+    ))
 }
 
 #[openapi(tag = "Customer")]
@@ -153,10 +151,9 @@ pub async fn get_by_addr(
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchCustomer);
 
-    match Customer::fetch_by_addr(addr, session, &db).await {
-        Ok(customers) => Ok(Json(customers)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Ok(Json(
+        Customer::fetch_by_addr(addr, session, &db).await?
+    ))
 }
 
 #[openapi(tag = "Customer")]
@@ -170,10 +167,9 @@ async fn generate(
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
 
-    match Customer::generate(session, &db).await {
-        Ok(res) => Ok(Json(res)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Ok(Json(
+        Customer::generate(session, &db).await?
+    ))
 }
 
 #[openapi(tag = "Customer")]
@@ -182,7 +178,7 @@ async fn update(
     conn: Connection<Db>,
     id: &str,
     cookies: &CookieJar<'_>,
-    input_data: Json<CustomerInput>,
+    input_data: Json<Customer>,
 ) -> Result<Json<Customer>, Error> {
     let input_data = input_data.clone().into_inner();
     let db = conn.into_inner();
@@ -190,10 +186,9 @@ async fn update(
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyCustomer);
 
-    match Customer::update(input_data, session, id, &db).await {
-        Ok(res) => Ok(Json(res)),
-        Err(_) => Err(ErrorResponse::input_error()),
-    }
+    Ok(Json(
+        Customer::update(input_data, session, id, &db).await?
+    ))
 }
 
 #[openapi(tag = "Customer")]
@@ -212,7 +207,7 @@ async fn update_contact_info(
 
     match Customer::update_contact_information(input_data, id, session, &db).await {
         Ok(res) => Ok(Json(res)),
-        Err(_) => Err(ErrorResponse::input_error()),
+        Err(error) => Err(ErrorResponse::db_err(error)),
     }
 }
 
@@ -243,9 +238,6 @@ pub async fn create(
                     )))
                 }
             },
-        Err(reason) => {
-            println!("[dberr]: {}", reason);
-            Err(ErrorResponse::input_error())
-        }
+        Err(error) => Err(ErrorResponse::db_err(error)),
     }
 }

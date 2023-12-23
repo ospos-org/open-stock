@@ -384,7 +384,11 @@ impl ErrorResponse {
     }
 }
 
-
+impl From<DbErr> for Error {
+    fn from(value: DbErr) -> Self {
+        ErrorResponse::db_err(value)
+    }
+}
 
 #[cfg(feature = "process")]
 #[derive(Debug, Responder)]

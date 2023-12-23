@@ -45,15 +45,18 @@ pub struct Customer {
 pub struct CustomerWithTransactions {
     pub id: Id,
     pub name: String,
-
     pub contact: JsonValue,
-    pub customer_notes: JsonValue,
 
-    pub balance: u32,
+    pub customer_notes: JsonValue,
+    pub balance: i64,
+
     pub special_pricing: JsonValue,
+    pub accepts_marketing: bool,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 
     pub transactions: Option<String>,
-    pub accepts_marketing: bool,
 }
 
 #[cfg(feature = "types")]
@@ -61,15 +64,18 @@ pub struct CustomerWithTransactions {
 pub struct CustomerWithTransactionsOut {
     pub id: Id,
     pub name: String,
-
     pub contact: ContactInformation,
-    pub customer_notes: NoteList,
 
-    pub balance: u32,
+    pub customer_notes: NoteList,
+    pub balance: i64,
+
     pub special_pricing: String,
+    pub accepts_marketing: bool,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 
     pub transactions: Option<String>,
-    pub accepts_marketing: bool,
 }
 
 #[cfg(feature = "types")]
@@ -95,10 +101,7 @@ impl Customer {
     ) -> Result<InsertResult<ActiveModel>, DbErr> {
         let insert_crud = cust.into_active(session.tenant_id);
 
-        match Cust::insert(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+        Cust::insert(insert_crud).exec(db).await
     }
 
     pub async fn insert_raw(
@@ -108,10 +111,7 @@ impl Customer {
     ) -> Result<InsertResult<ActiveModel>, DbErr> {
         let insert_crud = cust.into_active(session.tenant_id);
 
-        match Cust::insert(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+        Cust::insert(insert_crud).exec(db).await
     }
 
     pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Customer, DbErr> {
@@ -160,6 +160,8 @@ impl Customer {
                 balance: c.balance,
                 transactions: c.transactions.clone(),
                 accepts_marketing: c.accepts_marketing,
+                created_at: c.created_at,
+                updated_at: c.updated_at
             })
             .collect();
 
@@ -189,14 +191,14 @@ impl Customer {
         Ok(mapped)
     }
 
-    pub async fn fetch_by_phone(
-        phone: &str,
+    pub async fn fetch_containing_contact(
+        value: &str,
         session: Session,
         db: &DbConn,
     ) -> Result<Vec<Customer>, DbErr> {
         let res = customer::Entity::find()
             .filter(customer::Column::TenantId.eq(session.tenant_id))
-            .having(customer::Column::Contact.contains(phone))
+            .having(customer::Column::Contact.contains(value))
             .limit(25)
             .all(db)
             .await?;
@@ -209,24 +211,20 @@ impl Customer {
         Ok(mapped)
     }
 
+    pub async fn fetch_by_phone(
+        phone: &str,
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Customer>, DbErr> {
+        Customer::fetch_containing_contact(phone, session, db).await
+    }
+
     pub async fn fetch_by_addr(
         addr: &str,
         session: Session,
         db: &DbConn,
     ) -> Result<Vec<Customer>, DbErr> {
-        let res = customer::Entity::find()
-            .filter(customer::Column::TenantId.eq(session.tenant_id))
-            .having(customer::Column::Contact.contains(addr))
-            .limit(25)
-            .all(db)
-            .await?;
-
-        let mapped: Vec<Customer> = res
-            .iter()
-            .map(|c| c.into())
-            .collect();
-
-        Ok(mapped)
+        Customer::fetch_containing_contact(addr, session, db).await
     }
 
     pub async fn fetch_recent(
@@ -253,14 +251,11 @@ impl Customer {
         let cust = example_customer();
         // Insert & Fetch Customer
         let r = Customer::insert(cust, session.clone(), db).await.unwrap();
-        match Customer::fetch_by_id(&r.last_insert_id, session, db).await {
-            Ok(cust) => Ok(cust),
-            Err(e) => Err(e),
-        }
+        Customer::fetch_by_id(&r.last_insert_id, session, db).await
     }
 
     pub async fn update(
-        cust: CustomerInput,
+        cust: Customer,
         session: Session,
         id: &str,
         db: &DbConn,
@@ -273,19 +268,21 @@ impl Customer {
             cust.contact.address.city
         ));
 
-        // !impl Validate form input/ contact information.
-
         match addr {
             Ok(ad) => {
-                let mut model = cust.clone().into_active(id.to_string());
+                // Derive the default from the provided customer
+                let mut model = cust.clone().into_active(session.tenant_id.clone());
 
-                let mut new_contact = cust.contact.clone();
-                new_contact.address = ad;
+                model.contact = Set(
+                    json!(ContactInformation {
+                        address: ad,
+                        ..cust.contact
+                    })
+                );
 
-                model.contact = Set(json!(new_contact));
+                println!("Have active model: {:?}", model);
 
-                model.update(db)
-                    .await?;
+                model.update(db).await?;
 
                 Self::fetch_by_id(id, session, db).await
             }
@@ -302,6 +299,7 @@ impl Customer {
         db: &DbConn,
     ) -> Result<Customer, DbErr> {
         let cust = Self::fetch_by_id(id, session.clone(), db).await?;
+
         // Get geo location for new contact information...
         let addr = convert_addr_to_geo(&format!(
             "{} {} {} {}",
@@ -313,15 +311,18 @@ impl Customer {
 
         match addr {
             Ok(ad) => {
-                let mut model = cust.clone().into_active(id.to_string());
+                let mut model = cust.clone().into_active(session.tenant_id.clone());
 
-                let mut new_contact = cust.contact.clone();
-                new_contact.address = ad;
+                model.contact = Set(
+                    json!(ContactInformation {
+                        address: ad,
+                        ..cust.contact
+                    })
+                );
 
-                model.contact = Set(json!(new_contact));
+                println!("Have active model: {:?}", model);
 
-                model.update(db)
-                    .await?;
+                model.update(db).await?;
 
                 Self::fetch_by_id(id, session, db).await
             }
