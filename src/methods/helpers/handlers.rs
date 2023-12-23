@@ -21,9 +21,8 @@ use rocket::time::OffsetDateTime;
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
-use schemars::JsonSchema;
 use sea_orm::EntityTrait;
-use serde_json::json;
+use crate::catchers::Validated;
 use crate::session::ActiveModel;
 
 pub fn documented_routes(_settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
@@ -127,11 +126,11 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
 #[post("/new", data = "<tenant_input>")]
 pub async fn new_tenant(
     conn: Connection<Db>,
-    tenant_input: Json<NewTenantInput>,
+    tenant_input: Validated<Json<NewTenantInput>>,
     _cookies: &CookieJar<'_>,
 ) -> Result<Json<NewTenantResponse>, Error> {
     let db = conn.into_inner();
-    let data = tenant_input.into_inner();
+    let data = tenant_input.0.into_inner();
 
     // Create new Tenant
     let tenant_id = Uuid::new_v4().to_string();

@@ -9,6 +9,7 @@ use rocket::{post};
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_db_pools::Connection;
 use rocket_okapi::settings::OpenApiSettings;
+use crate::catchers::Validated;
 
 use super::{Product, ProductWPromotion, Promotion, PromotionInput};
 
@@ -147,10 +148,10 @@ pub async fn search_with_associated_promotions(
 async fn update(
     conn: Connection<Db>,
     id: &str,
-    input_data: Json<Product>,
+    input_data: Validated<Json<Product>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Product>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -166,10 +167,10 @@ async fn update(
 #[post("/", data = "<input_data>")]
 pub async fn create(
     conn: Connection<Db>,
-    input_data: Json<Product>,
+    input_data: Validated<Json<Product>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Product>, Error> {
-    let new_transaction = input_data.clone().into_inner();
+    let new_transaction = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -249,10 +250,10 @@ pub async fn get_promotion_by_query(
 async fn update_promotion(
     conn: Connection<Db>,
     id: &str,
-    input_data: Json<PromotionInput>,
+    input_data: Validated<Json<PromotionInput>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Promotion>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -268,10 +269,10 @@ async fn update_promotion(
 #[post("/promotion", data = "<input_data>")]
 pub async fn create_promotion(
     conn: Connection<Db>,
-    input_data: Json<PromotionInput>,
+    input_data: Validated<Json<PromotionInput>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Promotion>, Error> {
-    let new_promotion = input_data.clone().into_inner();
+    let new_promotion = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;

@@ -1,7 +1,7 @@
 use rocket::{
     data::{self, Data, FromData, Limits},
     http::Status,
-    request::{self, local_cache, FromRequest, Request},
+    request::{local_cache, FromRequest, Request},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

@@ -20,6 +20,13 @@ use crate::Session;
 #[cfg(feature = "process")]
 use crate::methods::convert_addr_to_geo;
 
+#[derive(Deserialize, Serialize, Clone, JsonSchema, Validate)]
+pub struct Auth {
+    pub pass: String,
+    pub kiosk_id: String,
+    pub tenant_id: String,
+}
+
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub enum AccountType {

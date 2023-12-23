@@ -8,6 +8,7 @@ use rocket::{get, post};
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
+use crate::catchers::Validated;
 
 use crate::{
     check_permissions,
@@ -49,10 +50,10 @@ pub async fn get(
 #[post("/", data = "<input_data>")]
 pub async fn initialize(
     conn: Connection<Db>,
-    input_data: Json<KioskInit>,
+    input_data: Validated<Json<KioskInit>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Kiosk>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -73,10 +74,10 @@ pub async fn initialize(
 pub async fn update(
     conn: Connection<Db>,
     id: &str,
-    input_data: Json<KioskInit>,
+    input_data: Validated<Json<KioskInit>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Kiosk>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -93,10 +94,10 @@ pub async fn update(
 pub async fn update_preferences(
     conn: Connection<Db>,
     id: &str,
-    input_data: Json<KioskPreferences>,
+    input_data: Validated<Json<KioskPreferences>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Kiosk>, Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -149,10 +150,10 @@ pub async fn delete(
 pub async fn auth_log(
     conn: Connection<Db>,
     id: &str,
-    input_data: Json<AuthenticationLog>,
+    input_data: Validated<Json<AuthenticationLog>>,
     cookies: &CookieJar<'_>,
 ) -> Result<(), Error> {
-    let input_data = input_data.clone().into_inner();
+    let input_data = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
