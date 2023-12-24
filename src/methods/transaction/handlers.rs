@@ -12,7 +12,7 @@ use super::{Transaction, TransactionInit, TransactionInput};
 use crate::methods::employee::Action;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, QuantityAlterationIntent};
 use crate::pool::Db;
-use crate::{apply_discount, check_permissions, Order, OrderStatus, PickStatus};
+use crate::{apply_discount, check_permissions, Order, OrderStatus, PickStatus, TransactionType};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -240,10 +240,10 @@ async fn generate(
 #[post("/", data = "<input_data>")]
 pub async fn create(
     conn: Connection<Db>,
-    input_data: Json<TransactionInit>,
+    input_data: Validated<Json<TransactionInit>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Transaction>, Error> {
-    let new_transaction = input_data.clone().into_inner();
+    let new_transaction = input_data.clone().0.into_inner();
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -270,6 +270,7 @@ pub async fn create(
         .iter()
         .map(|payment| payment.amount.quantity)
         .sum::<f32>();
+
     let total_cost = new_transaction
         .products
         .iter()
@@ -290,23 +291,31 @@ pub async fn create(
         })
         .sum::<f32>();
 
-    if (total_paid - total_cost).abs() > 0.1 {
-        return Err(ErrorResponse::create_error(
-            "Payment amount does not match product costs.",
-        ));
-    }
+    println!("Paid: {}. Cost: {}", total_paid, total_cost);
 
-    match Transaction::insert(new_transaction, session.clone(), &db).await {
-        Ok(data) => {
+    let insertion = match new_transaction.transaction_type {
+        TransactionType::Saved => {
+            // We do not need to process intents. Simply save.
+            Transaction::insert(new_transaction, session.clone(), &db).await?
+        }
+        _ => {
+            // As we are removing inventory via a purchase,
+            // we need to process the intents.
+
+            if (total_paid - total_cost).abs() > 0.1 {
+                return Err(ErrorResponse::create_error(
+                    "Payment amount does not match product costs.",
+                ));
+            }
+
+            let data = Transaction::insert(new_transaction, session.clone(), &db).await?;
             Transaction::process_intents(session.clone(), &db, quantity_alteration_intents).await;
 
-            match Transaction::fetch_by_id(&data.last_insert_id, session, &db).await {
-                Ok(res) => Ok(Json(res)),
-                Err(reason) => Err(ErrorResponse::db_err(reason)),
-            }
+            data
         }
-        Err(_) => Err(ErrorResponse::input_error()),
-    }
+    };
+
+    Ok(Json(Transaction::fetch_by_id(&insertion.last_insert_id, session, &db).await?))
 }
 
 #[openapi(tag = "Transaction")]
