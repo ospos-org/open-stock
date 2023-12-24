@@ -12,7 +12,7 @@ use super::{Transaction, TransactionInit, TransactionInput};
 use crate::methods::employee::Action;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, QuantityAlterationIntent};
 use crate::pool::Db;
-use crate::{apply_discount, check_permissions, Order, OrderStatus, PickStatus, TransactionType};
+use crate::{apply_discount, check_permissions, Order, OrderStatus, ProductStatusUpdate, TransactionType};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -183,35 +183,24 @@ async fn update_order_status(
 }
 
 #[openapi(tag = "Transaction")]
-#[post("/status/product/<refer>/<pid>/<iid>", data = "<status>")]
+#[post("/status/product", data = "<data>")]
 async fn update_product_status(
     conn: Connection<Db>,
-    refer: &str,
-    pid: &str,
-    iid: &str,
-    status: &str,
+    data: Validated<Json<ProductStatusUpdate>>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<Transaction>, Error> {
     let db = conn.into_inner();
+    let data = data.clone().0.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifyTransaction);
 
-    let tsn = Transaction::fetch_by_ref(refer, session.clone(), &db)
+    let tsn = Transaction::fetch_by_ref(&data.transaction_id.clone(), session.clone(), &db)
         .await
         .unwrap();
     let id = tsn.get(0).unwrap().id.as_str();
 
-    let product_status: PickStatus = match status {
-        "picked" => PickStatus::Picked,
-        "pending" => PickStatus::Pending,
-        "failed" => PickStatus::Failed,
-        "uncertain" => PickStatus::Uncertain,
-        "processing" => PickStatus::Processing,
-        _ => return Err(ErrorResponse::input_error()),
-    };
-
-    match Transaction::update_product_status(id, refer, pid, iid, product_status, session, &db).await
+    match Transaction::update_product_status(id, data, session, &db).await
     {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),

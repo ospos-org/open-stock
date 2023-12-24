@@ -119,6 +119,8 @@ pub struct PromotionInput {
 
 #[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[serde(tag = "type", content = "value")]
+#[serde(rename_all = "lowercase")]
 pub enum PromotionBuy {
     // This(quantity), Specific((id, quantity)), Any(quantity)
     Specific((String, f32)),
@@ -128,6 +130,8 @@ pub enum PromotionBuy {
 
 #[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone, JsonSchema)]
+#[serde(tag = "type", content = "value")]
+#[serde(rename_all = "lowercase")]
 pub enum PromotionGet {
     /// `SoloThis(discount)` <br />
     /// *Represents the individual product.* <br /> <br />

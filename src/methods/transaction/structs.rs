@@ -159,6 +159,15 @@ pub struct TransactionInit {
     pub kiosk: Id,
 }
 
+#[cfg(feature = "types")]
+#[derive(Deserialize, Clone, JsonSchema, Validate)]
+pub struct ProductStatusUpdate {
+    pub transaction_id: String,
+    pub product_purchase_id: String,
+    pub product_instance_id: String,
+    pub new_status: PickStatus
+}
+
 #[cfg(feature = "methods")]
 impl Transaction {
     pub async fn insert(
@@ -405,10 +414,7 @@ impl Transaction {
 
     pub async fn update_product_status(
         id: &str,
-        refer: &str,
-        pid: &str,
-        iid: &str,
-        status: PickStatus,
+        update: ProductStatusUpdate,
         session: Session,
         db: &DbConn,
     ) -> Result<Transaction, DbErr> {
@@ -419,24 +425,24 @@ impl Transaction {
             .products
             .into_iter()
             .map(|mut v| {
-                if v.reference == refer {
+                if v.reference == update.transaction_id {
                     let new_products = v
                         .products
                         .into_iter()
                         .map(|mut p| {
-                            if p.id == pid {
+                            if p.id == update.product_purchase_id {
                                 p.instances = p
                                     .instances
                                     .into_iter()
                                     .map(|mut i| {
-                                        if i.id == iid {
+                                        if i.id == update.product_instance_id {
                                             i.fulfillment_status.pick_history.push(History {
                                                 item: i.fulfillment_status.pick_status,
                                                 reason: "Standard Update Bump".to_string(),
                                                 timestamp: i.fulfillment_status.last_updated,
                                             });
                                             i.fulfillment_status.last_updated = Utc::now();
-                                            i.fulfillment_status.pick_status = status.clone();
+                                            i.fulfillment_status.pick_status = update.new_status.clone();
                                         }
 
                                         i
