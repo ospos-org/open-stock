@@ -70,30 +70,30 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
 
     // Add Tenants
     let tenant = Tenant::generate(&db, tenant_id).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
     let tenant2 = Tenant::generate(&db, tenant_id2).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
 
     // Add Employees
     let employee = Employee::generate(&db, session.clone()).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
     let _employee2 = Employee::generate(&db, session2.clone()).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
 
     // Add other items (aggregated)
     let stores = Store::generate(session.clone(), &db).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
     let products = Product::generate(session.clone(), &db).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
     let customer = Customer::generate(session.clone(), &db).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
 
     // Add Kiosks
     let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), &db).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
 
     let _kiosk2 = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133622", session2.clone(), &db).await
-        .map_err(|e| ErrorResponse::db_err(e))?;
+        .map_err(ErrorResponse::db_err)?;
 
     let transaction = Transaction::generate(
         &db,
@@ -105,9 +105,9 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
             expiry: Utc::now(),
             tenant_id: tenant_id.to_string(),
         },
-    ).await.map_err(|e| ErrorResponse::db_err(e))?;
+    ).await.map_err(ErrorResponse::db_err)?;
 
-    let promotions = Promotion::generate(session, &db).await.map_err(|e| ErrorResponse::db_err(e))?;
+    let promotions = Promotion::generate(session, &db).await.map_err(ErrorResponse::db_err)?;
 
     Ok(Json(All {
         employee,
@@ -353,8 +353,6 @@ pub async fn distance_to_stores(
                 let stor = point!(x: store.contact.address.lat, y: store.contact.address.lon);
 
                 Distance {
-                    /// Defaults to the diameter of the earth, i.e. longest distance between two
-                    /// points (minimizes priority if incorrect data is provided)
                     distance: stor.vincenty_distance(&cust).unwrap_or(12756000.01),
                     store_id: store.id,
                     store_code: store.code,
@@ -394,8 +392,6 @@ pub async fn distance_to_stores_from_store(
                 let stor = point!(x: store.contact.address.lat, y: store.contact.address.lon);
 
                 Distance {
-                    /// Defaults to the diameter of the earth, i.e. longest distance between two
-                    /// points (minimizes priority if incorrect data is provided)
                     distance: stor.vincenty_distance(&cust).unwrap_or(12756000.01),
                     store_id: store.id,
                     store_code: store.code,

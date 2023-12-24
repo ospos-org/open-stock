@@ -4,27 +4,27 @@ use serde_json::json;
 use crate::{Tenant, TenantSettings};
 use crate::tenants::{ActiveModel, Model};
 
-impl Into<Tenant> for Model {
-    fn into(self) -> Tenant {
+impl From<Model> for Tenant {
+    fn from(val: Model) -> Self {
         Tenant {
-            tenant_id: self.tenant_id,
-            registration_date: DateTime::from_utc(self.registration_date, Utc),
-            settings: serde_json::from_value::<TenantSettings>(self.settings).unwrap(),
+            tenant_id: val.tenant_id,
+            registration_date: DateTime::from_utc(val.registration_date, Utc),
+            settings: serde_json::from_value::<TenantSettings>(val.settings).unwrap(),
 
-            created_at: DateTime::from_utc(self.created_at, Utc),
-            updated_at: DateTime::from_utc(self.updated_at, Utc),
+            created_at: DateTime::from_utc(val.created_at, Utc),
+            updated_at: DateTime::from_utc(val.updated_at, Utc),
         }
     }
 }
 
-impl Into<ActiveModel> for Tenant {
-    fn into(self) -> ActiveModel {
+impl From<Tenant> for ActiveModel {
+    fn from(val: Tenant) -> Self {
         ActiveModel {
-            tenant_id: Set(self.tenant_id),
-            registration_date: Set(self.registration_date.naive_utc()),
-            settings: Set(json!(self.settings)),
-            created_at: Set(self.created_at.naive_utc()),
-            updated_at: Set(self.updated_at.naive_utc()),
+            tenant_id: Set(val.tenant_id),
+            registration_date: Set(val.registration_date.naive_utc()),
+            settings: Set(json!(val.settings)),
+            created_at: Set(val.created_at.naive_utc()),
+            updated_at: Set(val.updated_at.naive_utc()),
         }
     }
 }

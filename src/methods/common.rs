@@ -43,7 +43,7 @@ impl Name {
         let names: Vec<&str> = name.split(' ').collect();
 
         Name {
-            first: names.get(0).map_or("", |x| x).to_string(),
+            first: names.first().map_or("", |x| x).to_string(),
             middle: names.get(1).map_or("", |x| x).to_string(),
             last: names.get(2).map_or("", |x| x).to_string(),
         }
@@ -207,14 +207,14 @@ pub struct Session {
     pub tenant_id: String,
 }
 
-impl Into<session::ActiveModel> for Session {
-    fn into(self) -> ActiveModel {
+impl From<Session> for session::ActiveModel {
+    fn from(val: Session) -> Self {
         ActiveModel {
-            id: Set(self.id),
-            key: Set(self.key),
-            tenant_id: Set(self.tenant_id),
-            employee_id: Set(self.employee.id),
-            expiry: Set(self.expiry.naive_utc()),
+            id: Set(val.id),
+            key: Set(val.key),
+            tenant_id: Set(val.tenant_id),
+            employee_id: Set(val.employee.id),
+            expiry: Set(val.expiry.naive_utc()),
         }
     }
 }
@@ -225,12 +225,10 @@ impl Session {
             .employee
             .level
             .into_iter()
-            .find(|x| x.action == permission).unwrap_or_else(||
-                Access {
+            .find(|x| x.action == permission).unwrap_or(Access {
                 action: permission,
                 authority: 0,
-            }
-        );
+            });
 
         if action.action == Action::GenerateTemplateContent {
             true

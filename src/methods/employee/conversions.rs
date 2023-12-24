@@ -50,20 +50,20 @@ impl EmployeeInput {
     }
 }
 
-impl Into<Employee> for Model {
-    fn into(self) -> Employee {
+impl From<Model> for Employee {
+    fn from(val: Model) -> Self {
         Employee {
-            id: self.id,
-            rid: self.rid,
-            account_type: serde_json::from_value::<AccountType>(self.account_type).unwrap(),
-            name: serde_json::from_value::<Name>(self.name).unwrap(),
-            auth: serde_json::from_value::<EmployeeAuth>(self.auth).unwrap(),
-            contact: serde_json::from_value::<ContactInformation>(self.contact).unwrap(),
-            clock_history: serde_json::from_value::<Vec<History<Attendance>>>(self.clock_history)
+            id: val.id,
+            rid: val.rid,
+            account_type: serde_json::from_value::<AccountType>(val.account_type).unwrap(),
+            name: serde_json::from_value::<Name>(val.name).unwrap(),
+            auth: serde_json::from_value::<EmployeeAuth>(val.auth).unwrap(),
+            contact: serde_json::from_value::<ContactInformation>(val.contact).unwrap(),
+            clock_history: serde_json::from_value::<Vec<History<Attendance>>>(val.clock_history)
                 .unwrap(),
-            level: serde_json::from_value::<Vec<Access<Action>>>(self.level).unwrap(),
-            created_at: DateTime::from_utc(self.created_at, Utc),
-            updated_at: DateTime::from_utc(self.updated_at, Utc)
+            level: serde_json::from_value::<Vec<Access<Action>>>(val.level).unwrap(),
+            created_at: DateTime::from_utc(val.created_at, Utc),
+            updated_at: DateTime::from_utc(val.updated_at, Utc)
         }
     }
 }

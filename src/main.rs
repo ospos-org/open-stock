@@ -31,8 +31,6 @@ use open_stock::{catchers};
 
 #[cfg(feature = "sql")]
 extern crate argon2;
-#[cfg(feature = "sql")]
-extern crate futures_cpupool;
 
 pub struct CORS;
 

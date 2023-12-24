@@ -183,6 +183,7 @@ impl Display for Employee {
 
 #[cfg(feature = "process")]
 use argon2::{self, Config};
+use rand::Rng;
 use schemars::JsonSchema;
 use validator::Validate;
 
@@ -196,7 +197,7 @@ impl Employee {
         static_id: Option<String>,
     ) -> Result<InsertResult<employee::ActiveModel>, DbErr> {
         let id = static_id.map_or(Uuid::new_v4().to_string(), |x| x);
-        let mut rid = alea::i32_in_range(0, 9999);
+        let mut rid = rand::thread_rng().gen_range(0..9999);
 
         if static_rid.is_some() {
             rid = static_rid.unwrap();

@@ -4,16 +4,16 @@ use serde_json::json;
 use crate::entities::supplier::{ActiveModel, Model};
 use crate::{ContactInformation, Name, Supplier, SupplierInput, Transaction};
 
-impl Into<Supplier> for Model {
-    fn into(self) -> Supplier {
+impl From<Model> for Supplier {
+    fn from(val: Model) -> Self {
         Supplier {
-            id: self.id,
-            name: serde_json::from_value::<Name>(self.name).unwrap(),
-            contact: serde_json::from_value::<ContactInformation>(self.contact).unwrap(),
-            transaction_history: serde_json::from_value::<Vec<Transaction>>(self.transaction_history)
+            id: val.id,
+            name: serde_json::from_value::<Name>(val.name).unwrap(),
+            contact: serde_json::from_value::<ContactInformation>(val.contact).unwrap(),
+            transaction_history: serde_json::from_value::<Vec<Transaction>>(val.transaction_history)
                 .unwrap(),
-            created_at: DateTime::from_utc(self.created_at, Utc),
-            updated_at: DateTime::from_utc(self.updated_at, Utc)
+            created_at: DateTime::from_utc(val.created_at, Utc),
+            updated_at: DateTime::from_utc(val.updated_at, Utc)
         }
     }
 }

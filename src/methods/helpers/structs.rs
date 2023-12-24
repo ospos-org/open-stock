@@ -8,6 +8,8 @@ use crate::{Customer, Employee, Kiosk, Product, Promotion, Store, Tenant, Transa
 pub struct Distance {
     pub store_id: String,
     pub store_code: String,
+    /// Defaults to the diameter of the earth, i.e. longest distance between two
+    /// points (minimizes priority if incorrect data is provided)
     pub distance: f64,
 }
 

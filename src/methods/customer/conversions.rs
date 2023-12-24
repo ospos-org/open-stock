@@ -50,34 +50,34 @@ impl Customer {
     }
 }
 
-impl Into<Customer> for customer::Model {
-    fn into(self) -> Customer {
+impl From<customer::Model> for Customer {
+    fn from(val: customer::Model) -> Self {
         Customer {
-            id: self.id,
-            name: self.name,
-            contact: serde_json::from_value::<ContactInformation>(self.contact).unwrap(),
-            customer_notes: serde_json::from_value::<NoteList>(self.customer_notes).unwrap(),
-            special_pricing: serde_json::from_value::<String>(self.special_pricing).unwrap(),
-            balance: self.balance,
-            accepts_marketing: self.accepts_marketing,
-            created_at: DateTime::from_utc(self.created_at, Utc),
-            updated_at: DateTime::from_utc(self.updated_at, Utc),
+            id: val.id,
+            name: val.name,
+            contact: serde_json::from_value::<ContactInformation>(val.contact).unwrap(),
+            customer_notes: serde_json::from_value::<NoteList>(val.customer_notes).unwrap(),
+            special_pricing: serde_json::from_value::<String>(val.special_pricing).unwrap(),
+            balance: val.balance,
+            accepts_marketing: val.accepts_marketing,
+            created_at: DateTime::from_utc(val.created_at, Utc),
+            updated_at: DateTime::from_utc(val.updated_at, Utc),
         }
     }
 }
 
-impl Into<Customer> for &customer::Model {
-    fn into(self) -> Customer {
+impl From<&customer::Model> for Customer {
+    fn from(val: &customer::Model) -> Self {
         Customer {
-            id: self.id.clone(),
-            name: self.name.clone(),
-            contact: serde_json::from_value::<ContactInformation>(self.contact.clone()).unwrap(),
-            customer_notes: serde_json::from_value::<NoteList>(self.customer_notes.clone()).unwrap(),
-            special_pricing: serde_json::from_value::<String>(self.special_pricing.clone()).unwrap(),
-            balance: self.balance,
-            accepts_marketing: self.accepts_marketing,
-            created_at: DateTime::from_utc(self.created_at, Utc),
-            updated_at: DateTime::from_utc(self.updated_at, Utc),
+            id: val.id.clone(),
+            name: val.name.clone(),
+            contact: serde_json::from_value::<ContactInformation>(val.contact.clone()).unwrap(),
+            customer_notes: serde_json::from_value::<NoteList>(val.customer_notes.clone()).unwrap(),
+            special_pricing: serde_json::from_value::<String>(val.special_pricing.clone()).unwrap(),
+            balance: val.balance,
+            accepts_marketing: val.accepts_marketing,
+            created_at: DateTime::from_utc(val.created_at, Utc),
+            updated_at: DateTime::from_utc(val.updated_at, Utc),
         }
     }
 }

@@ -18,15 +18,15 @@ impl Store {
     }
 }
 
-impl Into<Store> for Model {
-    fn into(self) -> Store {
+impl From<Model> for Store {
+    fn from(val: Model) -> Self {
         Store {
-            id: self.id,
-            name: self.name,
-            contact: serde_json::from_value::<ContactInformation>(self.contact).unwrap(),
-            code: serde_json::from_value::<String>(serde_json::Value::String(self.code)).unwrap(),
-            updated_at: DateTime::from_utc(self.updated_at, Utc),
-            created_at: DateTime::from_utc(self.created_at, Utc)
+            id: val.id,
+            name: val.name,
+            contact: serde_json::from_value::<ContactInformation>(val.contact).unwrap(),
+            code: serde_json::from_value::<String>(serde_json::Value::String(val.code)).unwrap(),
+            updated_at: DateTime::from_utc(val.updated_at, Utc),
+            created_at: DateTime::from_utc(val.created_at, Utc)
         }
     }
 }

@@ -94,26 +94,26 @@ impl Transaction {
     }
 }
 
-impl Into<Transaction> for Model {
-    fn into(self) -> Transaction {
+impl From<Model> for Transaction {
+    fn from(val: Model) -> Self {
         Transaction {
-            id: self.id,
-            transaction_type: self.transaction_type.into(),
+            id: val.id,
+            transaction_type: val.transaction_type.into(),
 
-            customer: serde_json::from_value::<TransactionCustomer>(self.customer).unwrap(),
-            products: serde_json::from_value::<OrderList>(self.products).unwrap(),
+            customer: serde_json::from_value::<TransactionCustomer>(val.customer).unwrap(),
+            products: serde_json::from_value::<OrderList>(val.products).unwrap(),
 
-            order_total: self.order_total,
-            payment: serde_json::from_value::<Vec<Payment>>(self.payment).unwrap(),
+            order_total: val.order_total,
+            payment: serde_json::from_value::<Vec<Payment>>(val.payment).unwrap(),
 
-            order_date: DateTime::from_utc(self.order_date, Utc),
-            order_notes: serde_json::from_value::<NoteList>(self.order_notes).unwrap(),
+            order_date: DateTime::from_utc(val.order_date, Utc),
+            order_notes: serde_json::from_value::<NoteList>(val.order_notes).unwrap(),
 
-            salesperson: self.salesperson,
-            kiosk: self.kiosk,
+            salesperson: val.salesperson,
+            kiosk: val.kiosk,
 
-            created_at: DateTime::from_utc(self.created_at, Utc),
-            updated_at: DateTime::from_utc(self.updated_at, Utc),
+            created_at: DateTime::from_utc(val.created_at, Utc),
+            updated_at: DateTime::from_utc(val.updated_at, Utc),
         }
     }
 }

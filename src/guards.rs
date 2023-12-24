@@ -1,7 +1,7 @@
 use rocket::{
     data::{self, Data, FromData, Limits},
     http::Status,
-    request::{local_cache, FromRequest, Request},
+    request::{local_cache, Request},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -40,7 +40,7 @@ impl<'r, T> FromData<'r> for JsonValidation<T>
                 let string = local_cache!(req, value.into_inner());
 
                 match serde_json::from_str::<T>(string)
-                    .map_err(|e| JsonValidationError::ParseError(e))
+                    .map_err(JsonValidationError::ParseError)
                 {
                     Ok(e) =>
                         data::Outcome::Success(JsonValidation(e)),

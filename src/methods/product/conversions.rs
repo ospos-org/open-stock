@@ -27,27 +27,27 @@ impl Product {
     }
 }
 
-impl Into<Product> for Model {
-    fn into(self) -> Product {
+impl From<Model> for Product {
+    fn from(val: Model) -> Self {
         Product {
-            name: self.name,
-            company: self.company,
-            variant_groups: serde_json::from_value::<VariantCategoryList>(self.variant_groups)
+            name: val.name,
+            company: val.company,
+            variant_groups: serde_json::from_value::<VariantCategoryList>(val.variant_groups)
                 .unwrap(),
-            variants: serde_json::from_value::<Vec<VariantInformation>>(self.variants).unwrap(),
-            sku: self.sku,
-            images: serde_json::from_value::<Vec<Url>>(self.images).unwrap(),
-            tags: serde_json::from_value::<TagList>(self.tags).unwrap(),
-            description: self.description,
-            specifications: serde_json::from_value::<Vec<(String, String)>>(self.specifications)
+            variants: serde_json::from_value::<Vec<VariantInformation>>(val.variants).unwrap(),
+            sku: val.sku,
+            images: serde_json::from_value::<Vec<Url>>(val.images).unwrap(),
+            tags: serde_json::from_value::<TagList>(val.tags).unwrap(),
+            description: val.description,
+            specifications: serde_json::from_value::<Vec<(String, String)>>(val.specifications)
                 .unwrap(),
-            identification: serde_json::from_value::<ProductIdentification>(self.identification)
+            identification: serde_json::from_value::<ProductIdentification>(val.identification)
                 .unwrap(),
-            visible: serde_json::from_value::<ProductVisibility>(self.visible).unwrap(),
-            created_at: DateTime::from_utc(self.created_at, Utc),
-            name_long: self.name_long,
-            description_long: self.description_long,
-            updated_at: DateTime::from_utc(self.updated_at, Utc),
+            visible: serde_json::from_value::<ProductVisibility>(val.visible).unwrap(),
+            created_at: DateTime::from_utc(val.created_at, Utc),
+            name_long: val.name_long,
+            description_long: val.description_long,
+            updated_at: DateTime::from_utc(val.updated_at, Utc),
         }
     }
 }
