@@ -205,7 +205,7 @@ impl Employee {
 
         let password = empl.password.clone();
         let salt = b"randomsalt";
-        let config = Config::default();
+        let config = Config::original();
         let hash = argon2::hash_encoded(password.as_bytes(), salt, &config).unwrap();
 
         let insert_crud = empl.into_active(id, rid, session.tenant_id, hash);
@@ -242,9 +242,13 @@ impl Employee {
         let mut valid_user: Option<Employee> = None;
 
         for employee in employee {
+            println!("Validating employee");
+
             let is_valid = argon2::verify_encoded(
                 &employee.auth.hash, pass.as_bytes()
-            ).unwrap();
+            ).map_err(|e| DbErr::RecordNotFound(e.to_string()))?;
+
+            println!("Found employee is {}", if is_valid { "Valid" } else { "Invalid" });
 
             if is_valid && valid_user.is_none() {
                 valid_user = Some(employee);

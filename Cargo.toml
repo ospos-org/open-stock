@@ -73,3 +73,6 @@ default = ["all"]
 
 [profile.release]
 strip = false
+
+[profile.dev]
+split-debuginfo = "unpacked"
