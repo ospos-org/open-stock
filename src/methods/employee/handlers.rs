@@ -278,7 +278,7 @@ pub async fn auth(
         }
         Err(reason) => {
             println!("[dberr]: {}", reason);
-            Err(ErrorResponse::input_error())
+            Err(ErrorResponse::db_err(reason))
         }
     }
 }

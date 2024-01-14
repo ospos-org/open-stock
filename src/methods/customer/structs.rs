@@ -8,7 +8,7 @@ use crate::entities::customer;
 use crate::entities::prelude::Customer as Cust;
 #[cfg(feature = "process")]
 use crate::methods::convert_addr_to_geo;
-use crate::methods::{Address, ContactInformation, Email, Id, MobileNumber, NoteList};
+use crate::methods::{Address, ContactInformation, Id, NoteList};
 #[cfg(feature = "process")]
 use sea_orm::QueryFilter;
 #[cfg(feature = "process")]
@@ -17,12 +17,12 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbBackend, DbConn, DbErr, EntityTrait, FromQueryResult,
     InsertResult, JsonValue, QuerySelect, RuntimeErr, Set, Statement,
 };
-use sea_orm::QueryOrder;
+use sea_orm::{DeleteResult, QueryOrder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use validator::Validate;
 use crate::entities::customer::ActiveModel;
-use crate::Session;
+use crate::{ContactInformationInput, Session};
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -84,7 +84,7 @@ pub struct CustomerWithTransactionsOut {
 pub struct CustomerInput {
     pub name: String,
 
-    pub contact: ContactInformation,
+    pub contact: ContactInformationInput,
     pub customer_notes: NoteList,
 
     pub special_pricing: String,
@@ -192,6 +192,17 @@ impl Customer {
         Ok(mapped)
     }
 
+    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, DbErr> {
+        match crate::entities::customer::Entity::delete_by_id(id)
+            .filter(customer::Column::TenantId.eq(session.tenant_id))
+            .exec(db)
+            .await
+        {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err),
+        }
+    }
+
     pub async fn fetch_containing_contact(
         value: &str,
         session: Session,
@@ -253,6 +264,20 @@ impl Customer {
         // Insert & Fetch Customer
         let r = Customer::insert(cust, session.clone(), db).await.unwrap();
         Customer::fetch_by_id(&r.last_insert_id, session, db).await
+    }
+
+    pub async fn update_by_input(
+        cust: CustomerInput,
+        session: Session,
+        id: &str,
+        db: &DbConn,
+    ) -> Result<Customer, DbErr> {
+        let old_customer = Self::fetch_by_id(id, session.clone(), db).await?;
+        let customer = cust.from_existing(old_customer, session.tenant_id.clone());
+
+        Cust::update(customer).exec(db).await?;
+
+        Self::fetch_by_id(id, session, db).await
     }
 
     pub async fn update(
@@ -362,10 +387,10 @@ impl Display for Customer {
 }
 
 pub fn example_customer() -> CustomerInput {
-    let customer = ContactInformation {
+    let customer = ContactInformationInput {
         name: "Carl Kennith".into(),
-        mobile: MobileNumber::from("0212121204".to_string()),
-        email: Email::from("carl@kennith.com".to_string()),
+        mobile: "0212121204".to_string(),
+        email: "carl@kennith.com".to_string(),
         landline: "".into(),
         address: Address {
             street: "54 Arney Crescent".into(),

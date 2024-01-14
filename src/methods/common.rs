@@ -60,6 +60,27 @@ pub struct ContactInformation {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema, Validate)]
+pub struct ContactInformationInput {
+    pub name: String,
+    pub mobile: String,
+    pub email: String,
+    pub landline: String,
+    pub address: Address,
+}
+
+impl ContactInformationInput {
+    pub fn into_major(self) -> ContactInformation {
+        ContactInformation {
+            name: self.name,
+            email: Email::from(self.email),
+            mobile: MobileNumber::from(self.mobile),
+            landline: self.landline,
+            address: self.address
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema, Validate)]
 pub struct MobileNumber {
     pub number: String,
     pub valid: bool,

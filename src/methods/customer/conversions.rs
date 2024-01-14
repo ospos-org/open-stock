@@ -16,7 +16,7 @@ impl CustomerInput {
             id: Set(id),
             name: Set(self.name),
 
-            contact: Set(json!(self.contact)),
+            contact: Set(json!(self.contact.into_major())),
             customer_notes: Set(json!(self.customer_notes)),
 
             balance: Set(self.balance),
@@ -26,6 +26,22 @@ impl CustomerInput {
 
             created_at: Set(Utc::now().naive_utc()),
             updated_at: Set(Utc::now().naive_utc()),
+        }
+    }
+
+    pub(crate) fn from_existing(self, customer: Customer, tenant_id: String) -> ActiveModel {
+        ActiveModel {
+            id: Set(customer.id),
+            name: Set(self.name),
+
+            contact: Set(json!(self.contact.into_major())),
+            customer_notes: Set(json!(self.customer_notes)),
+            accepts_marketing: Set(self.accepts_marketing),
+            tenant_id: Set(tenant_id),
+
+            updated_at: Set(Utc::now().naive_utc()),
+
+            ..Default::default()
         }
     }
 }

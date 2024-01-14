@@ -1,5 +1,5 @@
 use okapi::openapi3::OpenApi;
-use crate::check_permissions;
+use crate::{check_permissions};
 use crate::methods::{
     cookie_status_wrapper, Action, ContactInformation, CustomerWithTransactionsOut, Error,
     ErrorResponse, Transaction,
@@ -22,6 +22,7 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
     openapi_get_routes_spec![
         settings:
         get,
+        delete,
         get_by_name,
         get_by_phone,
         get_by_addr,
@@ -31,6 +32,7 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
         generate,
         search_query,
         update_contact_info,
+        update_by_input,
         find_related_transactions
     ]
 }
@@ -49,6 +51,24 @@ pub async fn get(
 
     match Customer::fetch_by_id(id, session, &db).await {
         Ok(customers) => Ok(Json(customers)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
+}
+
+#[openapi(tag = "Customer")]
+#[post("/delete/<id>")]
+pub async fn delete(
+    conn: Connection<Db>,
+    id: &str,
+    cookies: &CookieJar<'_>,
+) -> Result<(), Error> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(&db, cookies).await?;
+    check_permissions!(session.clone(), Action::AccessAdminPanel);
+
+    match Customer::delete(id, session, &db).await {
+        Ok(_res) => Ok(()),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
@@ -189,6 +209,25 @@ async fn update(
 
     Ok(Json(
         Customer::update(input_data, session, id, &db).await?
+    ))
+}
+
+#[openapi(tag = "Customer")]
+#[post("/input/<id>", data = "<input_data>")]
+async fn update_by_input(
+    conn: Connection<Db>,
+    id: &str,
+    cookies: &CookieJar<'_>,
+    input_data: Validated<Json<CustomerInput>>,
+) -> Result<Json<Customer>, Error> {
+    let input_data = input_data.clone().0.into_inner();
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(&db, cookies).await?;
+    check_permissions!(session.clone(), Action::ModifyCustomer);
+
+    Ok(Json(
+        Customer::update_by_input(input_data, session, id, &db).await?
     ))
 }
 
