@@ -76,8 +76,8 @@ impl From<customer::Model> for Customer {
             special_pricing: serde_json::from_value::<String>(val.special_pricing).unwrap(),
             balance: val.balance,
             accepts_marketing: val.accepts_marketing,
-            created_at: DateTime::from_utc(val.created_at, Utc),
-            updated_at: DateTime::from_utc(val.updated_at, Utc),
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
         }
     }
 }
@@ -92,8 +92,8 @@ impl From<&customer::Model> for Customer {
             special_pricing: serde_json::from_value::<String>(val.special_pricing.clone()).unwrap(),
             balance: val.balance,
             accepts_marketing: val.accepts_marketing,
-            created_at: DateTime::from_utc(val.created_at, Utc),
-            updated_at: DateTime::from_utc(val.updated_at, Utc),
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
         }
     }
 }

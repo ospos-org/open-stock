@@ -4,13 +4,10 @@ use crate::pool::Db;
 use crate::catchers::Validated;
 use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie, LogRequest, Auth};
 use chrono::{Days, Duration as ChronoDuration, Utc};
-use std::time::Duration;
-
 use okapi::openapi3::OpenApi;
 use rocket::get;
-use rocket::http::{Cookie, CookieJar, SameSite};
+use rocket::http::{CookieJar};
 use rocket::serde::json::Json;
-use rocket::time::OffsetDateTime;
 use rocket::{post};
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
@@ -350,19 +347,7 @@ pub async fn auth_rid(
             .await
             {
                 Ok(_) => {
-                    let now = OffsetDateTime::now_utc();
-                    let expiry = now + Duration::from_secs(10 * 60);
-
-                    let cookie = Cookie::build("key", api_key.clone())
-                        .expires(expiry)
-                        .path("/")
-                        .secure(true)
-                        .same_site(SameSite::None)
-                        .http_only(true)
-                        .finish();
-
-                    cookies.add(cookie);
-
+                    cookies.add(create_cookie(api_key.clone()));
                     Ok(Json(api_key))
                 }
                 Err(reason) => Err(ErrorResponse::db_err(reason)),

@@ -304,7 +304,7 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
                 created_at: Default::default(),
                 updated_at: Default::default(),
             },
-            expiry: DateTime::from_utc(val.expiry, Utc),
+            expiry: DateTime::from_naive_utc_and_offset(val.expiry, Utc),
         }),
         None => Err(DbErr::RecordNotFound(format!(
             "Record {} does not exist.",
@@ -323,13 +323,13 @@ pub fn create_cookie(api_key: String) -> Cookie<'static> {
     let now = OffsetDateTime::now_utc();
     let expiry = now + Duration::from_secs(10 * 60);
 
-    Cookie::build("key", api_key.clone())
+    Cookie::build(("key", api_key.clone()))
         .expires(expiry)
         .path("/")
         .secure(true)
         .same_site(SameSite::None)
         .http_only(true)
-        .finish()
+        .build()
 }
 
 #[cfg(feature = "process")]

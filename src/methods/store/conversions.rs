@@ -25,8 +25,8 @@ impl From<Model> for Store {
             name: val.name,
             contact: serde_json::from_value::<ContactInformation>(val.contact).unwrap(),
             code: serde_json::from_value::<String>(serde_json::Value::String(val.code)).unwrap(),
-            updated_at: DateTime::from_utc(val.updated_at, Utc),
-            created_at: DateTime::from_utc(val.created_at, Utc)
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc)
         }
     }
 }

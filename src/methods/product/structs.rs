@@ -178,8 +178,8 @@ impl Product {
                 buy: serde_json::from_value::<PromotionBuy>(p.buy.clone()).unwrap(),
                 get: serde_json::from_value::<PromotionGet>(p.get.clone()).unwrap(),
                 id: p.id.clone(),
-                valid_till: DateTime::from_utc(p.valid_till, Utc),
-                timestamp: DateTime::from_utc(p.timestamp, Utc),
+                valid_till: DateTime::from_naive_utc_and_offset(p.valid_till, Utc),
+                timestamp: DateTime::from_naive_utc_and_offset(p.timestamp, Utc),
             })
             .collect();
 
@@ -284,8 +284,8 @@ impl Product {
                     buy: serde_json::from_value::<PromotionBuy>(p.buy.clone()).unwrap(),
                     get: serde_json::from_value::<PromotionGet>(p.get.clone()).unwrap(),
                     id: p.id.clone(),
-                    valid_till: DateTime::from_utc(p.valid_till, Utc),
-                    timestamp: DateTime::from_utc(p.timestamp, Utc),
+                    valid_till: DateTime::from_naive_utc_and_offset(p.valid_till, Utc),
+                    timestamp: DateTime::from_naive_utc_and_offset(p.timestamp, Utc),
                 })
                 .collect();
 

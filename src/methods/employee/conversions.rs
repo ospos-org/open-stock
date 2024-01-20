@@ -62,8 +62,8 @@ impl From<Model> for Employee {
             clock_history: serde_json::from_value::<Vec<History<Attendance>>>(val.clock_history)
                 .unwrap(),
             level: serde_json::from_value::<Vec<Access<Action>>>(val.level).unwrap(),
-            created_at: DateTime::from_utc(val.created_at, Utc),
-            updated_at: DateTime::from_utc(val.updated_at, Utc)
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc)
         }
     }
 }

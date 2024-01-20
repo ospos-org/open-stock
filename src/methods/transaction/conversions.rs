@@ -106,14 +106,14 @@ impl From<Model> for Transaction {
             order_total: val.order_total,
             payment: serde_json::from_value::<Vec<Payment>>(val.payment).unwrap(),
 
-            order_date: DateTime::from_utc(val.order_date, Utc),
+            order_date: DateTime::from_naive_utc_and_offset(val.order_date, Utc),
             order_notes: serde_json::from_value::<NoteList>(val.order_notes).unwrap(),
 
             salesperson: val.salesperson,
             kiosk: val.kiosk,
 
-            created_at: DateTime::from_utc(val.created_at, Utc),
-            updated_at: DateTime::from_utc(val.updated_at, Utc),
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
         }
     }
 }

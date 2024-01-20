@@ -1,6 +1,5 @@
 use std::env;
 
-use std::time::Duration;
 use chrono::{Days, Utc};
 use geo::point;
 use rocket::{get, http::CookieJar, post, serde::json::Json};
@@ -9,15 +8,13 @@ use uuid::Uuid;
 use crate::{check_permissions, example_employee, methods::{
     cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
     Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType, Distance};
+}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType, Distance, create_cookie};
 use geo::VincentyDistance;
 use okapi::openapi3::OpenApi;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
     LatLon, PhotonApiClient, PhotonFeature,
 };
-use rocket::http::{Cookie, SameSite};
-use rocket::time::OffsetDateTime;
 use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
@@ -203,18 +200,8 @@ pub async fn assign_session_cookie(
     key: &str,
     cookies: &CookieJar<'_>
 ) -> Result<Json<()>, Error> {
-    let now = OffsetDateTime::now_utc();
-    let expiry = now + Duration::from_secs(10 * 60);
-
     let hard_key = key.to_string();
-
-    let cookie = Cookie::build("key", hard_key.clone())
-        .expires(expiry)
-        .path("/")
-        .secure(true)
-        .same_site(SameSite::None)
-        .http_only(true)
-        .finish();
+    let cookie = create_cookie(hard_key.clone());
 
     cookies.add(cookie);
 
