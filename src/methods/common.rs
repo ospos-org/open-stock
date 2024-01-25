@@ -274,7 +274,7 @@ impl Session {
 
 #[cfg(feature = "process")]
 pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
-    cookies.get("key").map(|crumb| crumb.value().to_string())
+    cookies.get("os-stock-key").map(|crumb| crumb.value().to_string())
 }
 
 #[cfg(feature = "process")]
@@ -323,7 +323,7 @@ pub fn create_cookie(api_key: String) -> Cookie<'static> {
     let now = OffsetDateTime::now_utc();
     let expiry = now + Duration::from_secs(10 * 60);
 
-    Cookie::build(("key", api_key.clone()))
+    Cookie::build(("os-stock-key", api_key.clone()))
         .expires(expiry)
         .path("/")
         .secure(true)

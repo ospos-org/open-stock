@@ -2,7 +2,10 @@ use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
 use serde_json::json;
 use uuid::Uuid;
-use crate::{Access, AccountType, Action, Attendance, ContactInformation, Employee, EmployeeAuth, EmployeeInput, History, Name};
+use crate::{
+    Access, AccountType, Action, Attendance, ContactInformation,
+    Employee, EmployeeAuth, EmployeeInput, History, Name
+};
 use crate::entities::employee::{ActiveModel, Model};
 
 impl From<EmployeeInput> for Employee {
@@ -12,11 +15,11 @@ impl From<EmployeeInput> for Employee {
         Employee {
             id,
             rid: value.rid.to_string(),
-            name: value.name,
+            name: Name::from_string(value.name),
             auth: EmployeeAuth {
                 hash: String::new(),
             },
-            contact: value.contact,
+            contact: value.contact.into_major(),
             clock_history: value.clock_history,
             level: value.level,
             account_type: value.account_type,
@@ -46,6 +49,24 @@ impl EmployeeInput {
             account_type: Set(json!(self.account_type)),
             created_at: Set(Utc::now().naive_utc()),
             updated_at: Set(Utc::now().naive_utc())
+        }
+    }
+
+    pub(crate) fn from_existing(self, employee: Employee, tenant_id: String) -> ActiveModel {
+        ActiveModel {
+            id: Set(employee.id),
+            tenant_id: Set(tenant_id),
+
+            name: Set(json!(Name::from_string(self.name))),
+
+            contact: Set(json!(self.contact.into_major())),
+            clock_history: Set(json!(self.clock_history)),
+
+            level: Set(json!(self.level)),
+            account_type: Set(json!(self.account_type)),
+            updated_at: Set(Utc::now().naive_utc()),
+
+            ..Default::default()
         }
     }
 }

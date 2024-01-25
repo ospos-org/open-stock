@@ -19,6 +19,7 @@ use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
 use sea_orm::EntityTrait;
+use crate::ContactInformationInput;
 use crate::catchers::Validated;
 use crate::session::ActiveModel;
 
@@ -145,19 +146,16 @@ pub async fn new_tenant(
 
     // Create Primary Employee
     let employee = EmployeeInput {
-        name: crate::Name::from_string(data.clone().name),
+        name: data.clone().name,
         level: all_actions(),
         rid: 0000,
-        password: data.clone().password,
+        password: Some(data.clone().password),
         account_type: AccountType::Managerial,
         clock_history: vec![],
-        contact: ContactInformation {
+        contact: ContactInformationInput {
             name: data.clone().name,
-            mobile: MobileNumber {
-                number: "".to_string(),
-                valid: false,
-            },
-            email: Email::from(data.clone().email),
+            mobile: "".to_string(),
+            email: data.clone().email,
             landline: "".to_string(),
             address: convert_addr_to_geo(&data.clone().address)?,
         },
@@ -386,4 +384,17 @@ pub async fn distance_to_stores_from_store(
             })
             .collect(),
     ))
+}
+
+
+#[openapi(tag = "Helpers")]
+#[get("/refresh_token/<token>")]
+pub async fn refresh_token(
+    conn: Connection<Db>,
+    token: &str,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<String>, Error> {
+    let db = conn.into_inner();
+
+    Ok(Json("".to_string()))
 }

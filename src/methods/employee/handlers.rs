@@ -2,7 +2,7 @@ use crate::entities::session;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
 use crate::pool::Db;
 use crate::catchers::Validated;
-use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie, LogRequest, Auth};
+use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie, LogRequest, Auth, Customer, CustomerInput};
 use chrono::{Days, Duration as ChronoDuration, Utc};
 use okapi::openapi3::OpenApi;
 use rocket::get;
@@ -22,6 +22,8 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
     openapi_get_routes_spec![
         settings:
         get,
+        get_recent,
+        update_by_input,
         whoami,
         get_by_name,
         get_by_rid,
@@ -87,6 +89,23 @@ pub async fn get_by_rid(
 
     match Employee::fetch_by_rid(rid, session, &db).await {
         Ok(employee) => Ok(Json(employee)),
+        Err(err) => Err(ErrorResponse::db_err(err)),
+    }
+}
+
+#[openapi(tag = "Employee")]
+#[get("/recent")]
+pub async fn get_recent(
+    conn: Connection<Db>,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<Vec<Employee>>, Error> {
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(&db, cookies).await?;
+    check_permissions!(session.clone(), Action::FetchCustomer);
+
+    match Employee::fetch_recent(session, &db).await {
+        Ok(employees) => Ok(Json(employees)),
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
@@ -189,15 +208,30 @@ async fn update(
         .find(|x| x.action == Action::ModifyEmployee)
         .unwrap()
         .authority
-        >= 1
-    {
-        match Employee::update(input_data, session, id, &db).await {
-            Ok(res) => Ok(Json(res)),
-            Err(_) => Err(ErrorResponse::input_error()),
-        }
+        >= 1 {
+        Ok(Json(Employee::update(input_data, session, id, &db).await?))
     } else {
         Err(ErrorResponse::unauthorized(Action::ModifyEmployee))
     }
+}
+
+#[openapi(tag = "Employee")]
+#[post("/input/<id>", data = "<input_data>")]
+async fn update_by_input(
+    conn: Connection<Db>,
+    id: &str,
+    cookies: &CookieJar<'_>,
+    input_data: Validated<Json<EmployeeInput>>,
+) -> Result<Json<Employee>, Error> {
+    let input_data = input_data.clone().0.into_inner();
+    let db = conn.into_inner();
+
+    let session = cookie_status_wrapper(&db, cookies).await?;
+    check_permissions!(session.clone(), Action::ModifyEmployee);
+
+    Ok(Json(
+        Employee::update_by_input(input_data, session, id, &db).await?
+    ))
 }
 
 #[openapi(tag = "Employee")]
