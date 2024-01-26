@@ -26,6 +26,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Session::Key).text().not_null())
                     .col(ColumnDef::new(Session::EmployeeId).text().not_null())
                     .col(ColumnDef::new(Session::Expiry).date_time().not_null())
+                    .col(ColumnDef::new(Session::Variant).json().not_null())
                     .to_owned(),
             )
             .await
@@ -53,4 +54,6 @@ pub enum Session {
     Expiry,
     #[iden = "tenant_id"]
     TenantId,
+    #[iden = "variant"]
+    Variant
 }

@@ -1,17 +1,21 @@
+use crate::catchers::Validated;
 use crate::entities::session;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
 use crate::pool::Db;
-use crate::catchers::Validated;
-use crate::{check_permissions, example_employee, tenants, AuthenticationLog, Kiosk, Session, create_cookie, LogRequest, Auth, Customer, CustomerInput};
+use crate::SessionVariant;
+use crate::{
+    check_permissions, create_cookie, example_employee, tenants, Auth, AuthenticationLog, Customer,
+    Kiosk, LogRequest, Session,
+};
 use chrono::{Days, Duration as ChronoDuration, Utc};
 use okapi::openapi3::OpenApi;
 use rocket::get;
-use rocket::http::{CookieJar};
+use rocket::http::CookieJar;
+use rocket::post;
 use rocket::serde::json::Json;
-use rocket::{post};
 use rocket_db_pools::Connection;
-use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 use sea_orm::{EntityTrait, Set};
 use serde_json::json;
 use uuid::Uuid;
@@ -171,10 +175,7 @@ pub async fn get_by_level(
 
 #[openapi(tag = "Employee")]
 #[post("/generate")]
-async fn generate(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Employee>, Error> {
+async fn generate(conn: Connection<Db>, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -208,7 +209,8 @@ async fn update(
         .find(|x| x.action == Action::ModifyEmployee)
         .unwrap()
         .authority
-        >= 1 {
+        >= 1
+    {
         Ok(Json(Employee::update(input_data, session, id, &db).await?))
     } else {
         Err(ErrorResponse::unauthorized(Action::ModifyEmployee))
@@ -230,7 +232,7 @@ async fn update_by_input(
     check_permissions!(session.clone(), Action::ModifyEmployee);
 
     Ok(Json(
-        Employee::update_by_input(input_data, session, id, &db).await?
+        Employee::update_by_input(input_data, session, id, &db).await?,
     ))
 }
 
@@ -255,6 +257,7 @@ pub async fn auth(
             employee: default_employee.into(),
             expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
             tenant_id: input.tenant_id.clone(),
+            variant: SessionVariant::AccessToken,
         },
         &input.pass,
         &db,
@@ -295,6 +298,7 @@ pub async fn auth(
                     employee_id: Set(id.to_string()),
                     expiry: Set(exp.naive_utc()),
                     tenant_id: Set(tenant_data.tenant_id),
+                    variant: Set(json!(SessionVariant::AccessToken)),
                 })
                 .exec(&db)
                 .await
@@ -332,6 +336,7 @@ pub async fn auth_rid(
         employee: default_employee.into(),
         expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
         tenant_id: input.tenant_id.clone(),
+        variant: SessionVariant::AccessToken,
     };
 
     match Employee::verify_with_rid(rid, session.clone(), &input.pass, &db).await {
@@ -376,6 +381,7 @@ pub async fn auth_rid(
                 employee_id: Set(data.id.to_string()),
                 expiry: Set(exp.naive_utc()),
                 tenant_id: Set(tenant_data.tenant_id),
+                variant: Set(json!(SessionVariant::AccessToken)),
             })
             .exec(&db)
             .await
@@ -421,19 +427,14 @@ pub async fn create(
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateEmployee);
 
-    match Employee::insert(
-        new_transaction, &db, session.clone(), None, None
-    ).await {
-        Ok(data) =>
-            match Employee::fetch_by_id(
-                &data.last_insert_id, session, &db
-            ).await {
-                Ok(res) => Ok(Json(res)),
-                Err(reason) => {
-                    println!("[dberr]: {}", reason);
-                    Err(ErrorResponse::db_err(reason))
-                }
-            },
+    match Employee::insert(new_transaction, &db, session.clone(), None, None).await {
+        Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, session, &db).await {
+            Ok(res) => Ok(Json(res)),
+            Err(reason) => {
+                println!("[dberr]: {}", reason);
+                Err(ErrorResponse::db_err(reason))
+            }
+        },
         Err(reason) => {
             println!("[dberr]: {}", reason);
             Err(ErrorResponse::input_error())

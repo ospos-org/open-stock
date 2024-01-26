@@ -1,31 +1,31 @@
-use std::{env, fs, sync::Arc, time::Duration};
-
 #[cfg(feature = "process")]
 use crate::entities::{session, transactions};
 #[cfg(feature = "process")]
 use crate::migrator::Migrator;
-use crate::{example_employee, Customer, Product, Session, Store, Transaction, Kiosk};
+use crate::SessionVariant;
+use crate::{example_employee, Customer, Kiosk, Product, Session, Store, Transaction};
 #[cfg(feature = "process")]
 use async_trait::async_trait;
 use chrono::{Days, Duration as ChronoDuration, Utc};
 #[cfg(feature = "process")]
 use dotenv::dotenv;
 use rocket::request;
+use rocket::request::FromRequest;
 #[cfg(feature = "process")]
 use rocket::tokio;
+use rocket_db_pools::Database;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
+use sea_orm::DatabaseConnection;
 #[cfg(feature = "process")]
 use sea_orm::{ColumnTrait, ConnectOptions, DbConn, EntityTrait, QuerySelect};
 #[cfg(feature = "process")]
 use sea_orm_migration::prelude::*;
 #[cfg(feature = "process")]
-use sea_orm_rocket::{rocket::figment::Figment};
-use rocket_db_pools::Database;
+use sea_orm_rocket::rocket::figment::Figment;
+use std::{env, fs, sync::Arc, time::Duration};
 #[cfg(feature = "process")]
 use tokio::sync::Mutex;
-use rocket::request::FromRequest;
-use sea_orm::DatabaseConnection;
 
 #[cfg(feature = "process")]
 #[derive(Database, Debug)]
@@ -38,7 +38,9 @@ impl<'a> FromRequest<'a> for RocketDbPool {
     async fn from_request(
         _request: &'a request::Request<'_>,
     ) -> request::Outcome<Self, Self::Error> {
-        request::Outcome::Success(RocketDbPool { conn: DatabaseConnection::Disconnected })
+        request::Outcome::Success(RocketDbPool {
+            conn: DatabaseConnection::Disconnected,
+        })
     }
 }
 
@@ -48,18 +50,20 @@ impl<'a> FromRequest<'a> for Db {
     async fn from_request(
         _request: &'a request::Request<'_>,
     ) -> request::Outcome<Self, Self::Error> {
-        request::Outcome::Success(Db(RocketDbPool { conn: DatabaseConnection::Disconnected }))
+        request::Outcome::Success(Db(RocketDbPool {
+            conn: DatabaseConnection::Disconnected,
+        }))
     }
 }
 
 impl<'r> OpenApiFromRequest<'r> for Db {
-     fn from_request_input(
-         _gen: &mut OpenApiGenerator,
-         _name: String,
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
         _required: bool,
-     ) -> rocket_okapi::Result<RequestHeaderInput> {
-         Ok(RequestHeaderInput::None)
-     }
+    ) -> rocket_okapi::Result<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
 }
 
 #[cfg(feature = "process")]
@@ -95,6 +99,7 @@ impl rocket_db_pools::Pool for RocketDbPool {
         options.acquire_timeout(Duration::new(3600, 0));
         options.connect_timeout(Duration::new(3600, 0));
         options.min_connections(1);
+        options.sqlx_logging(false);
 
         let conn = sea_orm::Database::connect(options).await?;
 
@@ -176,8 +181,13 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
         return;
     }
 
-    let objectified: (Vec<Product>, Vec<Customer>, Vec<Transaction>, Vec<Store>, Vec<Kiosk>) =
-        serde_json::from_str(&to_ingest.unwrap()).unwrap();
+    let objectified: (
+        Vec<Product>,
+        Vec<Customer>,
+        Vec<Transaction>,
+        Vec<Store>,
+        Vec<Kiosk>,
+    ) = serde_json::from_str(&to_ingest.unwrap()).unwrap();
 
     let file_ending = file_path.split('/').last();
 
@@ -195,6 +205,7 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
         employee: default_employee.into(),
         expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
         tenant_id: tenant_id.to_string().clone(),
+        variant: SessionVariant::AccessToken,
     };
 
     for store in objectified.3 {

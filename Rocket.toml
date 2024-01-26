@@ -1,18 +1,17 @@
-[development]
-address = "0.0.0.0"
-log = "normal"
+# [development]
+# address = "0.0.0.0"
 
-[staging]
-address = "0.0.0.0"
-log = "normal"
+# [staging]
+# address = "0.0.0.0"
+# log = "normal"
 
-[production]
-address = "0.0.0.0"
-log = "critical"
+# [production]
+# address = "0.0.0.0"
+# log = "critical"
 
-[release]
-address = "0.0.0.0"
-log = "critical"
+# [release]
+# address = "0.0.0.0"
+# log = "critical"
 
 [global.limits]
 file = 1073741824 # 1 GiBs

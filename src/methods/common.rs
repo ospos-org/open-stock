@@ -6,7 +6,7 @@ use crate::entities::employee::Entity as Employee;
 #[cfg(feature = "process")]
 use crate::entities::session::Entity as SessionEntity;
 
-use crate::{AccountType, Employee as EmployeeStruct, EmployeeInput, session};
+use crate::{session, AccountType, Employee as EmployeeStruct, EmployeeInput};
 
 #[cfg(feature = "process")]
 use crate::entities;
@@ -21,15 +21,16 @@ use rocket::time::OffsetDateTime;
 use rocket::{http::CookieJar, serde::json::Json, Responder};
 use rocket_okapi::gen::OpenApiGenerator;
 
+use crate::session::{ActiveModel, Model};
 use rocket_okapi::response::OpenApiResponderInner;
 use schemars::JsonSchema;
+use sea_orm::ActiveValue::Set;
 #[cfg(feature = "process")]
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QuerySelect};
-use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 use validator::Validate;
-use crate::session::ActiveModel;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema, Validate)]
 pub struct Name {
@@ -75,7 +76,7 @@ impl ContactInformationInput {
             email: Email::from(self.email),
             mobile: MobileNumber::from(self.mobile),
             landline: self.landline,
-            address: self.address
+            address: self.address,
         }
     }
 }
@@ -217,6 +218,15 @@ pub struct SessionRaw {
     pub key: String,
     pub employee_id: String,
     pub expiry: DateTime<Utc>,
+    pub variant: SessionVariant,
+    pub tenant_id: String,
+}
+
+#[derive(Debug, Clone, JsonSchema, Serialize, Deserialize)]
+pub enum SessionVariant {
+    // Stores ID of AT.
+    RefreshToken(String),
+    AccessToken,
 }
 
 #[derive(Debug, Clone, JsonSchema, Validate)]
@@ -226,6 +236,7 @@ pub struct Session {
     pub employee: EmployeeObj,
     pub expiry: DateTime<Utc>,
     pub tenant_id: String,
+    pub variant: SessionVariant,
 }
 
 impl From<Session> for session::ActiveModel {
@@ -236,6 +247,20 @@ impl From<Session> for session::ActiveModel {
             tenant_id: Set(val.tenant_id),
             employee_id: Set(val.employee.id),
             expiry: Set(val.expiry.naive_utc()),
+            variant: Set(json!(val.variant)),
+        }
+    }
+}
+
+impl From<Model> for SessionRaw {
+    fn from(value: Model) -> Self {
+        SessionRaw {
+            id: value.id,
+            key: value.key,
+            employee_id: value.employee_id,
+            expiry: DateTime::from_naive_utc_and_offset(value.expiry, Utc),
+            variant: serde_json::from_value::<SessionVariant>(value.variant).unwrap(),
+            tenant_id: value.tenant_id,
         }
     }
 }
@@ -246,7 +271,8 @@ impl Session {
             .employee
             .level
             .into_iter()
-            .find(|x| x.action == permission).unwrap_or(Access {
+            .find(|x| x.action == permission)
+            .unwrap_or(Access {
                 action: permission,
                 authority: 0,
             });
@@ -258,15 +284,20 @@ impl Session {
         }
     }
 
-    pub fn ingestion(employee: EmployeeInput, tenant_id: String, employee_id: Option<String>) -> Self {
+    pub fn ingestion(
+        employee: EmployeeInput,
+        tenant_id: String,
+        employee_id: Option<String>,
+    ) -> Self {
         let mut converted_employee: EmployeeStruct = employee.into();
-        converted_employee.id = employee_id.map_or(Uuid::new_v4().to_string(), |x|x);
+        converted_employee.id = employee_id.map_or(Uuid::new_v4().to_string(), |x| x);
 
         Self {
             id: Uuid::new_v4().to_string(),
             key: Uuid::new_v4().to_string(),
             employee: converted_employee,
             expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+            variant: SessionVariant::AccessToken,
             tenant_id,
         }
     }
@@ -274,7 +305,9 @@ impl Session {
 
 #[cfg(feature = "process")]
 pub fn get_key_cookie(cookies: &CookieJar<'_>) -> Option<String> {
-    cookies.get("os-stock-key").map(|crumb| crumb.value().to_string())
+    cookies
+        .get("os-stock-key")
+        .map(|crumb| crumb.value().to_string())
 }
 
 #[cfg(feature = "process")]
@@ -298,20 +331,23 @@ pub async fn verify_cookie(key: String, db: &DatabaseConnection) -> Result<Sessi
                 contact: serde_json::from_value::<ContactInformation>(e.contact.clone()).unwrap(),
                 clock_history: serde_json::from_value::<Vec<History<Attendance>>>(
                     e.clock_history.clone(),
-                ).unwrap(),
+                )
+                .unwrap(),
                 account_type: serde_json::from_value::<AccountType>(e.account_type).unwrap(),
                 level: serde_json::from_value::<Vec<Access<Action>>>(e.level).unwrap(),
                 created_at: Default::default(),
                 updated_at: Default::default(),
             },
             expiry: DateTime::from_naive_utc_and_offset(val.expiry, Utc),
+            variant: SessionVariant::AccessToken,
         }),
         None => Err(DbErr::RecordNotFound(format!(
             "Record {} does not exist.",
             key
         ))),
         Some((_, None)) => Err(DbErr::RecordNotFound(format!(
-            "Bounded Employee does not exist for key {}", key
+            "Bounded Employee does not exist for key {}",
+            key
         ))),
     }
 }
@@ -367,7 +403,7 @@ pub async fn cookie_status_wrapper(
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ErrorResponse {
     message: String,
-    code: String
+    code: String,
 }
 
 #[cfg(feature = "process")]
@@ -375,35 +411,35 @@ impl ErrorResponse {
     pub fn create_error(message: &str) -> Error {
         Error::StandardError(Json(ErrorResponse {
             message: message.to_string(),
-            code: "error.custom".to_string()
+            code: "error.custom".to_string(),
         }))
     }
 
     pub fn input_error() -> Error {
         Error::InputError(Json(ErrorResponse {
             message: "Unable to update fields due to malformed inputs".to_string(),
-            code: "error.input".to_string()
+            code: "error.input".to_string(),
         }))
     }
 
     pub fn unauthorized(action: Action) -> Error {
         Error::Unauthorized(Json(ErrorResponse {
             message: format!("User lacks {:?} permission.", action),
-            code: "error.unauthorized".to_string()
+            code: "error.unauthorized".to_string(),
         }))
     }
 
     pub fn custom_unauthorized(message: &str) -> Error {
         Error::Unauthorized(Json(ErrorResponse {
             message: message.to_string(),
-            code: "error.unauthorized.custom".to_string()
+            code: "error.unauthorized.custom".to_string(),
         }))
     }
 
     pub fn db_err(message: DbErr) -> Error {
         Error::DbError(Json(ErrorResponse {
             message: format!("SQL error, reason: {}", message),
-            code: "error.database.query".to_string()
+            code: "error.database.query".to_string(),
         }))
     }
 }
