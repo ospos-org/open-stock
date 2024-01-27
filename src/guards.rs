@@ -45,11 +45,11 @@ impl<'r, T> FromData<'r> for JsonValidation<T>
                     Ok(e) =>
                         data::Outcome::Success(JsonValidation(e)),
                     Err(e) =>
-                        data::Outcome::Failure((Status::InternalServerError, e))
+                        data::Outcome::Error((Status::InternalServerError, e))
                 }
             }
             Err(_) => {
-                data::Outcome::Failure(
+                data::Outcome::Error(
                     (Status::InternalServerError, JsonValidationError::ReadError)
                 )
             }

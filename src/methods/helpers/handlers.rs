@@ -1,29 +1,32 @@
-use std::env;
-
-use std::time::Duration;
-use chrono::{Days, Utc};
+use crate::catchers::Validated;
+use crate::session::ActiveModel;
+use crate::ContactInformationInput;
+use crate::{
+    all_actions, check_permissions, create_cookie, example_employee,
+    methods::{
+        cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
+        Promotion, Session, Store, Transaction,
+    },
+    pool::Db,
+    session, AccountType, All, Distance, EmployeeInput, Kiosk, NewTenantInput, NewTenantResponse,
+    SessionRaw, SessionVariant, Tenant, TenantSettings,
+};
+use chrono::{Days, Duration, Utc};
 use geo::point;
-use rocket::{get, http::CookieJar, post, serde::json::Json};
-use uuid::Uuid;
-
-use crate::{check_permissions, example_employee, methods::{
-    cookie_status_wrapper, Action, Address, Customer, Employee, Error, ErrorResponse, Product,
-    Promotion, Session, Store, Transaction,
-}, pool::Db, All, ContactInformation, Email, EmployeeInput, Kiosk, MobileNumber, NewTenantInput, NewTenantResponse, Tenant, TenantSettings, session, all_actions, AccountType, Distance};
 use geo::VincentyDistance;
 use okapi::openapi3::OpenApi;
 use photon_geocoding::{
     filter::{ForwardFilter, PhotonLayer},
     LatLon, PhotonApiClient, PhotonFeature,
 };
-use rocket::http::{Cookie, SameSite};
-use rocket::time::OffsetDateTime;
+use rocket::{get, http::CookieJar, post, serde::json::Json};
 use rocket_db_pools::Connection;
-use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
-use sea_orm::EntityTrait;
-use crate::catchers::Validated;
-use crate::session::ActiveModel;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QuerySelect, Set};
+use serde_json::json;
+use std::env;
+use uuid::Uuid;
 
 pub fn documented_routes(_settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -33,7 +36,9 @@ pub fn documented_routes(_settings: &OpenApiSettings) -> (Vec<rocket::Route>, Op
         suggest_addr,
         new_tenant,
         distance_to_stores_from_store,
-        assign_session_cookie
+        assign_session_cookie,
+        refresh_token_create,
+        refresh_token_refresh
     ]
 }
 
@@ -58,6 +63,7 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
         employee: default_employee.clone().into(),
         expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
         tenant_id: tenant_id.to_string().clone(),
+        variant: SessionVariant::AccessToken,
     };
 
     let session2 = Session {
@@ -66,34 +72,48 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
         employee: default_employee.into(),
         expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
         tenant_id: tenant_id2.to_string().clone(),
+        variant: SessionVariant::AccessToken,
     };
 
     // Add Tenants
-    let tenant = Tenant::generate(&db, tenant_id).await
+    let tenant = Tenant::generate(&db, tenant_id)
+        .await
         .map_err(ErrorResponse::db_err)?;
-    let tenant2 = Tenant::generate(&db, tenant_id2).await
+    let tenant2 = Tenant::generate(&db, tenant_id2)
+        .await
         .map_err(ErrorResponse::db_err)?;
 
     // Add Employees
-    let employee = Employee::generate(&db, session.clone()).await
+    let employee = Employee::generate(&db, session.clone())
+        .await
         .map_err(ErrorResponse::db_err)?;
-    let _employee2 = Employee::generate(&db, session2.clone()).await
+    let _employee2 = Employee::generate(&db, session2.clone())
+        .await
         .map_err(ErrorResponse::db_err)?;
 
     // Add other items (aggregated)
-    let stores = Store::generate(session.clone(), &db).await
+    let stores = Store::generate(session.clone(), &db)
+        .await
         .map_err(ErrorResponse::db_err)?;
-    let products = Product::generate(session.clone(), &db).await
+    let products = Product::generate(session.clone(), &db)
+        .await
         .map_err(ErrorResponse::db_err)?;
-    let customer = Customer::generate(session.clone(), &db).await
+    let customer = Customer::generate(session.clone(), &db)
+        .await
         .map_err(ErrorResponse::db_err)?;
 
     // Add Kiosks
-    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), &db).await
+    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), &db)
+        .await
         .map_err(ErrorResponse::db_err)?;
 
-    let _kiosk2 = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133622", session2.clone(), &db).await
-        .map_err(ErrorResponse::db_err)?;
+    let _kiosk2 = Kiosk::generate(
+        "adbd48ab-f4ca-4204-9c88-3516f3133622",
+        session2.clone(),
+        &db,
+    )
+    .await
+    .map_err(ErrorResponse::db_err)?;
 
     let transaction = Transaction::generate(
         &db,
@@ -104,10 +124,15 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
             employee: employee.clone(),
             expiry: Utc::now(),
             tenant_id: tenant_id.to_string(),
+            variant: SessionVariant::AccessToken,
         },
-    ).await.map_err(ErrorResponse::db_err)?;
+    )
+    .await
+    .map_err(ErrorResponse::db_err)?;
 
-    let promotions = Promotion::generate(session, &db).await.map_err(ErrorResponse::db_err)?;
+    let promotions = Promotion::generate(session, &db)
+        .await
+        .map_err(ErrorResponse::db_err)?;
 
     Ok(Json(All {
         employee,
@@ -148,19 +173,16 @@ pub async fn new_tenant(
 
     // Create Primary Employee
     let employee = EmployeeInput {
-        name: crate::Name::from_string(data.clone().name),
+        name: data.clone().name,
         level: all_actions(),
         rid: 0000,
-        password: data.clone().password,
+        password: Some(data.clone().password),
         account_type: AccountType::Managerial,
         clock_history: vec![],
-        contact: ContactInformation {
+        contact: ContactInformationInput {
             name: data.clone().name,
-            mobile: MobileNumber {
-                number: "".to_string(),
-                valid: false,
-            },
-            email: Email::from(data.clone().email),
+            mobile: "".to_string(),
+            email: data.clone().email,
             landline: "".to_string(),
             address: convert_addr_to_geo(&data.clone().address)?,
         },
@@ -172,26 +194,23 @@ pub async fn new_tenant(
     let session = Session::ingestion(
         employee.clone(),
         tenant_id.clone(),
-        Some(employee_id.clone())
+        Some(employee_id.clone()),
     );
 
-    let employee_insert_result = Employee::insert(
-        employee, &db, session.clone(),
-        None, Some(employee_id))
-        .await
-        .map_err(ErrorResponse::db_err)?;
+    let employee_insert_result =
+        Employee::insert(employee, &db, session.clone(), None, Some(employee_id))
+            .await
+            .map_err(ErrorResponse::db_err)?;
 
     match session::Entity::insert::<ActiveModel>(session.clone().into())
         .exec(&db)
         .await
     {
-        Ok(_) => {
-            Ok(Json(NewTenantResponse {
-                tenant_id,
-                api_key: session.key,
-                employee_id: employee_insert_result.last_insert_id,
-            }))
-        }
+        Ok(_) => Ok(Json(NewTenantResponse {
+            tenant_id,
+            api_key: session.key,
+            employee_id: employee_insert_result.last_insert_id,
+        })),
         Err(reason) => Err(ErrorResponse::db_err(reason)),
     }
 }
@@ -201,20 +220,10 @@ pub async fn new_tenant(
 pub async fn assign_session_cookie(
     _conn: Connection<Db>,
     key: &str,
-    cookies: &CookieJar<'_>
+    cookies: &CookieJar<'_>,
 ) -> Result<Json<()>, Error> {
-    let now = OffsetDateTime::now_utc();
-    let expiry = now + Duration::from_secs(10 * 60);
-
     let hard_key = key.to_string();
-
-    let cookie = Cookie::build("key", hard_key.clone())
-        .expires(expiry)
-        .path("/")
-        .secure(true)
-        .same_site(SameSite::None)
-        .http_only(true)
-        .finish();
+    let cookie = create_cookie(hard_key.clone());
 
     cookies.add(cookie);
 
@@ -399,4 +408,144 @@ pub async fn distance_to_stores_from_store(
             })
             .collect(),
     ))
+}
+
+/// By fetching this route, as long as the user
+/// is authenticated by the access token, we will
+/// generate a refresh token for it.
+///
+///
+#[openapi(tag = "Helpers")]
+#[get("/refresh_token")]
+pub async fn refresh_token_create(
+    conn: Connection<Db>,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<String>, Error> {
+    let db = conn.into_inner();
+    let session = cookie_status_wrapper(&db, cookies).await?;
+
+    let token_key = Uuid::new_v4().to_string();
+    let token_id = Uuid::new_v4().to_string();
+
+    match session::Entity::insert(session::ActiveModel {
+        id: Set(token_id),
+        key: Set(token_key.clone()),
+        variant: Set(json!(SessionVariant::RefreshToken(session.id))),
+        employee_id: Set(session.employee.id),
+        tenant_id: Set(session.tenant_id),
+        expiry: Set(Utc::now()
+            .checked_add_signed(Duration::days(7))
+            .unwrap()
+            .naive_utc()),
+    })
+    .exec(&db)
+    .await
+    {
+        // Note; we do not assign a cookie.
+        // This is a refresh token, not an access token.
+        Ok(_) => Ok(Json(token_key)),
+        Err(reason) => Err(ErrorResponse::db_err(reason)),
+    }
+}
+
+/// Sending a refresh token through to this route,
+/// will create a new access token and assign it
+/// as server-assigned current cookie.
+///
+///
+#[openapi(tag = "Helpers")]
+#[get("/refresh_token/<token>")]
+pub async fn refresh_token_refresh(
+    conn: Connection<Db>,
+    token: &str,
+    cookies: &CookieJar<'_>,
+) -> Result<Json<String>, Error> {
+    let db = conn.into_inner();
+
+    let found_token = crate::entities::session::Entity::find()
+        .having(session::Column::Key.eq(token))
+        .one(&db)
+        .await?;
+
+    match found_token {
+        Some(e) => {
+            let decoded_token: SessionRaw = e.into();
+            println!("GOT TOKEN: {:?}", decoded_token);
+
+            match decoded_token.variant {
+                SessionVariant::AccessToken => Err(ErrorResponse::create_error(
+                    "Expected a Refresh Token, got an Access Token",
+                )),
+                SessionVariant::RefreshToken(access_reference) => {
+                    let access_token = crate::entities::session::Entity::find()
+                        .having(session::Column::Key.eq(access_reference.clone()))
+                        .one(&db)
+                        .await?;
+
+                    match access_token {
+                        Some(token) => {
+                            println!("THEN GOT ACCESS TOKEN: {:?}", token);
+
+                            let decoded_token_2: SessionRaw = token.into();
+                            let api_key = Uuid::new_v4().to_string();
+
+                            // Return an updated access token (we update
+                            // to optimize the avoidance of a dangling token)
+                            match session::Entity::update(session::ActiveModel {
+                                id: Set(decoded_token_2.id.to_string()),
+                                key: Set(api_key.clone()),
+                                variant: Set(json!(SessionVariant::AccessToken)),
+                                ..Default::default()
+                            })
+                            .exec(&db)
+                            .await
+                            {
+                                Ok(_) => {
+                                    // Assign the cookie
+                                    cookies.add(create_cookie(api_key.clone()));
+
+                                    Ok(Json(api_key))
+                                }
+                                Err(reason) => Err(ErrorResponse::db_err(reason)),
+                            }
+                        }
+                        None => {
+                            println!("ACCESS TOKEN EXPIRED! LET'S GENERATE ONE! {:?}", token);
+
+                            let new_access_key = Uuid::new_v4().to_string();
+
+                            let exp = Utc::now()
+                                .checked_add_signed(Duration::minutes(10))
+                                .unwrap();
+
+                            let access_token_to_insert = session::ActiveModel {
+                                id: Set(access_reference),
+                                key: Set(new_access_key.clone()),
+                                employee_id: Set(decoded_token.employee_id),
+                                expiry: Set(exp.naive_utc()),
+                                tenant_id: Set(decoded_token.tenant_id),
+                                variant: Set(json!(SessionVariant::AccessToken)),
+                            };
+
+                            match session::Entity::insert(access_token_to_insert)
+                                .exec(&db)
+                                .await
+                            {
+                                Ok(_) => {
+                                    // Assign the cookie
+                                    cookies.add(create_cookie(new_access_key.clone()));
+
+                                    Ok(Json(new_access_key))
+                                }
+                                Err(reason) => Err(ErrorResponse::db_err(reason)),
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        None => Err(ErrorResponse::db_err(DbErr::RecordNotFound(
+            token.to_string(),
+        ))),
+    }
 }

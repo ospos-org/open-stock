@@ -89,7 +89,7 @@ impl Kiosk {
                 store_id: k.store_id,
                 preferences: serde_json::from_value::<KioskPreferences>(k.preferences).unwrap(),
                 disabled: k.disabled != 0,
-                last_online: DateTime::from_utc(k.last_online, Utc),
+                last_online: DateTime::from_naive_utc_and_offset(k.last_online, Utc),
             }),
             None => Err(DbErr::RecordNotFound(id.to_string())),
         }

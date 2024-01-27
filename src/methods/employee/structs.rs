@@ -15,7 +15,7 @@ use crate::entities::employee;
 #[cfg(feature = "process")]
 use crate::entities::prelude::Employee as Epl;
 use crate::methods::{Address, ContactInformation, Email, History, Id, MobileNumber, Name};
-use crate::Session;
+use crate::{ContactInformationInput, Customer, CustomerInput, Session};
 
 #[cfg(feature = "process")]
 use crate::methods::convert_addr_to_geo;
@@ -137,10 +137,10 @@ pub struct EmployeeAuth {
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
 pub struct EmployeeInput {
-    pub name: Name,
+    pub name: String,
     pub rid: i32,
-    pub contact: ContactInformation,
-    pub password: String,
+    pub contact: ContactInformationInput,
+    pub password: Option<String>,
     pub clock_history: Vec<History<Attendance>>,
     pub level: Vec<Access<Action>>,
     pub account_type: AccountType
@@ -185,6 +185,7 @@ impl Display for Employee {
 use argon2::{self, Config};
 use rand::Rng;
 use schemars::JsonSchema;
+use sea_orm::QueryOrder;
 use validator::Validate;
 
 #[cfg(feature = "methods")]
@@ -204,9 +205,14 @@ impl Employee {
         }
 
         let password = empl.password.clone();
+
+        if password.is_none() {
+            return Err(DbErr::AttrNotSet("Field `password` must be present".to_string()))
+        }
+
         let salt = b"randomsalt";
         let config = Config::original();
-        let hash = argon2::hash_encoded(password.as_bytes(), salt, &config).unwrap();
+        let hash = argon2::hash_encoded(password.unwrap().as_bytes(), salt, &config).unwrap();
 
         let insert_crud = empl.into_active(id, rid, session.tenant_id, hash);
 
@@ -264,6 +270,25 @@ impl Employee {
                 "Unable to locate user. No user exists.".to_string(),
             )))
         }
+    }
+
+    pub async fn fetch_recent(
+        session: Session,
+        db: &DbConn,
+    ) -> Result<Vec<Employee>, DbErr> {
+        let res = employee::Entity::find()
+            .filter(employee::Column::TenantId.eq(session.tenant_id))
+            .order_by_desc(employee::Column::UpdatedAt)
+            .limit(25)
+            .all(db)
+            .await?;
+
+        let mapped: Vec<Employee> = res
+            .iter()
+            .map(|c| c.clone().into())
+            .collect();
+
+        Ok(mapped)
     }
 
     pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Employee, DbErr> {
@@ -379,6 +404,20 @@ impl Employee {
         Self::fetch_by_id(id, session, db).await
     }
 
+    pub async fn update_by_input(
+        employee: EmployeeInput,
+        session: Session,
+        id: &str,
+        db: &DbConn,
+    ) -> Result<Employee, DbErr> {
+        let old_employee = Self::fetch_by_id(id, session.clone(), db).await?;
+        let as_model = employee.from_existing(old_employee, session.tenant_id.clone());
+
+        crate::entities::employee::Entity::update(as_model).exec(db).await?;
+
+        Self::fetch_by_id(id, session, db).await
+    }
+
     pub async fn update(
         empl: Employee,
         session: Session,
@@ -465,17 +504,13 @@ impl ToString for TrackType {
 
 pub fn example_employee() -> EmployeeInput {
     EmployeeInput {
-        password: "1232".to_string(),
+        password: Some("1232".to_string()),
         rid: 1232,
-        name: Name {
-            first: "Carl".to_string(),
-            middle: "".to_string(),
-            last: "Kennith".to_string(),
-        },
-        contact: ContactInformation {
+        name: "Carl Kennith".to_string(),
+        contact: ContactInformationInput {
             name: "Carl Kennith".into(),
-            mobile: MobileNumber::from("021212120".to_string()),
-            email: Email::from("carl@kennith.com".to_string()),
+            mobile: "021212120".to_string(),
+            email: "carl@kennith.com".to_string(),
             landline: "".into(),
             address: Address {
                 street: "9 Carbine Road".into(),

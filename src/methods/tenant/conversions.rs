@@ -8,11 +8,11 @@ impl From<Model> for Tenant {
     fn from(val: Model) -> Self {
         Tenant {
             tenant_id: val.tenant_id,
-            registration_date: DateTime::from_utc(val.registration_date, Utc),
+            registration_date: DateTime::from_naive_utc_and_offset(val.registration_date, Utc),
             settings: serde_json::from_value::<TenantSettings>(val.settings).unwrap(),
 
-            created_at: DateTime::from_utc(val.created_at, Utc),
-            updated_at: DateTime::from_utc(val.updated_at, Utc),
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
         }
     }
 }

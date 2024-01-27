@@ -12,8 +12,8 @@ impl From<Model> for Supplier {
             contact: serde_json::from_value::<ContactInformation>(val.contact).unwrap(),
             transaction_history: serde_json::from_value::<Vec<Transaction>>(val.transaction_history)
                 .unwrap(),
-            created_at: DateTime::from_utc(val.created_at, Utc),
-            updated_at: DateTime::from_utc(val.updated_at, Utc)
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc)
         }
     }
 }

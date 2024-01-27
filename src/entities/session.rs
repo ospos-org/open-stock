@@ -12,6 +12,7 @@ pub struct Model {
     #[sea_orm(column_name = "employee_id")]
     pub employee_id: String,
     pub expiry: DateTime,
+    pub variant: Json
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -44,10 +44,10 @@ impl From<Model> for Product {
             identification: serde_json::from_value::<ProductIdentification>(val.identification)
                 .unwrap(),
             visible: serde_json::from_value::<ProductVisibility>(val.visible).unwrap(),
-            created_at: DateTime::from_utc(val.created_at, Utc),
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
             name_long: val.name_long,
             description_long: val.description_long,
-            updated_at: DateTime::from_utc(val.updated_at, Utc),
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
         }
     }
 }

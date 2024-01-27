@@ -9,12 +9,12 @@ description = "An Inventory Management Database Interface Layer for MySQL"
 [dependencies]
 # Core Utils
 tokio = { version = "1.28.2", features = ["rt"], optional = true }
-rocket = { version = "0.5.0-rc.3", features = [
+rocket = { version = "0.5.0", features = [
   "json", "secrets", "tls"
 ], optional = true }
 
 # ORM
-sea-orm-rocket = { version = "0.5.2", optional = true }
+sea-orm-rocket = { version = "0.5.3", optional = true }
 sea-orm-migration = { version = "0.12.1", optional = true }
 sea-orm = { version = "0.12.1", features = [
   "macros",
@@ -52,11 +52,11 @@ strum = "0.25.0"
 enum-iterator = "1.4.1"
 
 # Documentation & Validation
-rocket_db_pools = { version = "0.1.0-rc.3" }
-rocket_okapi = { version = "0.8.0-rc.3", features = ["uuid", "swagger", "rocket_db_pools"] }
-schemars = { version = "0.8.15" , features = ["chrono"]}
-okapi = { version = "0.7.0-rc.1", features = ["impl_json_schema"] }
-rocket-validation = "0.1.3"
+rocket_db_pools = { version = "0.1.0" }
+rocket_okapi = { version = "0.8.0", features = ["uuid", "swagger", "rocket_db_pools"] }
+schemars = { version = "0.8.16" , features = ["chrono"]}
+okapi = { version = "0.7.0", features = ["impl_json_schema"] }
+rocket-validation = { version = "0.1.4", git = "https://github.com/bennjii/rocket-validation.git", branch = "main" }
 validator="0.16.1"
 
 [features]
@@ -75,4 +75,4 @@ default = ["all"]
 strip = false
 
 [profile.dev]
-split-debuginfo = "unpacked"
+# split-debuginfo = "unpacked"

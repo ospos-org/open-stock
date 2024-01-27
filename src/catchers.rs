@@ -68,16 +68,16 @@ impl<'r, D: validator::Validate + rocket::serde::Deserialize<'r> + JsonSchema> F
         let data_outcome = <Json<D> as FromData<'r>>::from_data(req, data).await;
 
         match data_outcome {
-            Outcome::Failure((status, err)) => {
+            Outcome::Error((status, err)) => {
                 req.local_cache(|| CachedParseErrors(Some(err.to_string())));
-                Outcome::Failure((status, Err(err)))
+                Outcome::Error((status, Err(err)))
             }
             Outcome::Forward(err) => Outcome::Forward(err),
             Outcome::Success(data) => match data.validate() {
                 Ok(_) => Outcome::Success(Validated(data)),
                 Err(err) => {
                     req.local_cache(|| CachedValidationErrors(Some(err.to_owned())));
-                    Outcome::Failure((Status::BadRequest, Ok(err)))
+                    Outcome::Error((Status::BadRequest, Ok(err)))
                 }
             },
         }
@@ -91,17 +91,17 @@ impl<'r, D: Validate + FromRequest<'r>> FromRequest<'r> for Validated<D> {
         let data_outcome = D::from_request(req).await;
 
         match data_outcome {
-            Outcome::Failure((status, err)) => {
+            Outcome::Error((status, err)) => {
                 let error_message = format!("{err:?}");
                 req.local_cache(|| CachedParseErrors(Some(error_message)));
-                Outcome::Failure((status, Err(err)))
+                Outcome::Error((status, Err(err)))
             }
             Outcome::Forward(err) => Outcome::Forward(err),
             Outcome::Success(data) => match data.validate() {
                 Ok(_) => Outcome::Success(Validated(data)),
                 Err(err) => {
                     req.local_cache(|| CachedValidationErrors(Some(err.to_owned())));
-                    Outcome::Failure((Status::BadRequest, Ok(err)))
+                    Outcome::Error((Status::BadRequest, Ok(err)))
                 }
             },
         }

@@ -196,8 +196,8 @@ impl Promotion {
             name: p.name,
             buy: serde_json::from_value::<PromotionBuy>(p.buy).unwrap(),
             get: serde_json::from_value::<PromotionGet>(p.get).unwrap(),
-            valid_till: DateTime::from_utc(p.valid_till, Utc),
-            timestamp: DateTime::from_utc(p.timestamp, Utc),
+            valid_till: DateTime::from_naive_utc_and_offset(p.valid_till, Utc),
+            timestamp: DateTime::from_naive_utc_and_offset(p.timestamp, Utc),
         })
     }
 
@@ -226,8 +226,8 @@ impl Promotion {
                 name: p.name.clone(),
                 buy: serde_json::from_value::<PromotionBuy>(p.buy.clone()).unwrap(),
                 get: serde_json::from_value::<PromotionGet>(p.get.clone()).unwrap(),
-                valid_till: DateTime::from_utc(p.valid_till, Utc),
-                timestamp: DateTime::from_utc(p.timestamp, Utc),
+                valid_till: DateTime::from_naive_utc_and_offset(p.valid_till, Utc),
+                timestamp: DateTime::from_naive_utc_and_offset(p.timestamp, Utc),
             })
             .collect();
 
@@ -268,8 +268,8 @@ impl Promotion {
                 name: e.name.clone(),
                 buy: serde_json::from_value::<PromotionBuy>(e.buy.clone()).unwrap(),
                 get: serde_json::from_value::<PromotionGet>(e.get.clone()).unwrap(),
-                timestamp: DateTime::from_utc(e.timestamp, Utc),
-                valid_till: DateTime::from_utc(e.valid_till, Utc),
+                timestamp: DateTime::from_naive_utc_and_offset(e.timestamp, Utc),
+                valid_till: DateTime::from_naive_utc_and_offset(e.valid_till, Utc),
             })
             .collect();
 
