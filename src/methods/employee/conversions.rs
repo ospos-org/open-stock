@@ -1,12 +1,12 @@
+use crate::entities::employee::{ActiveModel, Model};
+use crate::{
+    Access, AccountType, Action, Attendance, ContactInformation, Employee, EmployeeAuth,
+    EmployeeInput, History, Name,
+};
 use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
 use serde_json::json;
 use uuid::Uuid;
-use crate::{
-    Access, AccountType, Action, Attendance, ContactInformation,
-    Employee, EmployeeAuth, EmployeeInput, History, Name
-};
-use crate::entities::employee::{ActiveModel, Model};
 
 impl From<EmployeeInput> for Employee {
     fn from(value: EmployeeInput) -> Self {
@@ -35,26 +35,27 @@ impl EmployeeInput {
         id: String,
         rid: i32,
         tenant_id: String,
-        hash: String
+        hash: String,
     ) -> ActiveModel {
         ActiveModel {
             id: Set(id),
             rid: Set(format!("{:0>#4}", rid)),
-            name: Set(json!(self.name)),
+            name: Set(json!(Name::from_string(self.name))),
             auth: Set(json!(EmployeeAuth { hash })),
-            contact: Set(json!(self.contact)),
+            contact: Set(json!(self.contact.into_major())),
             clock_history: Set(json!(self.clock_history)),
             level: Set(json!(self.level)),
             tenant_id: Set(tenant_id),
             account_type: Set(json!(self.account_type)),
             created_at: Set(Utc::now().naive_utc()),
-            updated_at: Set(Utc::now().naive_utc())
+            updated_at: Set(Utc::now().naive_utc()),
         }
     }
 
     pub(crate) fn from_existing(self, employee: Employee, tenant_id: String) -> ActiveModel {
         ActiveModel {
             id: Set(employee.id),
+            rid: Set(format!("{:0>#4}", self.rid)),
             tenant_id: Set(tenant_id),
 
             name: Set(json!(Name::from_string(self.name))),
@@ -84,7 +85,7 @@ impl From<Model> for Employee {
                 .unwrap(),
             level: serde_json::from_value::<Vec<Access<Action>>>(val.level).unwrap(),
             created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
-            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc)
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
         }
     }
 }
