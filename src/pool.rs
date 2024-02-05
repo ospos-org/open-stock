@@ -2,7 +2,7 @@
 use crate::entities::{session, transactions};
 #[cfg(feature = "process")]
 use crate::migrator::Migrator;
-use crate::SessionVariant;
+use crate::{SessionVariant};
 use crate::{example_employee, Customer, Kiosk, Product, Session, Store, Transaction};
 #[cfg(feature = "process")]
 use async_trait::async_trait;
@@ -10,10 +10,10 @@ use chrono::{Days, Duration as ChronoDuration, Utc};
 #[cfg(feature = "process")]
 use dotenv::dotenv;
 use rocket::request;
-use rocket::request::FromRequest;
+use rocket::request::{FromRequest, Outcome};
 #[cfg(feature = "process")]
 use rocket::tokio;
-use rocket_db_pools::Database;
+use rocket_db_pools::{Connection, Database};
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use sea_orm::DatabaseConnection;
@@ -44,19 +44,25 @@ impl<'a> FromRequest<'a> for RocketDbPool {
     }
 }
 
+#[derive(Debug)]
+pub struct InternalDb(pub DbConn);
+
 #[rocket::async_trait]
-impl<'a> FromRequest<'a> for Db {
-    type Error = &'static str;
+impl<'a> FromRequest<'a> for InternalDb {
+    type Error = Option<InternalDb>;
+
     async fn from_request(
-        _request: &'a request::Request<'_>,
+        request: &'a request::Request<'_>,
     ) -> request::Outcome<Self, Self::Error> {
-        request::Outcome::Success(Db(RocketDbPool {
-            conn: DatabaseConnection::Disconnected,
-        }))
+        match request.guard::<Connection<Db>>().await {
+            Outcome::Success(s) => Outcome::Success(InternalDb(s.into_inner())),
+            Outcome::Error(e) => Outcome::Error(e),
+            Outcome::Forward(f) => Outcome::Forward(f)
+        }
     }
 }
 
-impl<'r> OpenApiFromRequest<'r> for Db {
+impl<'r> OpenApiFromRequest<'r> for InternalDb {
     fn from_request_input(
         _gen: &mut OpenApiGenerator,
         _name: String,

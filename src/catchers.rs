@@ -27,6 +27,12 @@ use okapi::{
 #[derive(Clone, Debug, JsonSchema)]
 pub struct Validated<T>(pub T);
 
+impl<T: Clone> Validated<Json<T>> {
+    pub fn data(self) -> T {
+        self.clone().0.into_inner()
+    }
+}
+
 #[derive(Clone)]
 pub struct CachedValidationErrors(pub Option<ValidationErrors>);
 

@@ -1,20 +1,17 @@
 use crate::catchers::Validated;
-use crate::methods::{Error, ErrorResponse};
-use crate::pool::Db;
-use crate::{AuthenticationLog, Kiosk, KioskInit, KioskPreferences};
+use crate::methods::{Error};
+use crate::pool::{InternalDb};
+use crate::{AuthenticationLog, Kiosk, KioskInit, KioskPreferences, Session};
 use okapi::openapi3::OpenApi;
-use crate::guards::SessionReference;
-use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::{get, post};
-use rocket_db_pools::Connection;
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
-
 use crate::{
     check_permissions,
-    methods::{cookie_status_wrapper, Action},
+    methods::{Action},
 };
+use crate::guards::Convert;
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -31,124 +28,75 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 
 #[openapi(tag = "Kiosk")]
 #[get("/<id>")]
-// #[guard(Action::FetchKiosk)]
-pub async fn get(conn: Connection<Db>, id: &str, session: SessionReference) -> Result<Json<Kiosk>, Error> {
-    let db = conn.into_inner();
-    Kiosk::fetch_by_id(id, session.0, &db).await
-        .map(|v| Json(v))
-        .map_err(|v| ErrorResponse::db_err(v))
+pub async fn get(db: InternalDb, id: &str, session: Session) -> Convert<Kiosk> {
+    check_permissions!(session.clone(), Action::FetchKiosk);
+    Kiosk::fetch_by_id(id, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Kiosk")]
 #[post("/", data = "<input_data>")]
 pub async fn initialize(
-    conn: Connection<Db>,
+    db: InternalDb,
     input_data: Validated<Json<KioskInit>>,
-    cookies: &CookieJar<'_>,
+    session: Session,
 ) -> Result<Json<Kiosk>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
 
-    match Kiosk::insert(input_data, session.clone(), &db, None).await {
-        Ok(kiosk) => match Kiosk::fetch_by_id(&kiosk.last_insert_id, session, &db).await {
-            Ok(res) => Ok(Json(res)),
-            Err(reason) => Err(ErrorResponse::db_err(reason)),
-        },
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    let kiosk = Kiosk::insert(input_data.data(), session.clone(), &db.0, None).await?;
+    Kiosk::fetch_by_id(&kiosk.last_insert_id, session, &db.0).await.map(|v| Json(v))
 }
 
 #[openapi(tag = "Kiosk")]
 #[post("/<id>", data = "<input_data>")]
 pub async fn update(
-    conn: Connection<Db>,
+    conn: InternalDb,
     id: &str,
     input_data: Validated<Json<KioskInit>>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Kiosk>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+    session: Session,
+) -> Convert<Kiosk> {
     check_permissions!(session.clone(), Action::AccessAdminPanel);
 
-    match Kiosk::update(input_data, session, id, &db).await {
-        Ok(kiosk) => Ok(Json(kiosk)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Kiosk::update(input_data.data(), session, id, &conn.0).await.into()
 }
 
 #[openapi(tag = "Kiosk")]
 #[post("/preferences/<id>", data = "<input_data>")]
 pub async fn update_preferences(
-    conn: Connection<Db>,
+    db: InternalDb,
     id: &str,
     input_data: Validated<Json<KioskPreferences>>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Kiosk>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+    session: Session,
+) -> Convert<Kiosk> {
     check_permissions!(session.clone(), Action::ModifyKioskPreferences);
-
-    match Kiosk::update_preferences(id, session, input_data, &db).await {
-        Ok(kiosk) => Ok(Json(kiosk)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Kiosk::update_preferences(id, session, input_data.data(), &db.0).await.into()
 }
 
 #[openapi(tag = "Kiosk")]
 #[post("/online/<id>")]
 pub async fn update_online_status(
-    conn: Connection<Db>,
+    db: InternalDb,
     id: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Kiosk>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+    session: Session,
+) -> Convert<Kiosk> {
     check_permissions!(session.clone(), Action::FetchKiosk);
-
-    match Kiosk::update_online_to_now(id, session, &db).await {
-        Ok(kiosk) => Ok(Json(kiosk)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Kiosk::update_online_to_now(id, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Kiosk")]
 #[post("/delete/<id>")]
-pub async fn delete(conn: Connection<Db>, id: &str, cookies: &CookieJar<'_>) -> Result<(), Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn delete(db: InternalDb, id: &str, session: Session) -> Result<(), Error> {
     check_permissions!(session.clone(), Action::AccessAdminPanel);
-
-    match Kiosk::delete(id, session, &db).await {
-        Ok(_res) => Ok(()),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Kiosk::delete(id, session, &db.0).await.map(|_| ())
 }
 
 #[openapi(tag = "Kiosk")]
 #[post("/log/<id>", data = "<input_data>")]
 pub async fn auth_log(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     id: &str,
     input_data: Validated<Json<AuthenticationLog>>,
-    cookies: &CookieJar<'_>,
 ) -> Result<(), Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
-
-    match Kiosk::auth_log(id, session, input_data, &db).await {
-        Ok(_res) => Ok(()),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Kiosk::auth_log(id, session, input_data.data(), &db.0).await.map(|_| ())
 }

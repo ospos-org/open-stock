@@ -16,6 +16,7 @@ use serde_json::json;
 use uuid::Uuid;
 use validator::Validate;
 use crate::entities::kiosk::Model;
+use crate::methods::Error;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -64,7 +65,7 @@ pub struct KioskInit {
 
 #[cfg(feature = "methods")]
 impl Kiosk {
-    pub async fn generate(id: &str, session: Session, db: &DbConn) -> Result<Kiosk, DbErr> {
+    pub async fn generate(id: &str, session: Session, db: &DbConn) -> Result<Kiosk, Error> {
         let ksk: KioskInit = example_kiosk();
         // Insert & Fetch Customer
         let result = Kiosk::insert(ksk, session.clone(), db, Some(id))
@@ -76,7 +77,7 @@ impl Kiosk {
         }
     }
 
-    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Kiosk, DbErr> {
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Kiosk, Error> {
         let kiosk = Ksk::find_by_id(id.to_string())
             .filter(kiosk::Column::TenantId.eq(session.tenant_id))
             .one(db)
@@ -91,7 +92,7 @@ impl Kiosk {
                 disabled: k.disabled != 0,
                 last_online: DateTime::from_naive_utc_and_offset(k.last_online, Utc),
             }),
-            None => Err(DbErr::RecordNotFound(id.to_string())),
+            None => Err(DbErr::RecordNotFound(id.to_string()).into()),
         }
     }
 
@@ -100,7 +101,7 @@ impl Kiosk {
         session: Session,
         db: &DbConn,
         id: Option<&str>,
-    ) -> Result<InsertResult<ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<ActiveModel>, Error> {
         let id = match id {
             Some(id) => id.to_string(),
             None => Uuid::new_v4().to_string(),
@@ -116,10 +117,7 @@ impl Kiosk {
             tenant_id: Set(session.tenant_id),
         };
 
-        match Ksk::insert(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+        Ksk::insert(insert_crud).exec(db).await.map_err(|v| v.into())
     }
 
     pub async fn insert_raw(
@@ -138,7 +136,7 @@ impl Kiosk {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Kiosk, DbErr> {
+    ) -> Result<Kiosk, Error> {
         ActiveModel {
             id: Set(id.to_string()),
             name: Set(kiosk.name),
@@ -154,15 +152,12 @@ impl Kiosk {
         Self::fetch_by_id(id, session, db).await
     }
 
-    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, DbErr> {
-        match Ksk::delete_by_id(id)
+    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, Error> {
+        Ksk::delete_by_id(id)
             .filter(kiosk::Column::TenantId.eq(session.tenant_id))
             .exec(db)
             .await
-        {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+            .map_err(|v| v.into())
     }
 
     pub async fn auth_log(
@@ -170,7 +165,7 @@ impl Kiosk {
         session: Session,
         log: AuthenticationLog,
         db: &DbConn,
-    ) -> Result<crate::entities::authrecord::Model, DbErr> {
+    ) -> Result<crate::entities::authrecord::Model, Error> {
         let kiosk = Self::fetch_by_id(id, session.clone(), db).await?;
 
         AuthRecord {
@@ -182,6 +177,7 @@ impl Kiosk {
         }
         .insert(db)
         .await
+        .map_err(|v| v.into())
     }
 
     pub async fn update_preferences(
@@ -189,7 +185,7 @@ impl Kiosk {
         session: Session,
         preferences: KioskPreferences,
         db: &DbConn,
-    ) -> Result<Kiosk, DbErr> {
+    ) -> Result<Kiosk, Error> {
         let kiosk = Self::fetch_by_id(id, session.clone(), db).await?;
 
         ActiveModel {
@@ -211,7 +207,7 @@ impl Kiosk {
         id: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Kiosk, DbErr> {
+    ) -> Result<Kiosk, Error> {
         let kiosk = Self::fetch_by_id(id, session.clone(), db).await?;
 
         ActiveModel {

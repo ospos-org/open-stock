@@ -486,3 +486,23 @@ impl OpenApiResponderInner for Error {
         Ok(Responses::default())
     }
 }
+
+pub struct VoidableResult<T>(pub Result<T, Error>);
+
+impl<T> VoidableResult<T> {
+    fn void(self) -> Result<(), Error> {
+        self.into()
+    }
+}
+
+impl<T> From<Result<T, Error>> for VoidableResult<T> {
+    fn from(value: Result<T, Error>) -> Self {
+        VoidableResult(value)
+    }
+}
+
+impl<T> Into<Result<(), Error>> for VoidableResult<T> {
+    fn into(self) -> Result<(), Error> {
+        self.0.map(|_| ())
+    }
+}

@@ -1,13 +1,13 @@
 use futures::TryStreamExt;
-use rocket::{
-    data::{self, Data, FromData, Limits},
-    http::Status,
-    request::{local_cache, Request},
-};
+use okapi::openapi3::Responses;
+use rocket::{data::{self, Data, FromData, Limits}, http::Status, request::{local_cache, Request}, response};
 use rocket::request::{FromRequest, Outcome};
+use rocket::response::Responder;
+use rocket::serde::json::Json;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_db_pools::Connection;
 use rocket_okapi::gen::OpenApiGenerator;
+use rocket_okapi::response::OpenApiResponderInner;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::methods::common::Error;
@@ -64,9 +64,7 @@ impl<'r, T> FromData<'r> for JsonValidation<T>
     }
 }
 
-pub struct SessionReference(pub Session);
-
-impl<'r> OpenApiFromRequest<'r> for SessionReference {
+impl<'r> OpenApiFromRequest<'r> for Session {
     fn from_request_input(
         _gen: &mut OpenApiGenerator,
         _name: String,
@@ -77,7 +75,7 @@ impl<'r> OpenApiFromRequest<'r> for SessionReference {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for SessionReference { // &'r
+impl<'r> FromRequest<'r> for Session { // &'r
     type Error = Error;
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
@@ -97,9 +95,38 @@ impl<'r> FromRequest<'r> for SessionReference { // &'r
         };
 
         match cookie_status_wrapper(&db, cookies).await {
-            Ok(session) => Outcome::Success(SessionReference(session)),
-            Err(error) => Outcome::Forward(Status::Unauthorized)
+            Ok(session) => Outcome::Success(session),
+            Err(_) => Outcome::Forward(Status::Unauthorized)
         }
+    }
+}
 
+
+pub struct Convert<T>(pub Result<Json<T>, Error>);
+
+impl<T> From<Result<T, Error>> for Convert<T> {
+    fn from(value: Result<T, Error>) -> Self {
+        Convert(value.map(|v| Json(v)))
+    }
+}
+
+impl<K> OpenApiResponderInner for Convert<K> {
+    fn responses(_: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
+        Ok(Responses::default())
+    }
+}
+
+impl<'r, 'o: 'r, K: Serialize> Responder<'r, 'o> for Convert<K> {
+    fn respond_to(self, r: &'r Request<'_>) -> response::Result<'o> where K: Serialize {
+        Responder::respond_to(self.0, r)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Into<Result<Json<T>, Error>> for Convert<T> {
+    fn into(self) -> Result<Json<T>, Error> {
+        match self.0 {
+            Ok(v) => Ok(v.into()),
+            Err(e) => Err(e.into())
+        }
     }
 }
