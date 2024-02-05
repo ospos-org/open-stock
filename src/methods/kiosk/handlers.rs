@@ -1,14 +1,15 @@
-use okapi::openapi3::OpenApi;
+use crate::catchers::Validated;
 use crate::methods::{Error, ErrorResponse};
 use crate::pool::Db;
 use crate::{AuthenticationLog, Kiosk, KioskInit, KioskPreferences};
+use okapi::openapi3::OpenApi;
+use crate::guards::SessionReference;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use rocket_db_pools::Connection;
-use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
-use crate::catchers::Validated;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 
 use crate::{
     check_permissions,
@@ -30,20 +31,12 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 
 #[openapi(tag = "Kiosk")]
 #[get("/<id>")]
-pub async fn get(
-    conn: Connection<Db>,
-    id: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Kiosk>, Error> {
+// #[guard(Action::FetchKiosk)]
+pub async fn get(conn: Connection<Db>, id: &str, session: SessionReference) -> Result<Json<Kiosk>, Error> {
     let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
-    check_permissions!(session.clone(), Action::FetchEmployee);
-
-    match Kiosk::fetch_by_id(id, session, &db).await {
-        Ok(employee) => Ok(Json(employee)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Kiosk::fetch_by_id(id, session.0, &db).await
+        .map(|v| Json(v))
+        .map_err(|v| ErrorResponse::db_err(v))
 }
 
 #[openapi(tag = "Kiosk")]
@@ -60,11 +53,10 @@ pub async fn initialize(
     check_permissions!(session.clone(), Action::AccessAdminPanel);
 
     match Kiosk::insert(input_data, session.clone(), &db, None).await {
-        Ok(kiosk) =>
-            match Kiosk::fetch_by_id(&kiosk.last_insert_id, session, &db).await {
-                Ok(res) => Ok(Json(res)),
-                Err(reason) => Err(ErrorResponse::db_err(reason)),
-            },
+        Ok(kiosk) => match Kiosk::fetch_by_id(&kiosk.last_insert_id, session, &db).await {
+            Ok(res) => Ok(Json(res)),
+            Err(reason) => Err(ErrorResponse::db_err(reason)),
+        },
         Err(err) => Err(ErrorResponse::db_err(err)),
     }
 }
@@ -129,11 +121,7 @@ pub async fn update_online_status(
 
 #[openapi(tag = "Kiosk")]
 #[post("/delete/<id>")]
-pub async fn delete(
-    conn: Connection<Db>,
-    id: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<(), Error> {
+pub async fn delete(conn: Connection<Db>, id: &str, cookies: &CookieJar<'_>) -> Result<(), Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;

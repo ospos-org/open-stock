@@ -1,10 +1,17 @@
+use futures::TryStreamExt;
 use rocket::{
     data::{self, Data, FromData, Limits},
     http::Status,
     request::{local_cache, Request},
 };
+use rocket::request::{FromRequest, Outcome};
+use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
+use rocket_db_pools::Connection;
+use rocket_okapi::gen::OpenApiGenerator;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use crate::methods::common::Error;
+use crate::{cookie_status_wrapper, Db, ErrorResponse, Session};
 
 #[derive(Copy, Clone, Debug)]
 pub struct RequestId(pub Option<Uuid>);
@@ -54,5 +61,45 @@ impl<'r, T> FromData<'r> for JsonValidation<T>
                 )
             }
         }
+    }
+}
+
+pub struct SessionReference(pub Session);
+
+impl<'r> OpenApiFromRequest<'r> for SessionReference {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> rocket_okapi::Result<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for SessionReference { // &'r
+    type Error = Error;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let cookies = request.cookies();
+
+        let db = match request.guard::<Connection<Db>>().await {
+            Outcome::Success(s) => s,
+            Outcome::Error(e) => {
+                let err =  match e.1 {
+                    Some(v) => ErrorResponse::db_err(v),
+                    None => ErrorResponse::create_error("")
+                };
+
+                return Outcome::Error((e.0, err))
+            },
+            Outcome::Forward(f) => return Outcome::Forward(f)
+        };
+
+        match cookie_status_wrapper(&db, cookies).await {
+            Ok(session) => Outcome::Success(SessionReference(session)),
+            Err(error) => Outcome::Forward(Status::Unauthorized)
+        }
+
     }
 }

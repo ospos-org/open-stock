@@ -1,4 +1,4 @@
-mod common;
+pub(crate) mod common;
 mod payment;
 mod stml;
 

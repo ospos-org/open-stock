@@ -229,7 +229,7 @@ pub enum SessionVariant {
     AccessToken,
 }
 
-#[derive(Debug, Clone, JsonSchema, Validate)]
+#[derive(Debug, Clone, JsonSchema, Validate, Serialize, Deserialize)]
 pub struct Session {
     pub id: String,
     pub key: String,
@@ -447,6 +447,22 @@ impl ErrorResponse {
 impl From<DbErr> for Error {
     fn from(value: DbErr) -> Self {
         ErrorResponse::db_err(value)
+    }
+}
+
+impl<T: Into<Error>> From<Option<T>> for Error {
+    fn from(value: Option<T>) -> Self where T: Into<Error> {
+        match value {
+            Some(err) => err.into(),
+            None => ErrorResponse::create_error("Unable to retrieve database instance.")
+        }
+    }
+}
+
+struct Wrapper<T>(T);
+impl<T: JsonSchema> Into<Json<T>> for Wrapper<T> {
+    fn into(self) -> Json<T> {
+        Json(self.0)
     }
 }
 

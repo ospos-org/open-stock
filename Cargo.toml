@@ -59,6 +59,9 @@ okapi = { version = "0.7.0", features = ["impl_json_schema"] }
 rocket-validation = { version = "0.1.4", git = "https://github.com/bennjii/rocket-validation.git", branch = "main" }
 validator="0.16.1"
 
+# Automations
+macro_test = { path = "../../macro_test" }
+
 [features]
 types = []
 process = [

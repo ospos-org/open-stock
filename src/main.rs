@@ -2,18 +2,17 @@
 
 #[cfg(feature = "sql")]
 use pool::Db;
+use rocket::http::{Method, Status};
 #[cfg(feature = "sql")]
 use rocket::{
     fairing::{Fairing, Info, Kind},
     http::Header,
     *,
 };
-use rocket::http::{Method, Status};
 use rocket_db_pools::Database;
 use rocket_okapi::mount_endpoints_and_merged_docs;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
 #[cfg(feature = "process")]
-
 #[cfg(feature = "process")]
 pub mod entities;
 pub mod methods;
@@ -22,12 +21,14 @@ pub mod migrator;
 #[cfg(feature = "process")]
 pub mod pool;
 
+pub mod guards;
+
 #[cfg(feature = "sql")]
 pub use entities::*;
 pub use methods::*;
 #[cfg(feature = "sql")]
 pub use migrator::*;
-use open_stock::{catchers};
+use open_stock::catchers;
 
 #[cfg(feature = "sql")]
 extern crate argon2;
@@ -58,7 +59,10 @@ impl Fairing for CORS {
 
         if request.method() == Method::Options {
             response.set_status(Status::Ok);
-            response.set_header(Header::new("Access-Control-Allow-Headers", "Content-Type, Referer, *"));
+            response.set_header(Header::new(
+                "Access-Control-Allow-Headers",
+                "Content-Type, Referer, *",
+            ));
         }
     }
 }
@@ -70,13 +74,16 @@ fn rocket() -> _ {
 
     // All non-documented items attached here.
     let mut launcher = build()
-        .register("/", catchers![
-            catchers::not_authorized,
-            catchers::internal_server_error,
-            catchers::not_found,
-            catchers::unprocessable_entry,
-            catchers::general_catcher,
-        ])
+        .register(
+            "/",
+            catchers![
+                catchers::not_authorized,
+                catchers::internal_server_error,
+                catchers::not_found,
+                catchers::unprocessable_entry,
+                catchers::general_catcher,
+            ],
+        )
         .attach(Db::init())
         .attach(CORS)
         .mount(
