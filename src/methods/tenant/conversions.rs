@@ -1,8 +1,8 @@
+use crate::tenants::{ActiveModel, Model};
+use crate::{Tenant, TenantSettings};
 use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
 use serde_json::json;
-use crate::{Tenant, TenantSettings};
-use crate::tenants::{ActiveModel, Model};
 
 impl From<Model> for Tenant {
     fn from(val: Model) -> Self {

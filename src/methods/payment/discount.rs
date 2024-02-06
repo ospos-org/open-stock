@@ -1,6 +1,6 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use schemars::JsonSchema;
 
 #[cfg(feature = "types")]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

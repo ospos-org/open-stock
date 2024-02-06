@@ -20,14 +20,17 @@ use sea_orm::FromQueryResult;
 use crate::entities::{
     prelude::Transactions, sea_orm_active_enums::TransactionType as SeaORMTType, transactions,
 };
-use crate::{methods::{
-    History, Id, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment, Payment,
-    Product, Session, Stock, VariantInformation, Error
-}, PickStatus, ProductInstance};
+use crate::transaction::example::example_transaction;
+use crate::{
+    methods::{
+        Error, History, Id, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment,
+        Payment, Product, Session, Stock, VariantInformation,
+    },
+    PickStatus, ProductInstance,
+};
 #[cfg(feature = "process")]
 use sea_orm::DbConn;
 use validator::Validate;
-use crate::transaction::example::example_transaction;
 
 #[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -100,7 +103,7 @@ pub struct Transaction {
     pub kiosk: Id,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>
+    pub updated_at: DateTime<Utc>,
 }
 
 #[cfg(feature = "process")]
@@ -162,7 +165,7 @@ pub struct ProductStatusUpdate {
     pub transaction_id: String,
     pub product_purchase_id: String,
     pub product_instance_id: String,
-    pub new_status: PickStatus
+    pub new_status: PickStatus,
 }
 
 #[cfg(feature = "methods")]
@@ -174,7 +177,10 @@ impl Transaction {
     ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
 
-        match Transactions::insert(tsn.into_active(id, session)).exec(db).await {
+        match Transactions::insert(tsn.into_active(id, session))
+            .exec(db)
+            .await
+        {
             Ok(res) => Ok(res),
             Err(err) => Err(err),
         }
@@ -185,7 +191,10 @@ impl Transaction {
         session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
-        match Transactions::insert(tsn.into_active(session.tenant_id)).exec(db).await {
+        match Transactions::insert(tsn.into_active(session.tenant_id))
+            .exec(db)
+            .await
+        {
             Ok(res) => Ok(res),
             Err(err) => Err(err),
         }
@@ -293,10 +302,7 @@ impl Transaction {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|t| t.clone().into())
-            .collect();
+        let mapped = res.iter().map(|t| t.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -317,10 +323,7 @@ impl Transaction {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|t| t.clone().into())
-            .collect();
+        let mapped = res.iter().map(|t| t.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -336,10 +339,7 @@ impl Transaction {
             .all(db)
             .await?;
 
-        let mapped = tsn
-            .iter()
-            .map(|t| t.clone().into())
-            .collect();
+        let mapped = tsn.iter().map(|t| t.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -439,7 +439,8 @@ impl Transaction {
                                                 timestamp: i.fulfillment_status.last_updated,
                                             });
                                             i.fulfillment_status.last_updated = Utc::now();
-                                            i.fulfillment_status.pick_status = update.new_status.clone();
+                                            i.fulfillment_status.pick_status =
+                                                update.new_status.clone();
                                         }
 
                                         i

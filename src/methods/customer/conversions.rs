@@ -1,9 +1,9 @@
+use crate::entities::customer::ActiveModel;
+use crate::{ContactInformation, Customer, CustomerInput, NoteList};
 use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
 use serde_json::json;
 use uuid::Uuid;
-use crate::{ContactInformation, Customer, CustomerInput, NoteList};
-use crate::entities::customer::ActiveModel;
 
 #[cfg(feature = "process")]
 use crate::entities::customer;

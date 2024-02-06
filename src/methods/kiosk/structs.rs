@@ -1,5 +1,7 @@
+use crate::entities::kiosk::Model;
 #[cfg(feature = "process")]
 use crate::entities::prelude::Kiosk as Ksk;
+use crate::methods::Error;
 #[cfg(feature = "process")]
 use crate::{entities::authrecord::ActiveModel as AuthRecord, entities::kiosk::ActiveModel};
 #[cfg(feature = "process")]
@@ -15,8 +17,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 use validator::Validate;
-use crate::entities::kiosk::Model;
-use crate::methods::Error;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -117,14 +117,13 @@ impl Kiosk {
             tenant_id: Set(session.tenant_id),
         };
 
-        Ksk::insert(insert_crud).exec(db).await.map_err(|v| v.into())
+        Ksk::insert(insert_crud)
+            .exec(db)
+            .await
+            .map_err(|v| v.into())
     }
 
-    pub async fn insert_raw(
-        kiosk: Kiosk,
-        session: Session,
-        db: &DbConn,
-    ) -> Result<Model, DbErr> {
+    pub async fn insert_raw(kiosk: Kiosk, session: Session, db: &DbConn) -> Result<Model, DbErr> {
         match kiosk.into_active(session).insert(db).await {
             Ok(res) => Ok(res),
             Err(err) => Err(err),

@@ -1,8 +1,8 @@
+use crate::entities::store::{ActiveModel, Model};
+use crate::{ContactInformation, Session, Store};
 use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
 use serde_json::json;
-use crate::entities::store::{ActiveModel, Model};
-use crate::{ContactInformation, Session, Store};
 
 impl Store {
     pub(crate) fn into_active(self, session: Session) -> ActiveModel {
@@ -26,7 +26,7 @@ impl From<Model> for Store {
             contact: serde_json::from_value::<ContactInformation>(val.contact).unwrap(),
             code: serde_json::from_value::<String>(serde_json::Value::String(val.code)).unwrap(),
             updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
-            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc)
+            created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
         }
     }
 }

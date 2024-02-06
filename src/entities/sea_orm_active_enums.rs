@@ -2,9 +2,11 @@
 
 use schemars::JsonSchema;
 use sea_orm::entity::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize, JsonSchema)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize, JsonSchema,
+)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "transaction_type")]
 pub enum TransactionType {
     /// For **finalized** incoming transactions - all items within suborders of this transaction will be considered as additive towards inventory (i.e. incoming shipment of goods)
@@ -19,10 +21,10 @@ pub enum TransactionType {
     /// For **proposed** outgoing transactions - all items within suborders of this transaction will be considered as subtractive towards inventory upon finalization (i.e. reserved/allocated goods)
     #[sea_orm(string_value = "pending-out")]
     PendingOut,
-    /// For **saved** transactions - for all transactions saved temporarily. Acts identically to "Quote" but where quotes are retrieved by order number, saved will be time limited and culled. 
+    /// For **saved** transactions - for all transactions saved temporarily. Acts identically to "Quote" but where quotes are retrieved by order number, saved will be time limited and culled.
     #[sea_orm(string_value = "saved")]
     Saved,
     /// For **quoted** transactions - to be given to customers as an promise of cost
     #[sea_orm(string_value = "quote")]
-    Quote
+    Quote,
 }

@@ -2,7 +2,7 @@
 use crate::entities::{session, transactions};
 #[cfg(feature = "process")]
 use crate::migrator::Migrator;
-use crate::{SessionVariant};
+use crate::SessionVariant;
 use crate::{example_employee, Customer, Kiosk, Product, Session, Store, Transaction};
 #[cfg(feature = "process")]
 use async_trait::async_trait;
@@ -58,9 +58,9 @@ impl<'a> FromRequest<'a> for InternalDb {
             Outcome::Success(s) => {
                 let database = s.into_inner();
                 Outcome::Success(InternalDb(database))
-            },
+            }
             Outcome::Error(e) => Outcome::Error(e),
-            Outcome::Forward(f) => Outcome::Forward(f)
+            Outcome::Forward(f) => Outcome::Forward(f),
         }
     }
 }

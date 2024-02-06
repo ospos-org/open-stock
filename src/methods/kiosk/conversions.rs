@@ -1,7 +1,7 @@
-use sea_orm::ActiveValue::Set;
-use serde_json::json;
 use crate::entities::kiosk::ActiveModel;
 use crate::{Kiosk, Session};
+use sea_orm::ActiveValue::Set;
+use serde_json::json;
 
 impl Kiosk {
     pub(crate) fn into_active(self, session: Session) -> ActiveModel {

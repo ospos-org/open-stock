@@ -1,5 +1,6 @@
 use crate::catchers::Validated;
 use crate::entities::session;
+use crate::guards::Convert;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
 use crate::pool::{Db, InternalDb};
 use crate::SessionVariant;
@@ -19,7 +20,6 @@ use rocket_okapi::{openapi, openapi_get_routes_spec};
 use sea_orm::{EntityTrait, Set};
 use serde_json::json;
 use uuid::Uuid;
-use crate::guards::Convert;
 
 use super::{Action, Attendance, Employee, EmployeeInput, TrackType};
 
@@ -46,20 +46,14 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 
 #[openapi(tag = "Employee")]
 #[get("/")]
-pub async fn whoami(
-    session: Session,
-) -> Convert<Employee> {
+pub async fn whoami(session: Session) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::FetchEmployee);
     Ok(session.employee).into()
 }
 
 #[openapi(tag = "Employee")]
 #[get("/<id>")]
-pub async fn get(
-    db: InternalDb,
-    id: &str,
-    session: Session,
-) -> Convert<Employee> {
+pub async fn get(db: InternalDb, id: &str, session: Session) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::FetchEmployee);
 
     if session.employee.id == id {
@@ -71,32 +65,21 @@ pub async fn get(
 
 #[openapi(tag = "Employee")]
 #[get("/rid/<rid>")]
-pub async fn get_by_rid(
-    db: InternalDb,
-    rid: &str,
-    session: Session,
-) -> Convert<Vec<Employee>> {
+pub async fn get_by_rid(db: InternalDb, rid: &str, session: Session) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchEmployee);
     Employee::fetch_by_rid(rid, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Employee")]
 #[get("/recent")]
-pub async fn get_recent(
-    db: InternalDb,
-    session: Session,
-) -> Convert<Vec<Employee>> {
+pub async fn get_recent(db: InternalDb, session: Session) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
     Employee::fetch_recent(session, &db.0).await.into()
 }
 
 #[openapi(tag = "Employee")]
 #[get("/name/<name>")]
-pub async fn get_by_name(
-    db: InternalDb,
-    session: Session,
-    name: &str,
-) -> Convert<Vec<Employee>> {
+pub async fn get_by_name(db: InternalDb, session: Session, name: &str) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchEmployee);
     Employee::fetch_by_name(name, session, &db.0).await.into()
 }
@@ -113,27 +96,22 @@ pub async fn get_by_name_exact(
     if session.employee.name == name.0 {
         Ok(vec![session.employee]).into()
     } else {
-        Employee::fetch_by_name_exact(json!(name.0), session, &db.0).await.into()
+        Employee::fetch_by_name_exact(json!(name.0), session, &db.0)
+            .await
+            .into()
     }
 }
 
 #[openapi(tag = "Employee")]
 #[get("/level/<level>")]
-pub async fn get_by_level(
-    db: InternalDb,
-    session: Session,
-    level: i32,
-) -> Convert<Vec<Employee>> {
+pub async fn get_by_level(db: InternalDb, session: Session, level: i32) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchEmployee);
     Employee::fetch_by_level(level, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Employee")]
 #[post("/generate")]
-async fn generate(
-    db: InternalDb,
-    session: Session,
-) -> Convert<Employee> {
+async fn generate(db: InternalDb, session: Session) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
     Employee::generate(&db.0, session).await.into()
 }
@@ -147,7 +125,9 @@ async fn update(
     input_data: Validated<Json<Employee>>,
 ) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::ModifyEmployee);
-    Employee::update(input_data.data(), session, id, &db.0).await.into()
+    Employee::update(input_data.data(), session, id, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Employee")]
@@ -159,7 +139,9 @@ async fn update_by_input(
     input_data: Validated<Json<EmployeeInput>>,
 ) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::ModifyEmployee);
-    Employee::update_by_input(input_data.data(), session, id, &db.0).await.into()
+    Employee::update_by_input(input_data.data(), session, id, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Employee")]
@@ -176,7 +158,9 @@ pub async fn auth(
     let verified = Employee::verify(id, default_session, &input.pass, &db.0).await?;
 
     match verified {
-        false => Err(ErrorResponse::custom_unauthorized("Invalid password or id.")),
+        false => Err(ErrorResponse::custom_unauthorized(
+            "Invalid password or id.",
+        )),
         true => {
             // User is authenticated, lets give them an API key to work with...
             let api_key = Uuid::new_v4().to_string();
@@ -185,7 +169,10 @@ pub async fn auth(
                 .checked_add_signed(ChronoDuration::minutes(10))
                 .unwrap();
 
-            let tenant_data: Option<tenants::Model> = tenants::Entity::find_by_id(input.tenant_id.clone()).one(&db.0).await?;
+            let tenant_data: Option<tenants::Model> =
+                tenants::Entity::find_by_id(input.tenant_id.clone())
+                    .one(&db.0)
+                    .await?;
 
             match tenant_data {
                 Some(data) => {
@@ -196,12 +183,14 @@ pub async fn auth(
                         expiry: Set(exp.naive_utc()),
                         tenant_id: Set(data.tenant_id),
                         variant: Set(json!(SessionVariant::AccessToken)),
-                    }).exec(&db.0).await?;
+                    })
+                    .exec(&db.0)
+                    .await?;
 
                     cookies.add(create_cookie(api_key.clone()));
                     Ok(Json(api_key))
                 }
-                None => Err(ErrorResponse::create_error("Tenant does not exist."))
+                None => Err(ErrorResponse::create_error("Tenant does not exist.")),
             }
         }
     }
@@ -220,7 +209,10 @@ pub async fn auth_rid(
 
     match Employee::verify_with_rid(rid, session.clone(), &input.pass, &db.0).await {
         Ok(data) => {
-            let auth_log = AuthenticationLog { employee_id: data.id.to_string(), successful: true };
+            let auth_log = AuthenticationLog {
+                employee_id: data.id.to_string(),
+                successful: true,
+            };
             Kiosk::auth_log(&input.kiosk_id, session.clone(), auth_log, &db.0).await?;
 
             let api_key = Uuid::new_v4().to_string();
@@ -229,7 +221,10 @@ pub async fn auth_rid(
                 .checked_add_signed(ChronoDuration::minutes(10))
                 .unwrap();
 
-            let tenant_data: Option<tenants::Model> = tenants::Entity::find_by_id(input.tenant_id.clone()).one(&db.0).await?;
+            let tenant_data: Option<tenants::Model> =
+                tenants::Entity::find_by_id(input.tenant_id.clone())
+                    .one(&db.0)
+                    .await?;
 
             match tenant_data {
                 Some(tenant) => {
@@ -240,19 +235,27 @@ pub async fn auth_rid(
                         expiry: Set(exp.naive_utc()),
                         tenant_id: Set(tenant.tenant_id),
                         variant: Set(json!(SessionVariant::AccessToken)),
-                    }).exec(&db.0).await?;
+                    })
+                    .exec(&db.0)
+                    .await?;
 
                     cookies.add(create_cookie(api_key.clone()));
                     Ok(Json(api_key))
                 }
-                None => Err(ErrorResponse::create_error("Tenant does not exist."))
+                None => Err(ErrorResponse::create_error("Tenant does not exist.")),
             }
         }
         Err(err) => {
-            let auth_log = AuthenticationLog { employee_id: rid.to_string(), successful: false };
+            let auth_log = AuthenticationLog {
+                employee_id: rid.to_string(),
+                successful: false,
+            };
             Kiosk::auth_log(&input.kiosk_id, session.clone(), auth_log, &db.0).await?;
 
-            Err(ErrorResponse::custom_unauthorized(&format!("Invalid password or id. Reason: {:?}", err)))
+            Err(ErrorResponse::custom_unauthorized(&format!(
+                "Invalid password or id. Reason: {:?}",
+                err
+            )))
         }
     }
 }
@@ -267,7 +270,9 @@ pub async fn create(
     check_permissions!(session.clone(), Action::CreateEmployee);
 
     let data = Employee::insert(input_data.data(), &db.0, session.clone(), None, None).await?;
-    let converted: Convert<Employee> = Employee::fetch_by_id(&data.last_insert_id, session, &db.0).await.into();
+    let converted: Convert<Employee> = Employee::fetch_by_id(&data.last_insert_id, session, &db.0)
+        .await
+        .into();
     converted.0
 }
 
@@ -301,7 +306,9 @@ pub async fn log(
     let mut data = Employee::fetch_by_id(id, session.clone(), &db.0).await?;
     data.clock_history.push(new_attendance);
 
-    let converted: Convert<Employee> = Employee::update_no_geom(data, session, id, &db.0).await.into();
+    let converted: Convert<Employee> = Employee::update_no_geom(data, session, id, &db.0)
+        .await
+        .into();
     converted.0
 }
 
@@ -328,6 +335,7 @@ pub async fn get_status(
         }));
     }
 
-    data.clock_history.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    data.clock_history
+        .sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     Ok(Json(data.clock_history[0].clone()))
 }

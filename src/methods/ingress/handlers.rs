@@ -1,13 +1,11 @@
-use crate::{
-    check_permissions, cookie_status_wrapper, methods::Action, methods::Error, Db, ErrorResponse,
-};
+use crate::{check_permissions, cookie_status_wrapper, methods::Action, methods::Error, Db, ErrorResponse, Session};
 use chrono::Utc;
 use okapi::openapi3::OpenApi;
 
 use rocket::{fs::TempFile, http::CookieJar, post};
 use rocket_db_pools::Connection;
-use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![settings: upload]
@@ -19,16 +17,10 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 #[openapi(tag = "Ingress")]
 #[post("/upload", format = "plain", data = "<file>")]
 async fn upload(
-    conn: Connection<Db>,
+    session: Session,
     file: TempFile<'_>,
-    cookies: &CookieJar<'_>,
 ) -> Result<(), Error> {
-    let db = conn.into_inner();
-
-    // Disable verification in testing;
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
-
     receive_file(file, session.tenant_id).await
 }
 

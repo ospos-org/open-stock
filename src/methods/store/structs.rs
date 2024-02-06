@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
+use sea_orm::Set;
 #[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
     QuerySelect, RuntimeErr,
 };
-use sea_orm::Set;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "process")]
@@ -13,15 +13,14 @@ use crate::entities::prelude::Store as StoreEntity;
 #[cfg(feature = "process")]
 use crate::entities::store;
 
-
 #[cfg(feature = "process")]
 use crate::methods::convert_addr_to_geo;
 
+use crate::methods::store::example::example_stores;
 use crate::methods::{ContactInformation, Id};
 use crate::Session;
 use serde_json::json;
 use validator::Validate;
-use crate::methods::store::example::example_stores;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Validate)]
@@ -33,7 +32,7 @@ pub struct Store {
     pub code: String,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>
+    pub updated_at: DateTime<Utc>,
 }
 
 #[cfg(feature = "methods")]
@@ -56,11 +55,7 @@ impl Store {
         session: Session,
         db: &DbConn,
     ) -> Result<InsertResult<store::ActiveModel>, DbErr> {
-        let entities = stores
-            .into_iter()
-            .map(|s|
-                s.into_active(session.clone())
-            );
+        let entities = stores.into_iter().map(|s| s.into_active(session.clone()));
 
         match StoreEntity::insert_many(entities).exec(db).await {
             Ok(res) => Ok(res),
@@ -99,10 +94,7 @@ impl Store {
             .all(db)
             .await?;
 
-        let mapped = stores
-            .iter()
-            .map(|e| e.clone().into())
-            .collect();
+        let mapped = stores.iter().map(|e| e.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -130,9 +122,7 @@ impl Store {
 
                 model.contact = Set(json!(new_contact));
 
-                model
-                    .update(db)
-                    .await?;
+                model.update(db).await?;
 
                 Self::fetch_by_id(id, session, db).await
             }

@@ -1,15 +1,15 @@
-use okapi::openapi3::OpenApi;
-use crate::{check_permissions, Session};
-use crate::methods::{Action, ContactInformation, CustomerWithTransactionsOut, Error, Transaction};
-use crate::pool::{InternalDb};
-use rocket::get;
-use rocket::serde::json::Json;
-use rocket::{post};
-use rocket_okapi::{openapi, openapi_get_routes_spec};
-use rocket_okapi::settings::OpenApiSettings;
+use super::{Customer, CustomerInput};
 use crate::catchers::Validated;
 use crate::guards::Convert;
-use super::{Customer, CustomerInput};
+use crate::methods::{Action, ContactInformation, CustomerWithTransactionsOut, Error, Transaction};
+use crate::pool::InternalDb;
+use crate::{check_permissions, Session};
+use okapi::openapi3::OpenApi;
+use rocket::get;
+use rocket::post;
+use rocket::serde::json::Json;
+use rocket_okapi::settings::OpenApiSettings;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -32,43 +32,28 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 
 #[openapi(tag = "Customer")]
 #[get("/<id>")]
-pub async fn get(
-    db: InternalDb,
-    id: &str,
-    session: Session,
-) -> Convert<Customer> {
+pub async fn get(db: InternalDb, id: &str, session: Session) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::FetchCustomer);
     Customer::fetch_by_id(id, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[post("/delete/<id>")]
-pub async fn delete(
-    db: InternalDb,
-    id: &str,
-    session: Session,
-) -> Result<(), Error> {
+pub async fn delete(db: InternalDb, id: &str, session: Session) -> Result<(), Error> {
     check_permissions!(session.clone(), Action::AccessAdminPanel);
     Customer::delete(id, session, &db.0).await.map(|_| ())
 }
 
 #[openapi(tag = "Customer")]
 #[get("/recent")]
-pub async fn get_recent(
-    db: InternalDb,
-    session: Session,
-) -> Convert<Vec<Customer>> {
+pub async fn get_recent(db: InternalDb, session: Session) -> Convert<Vec<Customer>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
     Customer::fetch_recent(session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[get("/name/<name>")]
-pub async fn get_by_name(
-    db: InternalDb,
-    session: Session,
-    name: &str,
-) -> Convert<Vec<Customer>> {
+pub async fn get_by_name(db: InternalDb, session: Session, name: &str) -> Convert<Vec<Customer>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
     Customer::fetch_by_name(name, session, &db.0).await.into()
 }
@@ -93,37 +78,28 @@ pub async fn find_related_transactions(
     id: &str,
 ) -> Convert<Vec<Transaction>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-    Transaction::fetch_by_client_id(id, session, &db.0).await.into()
+    Transaction::fetch_by_client_id(id, session, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Customer")]
 #[get("/phone/<phone>")]
-pub async fn get_by_phone(
-    db: InternalDb,
-    session: Session,
-    phone: &str,
-) -> Convert<Vec<Customer>> {
+pub async fn get_by_phone(db: InternalDb, session: Session, phone: &str) -> Convert<Vec<Customer>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
     Customer::fetch_by_phone(phone, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[get("/addr/<addr>")]
-pub async fn get_by_addr(
-    db: InternalDb,
-    session: Session,
-    addr: &str,
-) -> Convert<Vec<Customer>> {
+pub async fn get_by_addr(db: InternalDb, session: Session, addr: &str) -> Convert<Vec<Customer>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
     Customer::fetch_by_addr(addr, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[post("/generate")]
-async fn generate(
-    db: InternalDb,
-    session: Session,
-) -> Convert<Customer> {
+async fn generate(db: InternalDb, session: Session) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
     Customer::generate(session, &db.0).await.into()
 }
@@ -137,7 +113,9 @@ async fn update(
     id: &str,
 ) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::ModifyCustomer);
-    Customer::update(input_data.data(), session, id, &db.0).await.into()
+    Customer::update(input_data.data(), session, id, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Customer")]
@@ -149,7 +127,9 @@ async fn update_by_input(
     input_data: Validated<Json<CustomerInput>>,
 ) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::ModifyCustomer);
-    Customer::update_by_input(input_data.data(), session, id, &db.0).await.into()
+    Customer::update_by_input(input_data.data(), session, id, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Customer")]
@@ -161,7 +141,9 @@ async fn update_contact_info(
     id: &str,
 ) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::ModifyCustomer);
-    Customer::update_contact_information(input_data.data(), id, session, &db.0).await.into()
+    Customer::update_contact_information(input_data.data(), id, session, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Customer")]
@@ -174,6 +156,8 @@ pub async fn create(
     check_permissions!(session.clone(), Action::CreateCustomer);
 
     let data = Customer::insert(input_data.data(), session.clone(), &db.0).await?;
-    let converted: Convert<Customer> = Customer::fetch_by_id(&data.last_insert_id, session, &db.0).await.into();
+    let converted: Convert<Customer> = Customer::fetch_by_id(&data.last_insert_id, session, &db.0)
+        .await
+        .into();
     converted.0
 }

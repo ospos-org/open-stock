@@ -1,16 +1,16 @@
-use okapi::openapi3::OpenApi;
+use crate::catchers::Validated;
 use crate::check_permissions;
 use crate::methods::employee::Action;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse};
 use crate::pool::Db;
+use okapi::openapi3::OpenApi;
 use rocket::get;
 use rocket::http::CookieJar;
+use rocket::post;
 use rocket::serde::json::Json;
-use rocket::{post};
 use rocket_db_pools::Connection;
-use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
-use crate::catchers::Validated;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 
 use super::{Supplier, SupplierInput};
 
@@ -101,10 +101,7 @@ pub async fn get_by_addr(
 
 #[openapi(tag = "Supplier")]
 #[post("/generate")]
-async fn generate(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Supplier>, Error> {
+async fn generate(conn: Connection<Db>, cookies: &CookieJar<'_>) -> Result<Json<Supplier>, Error> {
     let db = conn.into_inner();
 
     let session = cookie_status_wrapper(&db, cookies).await?;
@@ -150,16 +147,13 @@ pub async fn create(
     check_permissions!(session.clone(), Action::ModifySupplier);
 
     match Supplier::insert(new_data, session.clone(), &db).await {
-        Ok(data) =>
-            match Supplier::fetch_by_id(
-                &data.last_insert_id, session, &db
-            ).await {
-                Ok(res) => Ok(Json(res)),
-                Err(reason) => {
-                    println!("[dberr]: {}", reason);
-                    Err(ErrorResponse::db_err(reason))
-                }
-            },
+        Ok(data) => match Supplier::fetch_by_id(&data.last_insert_id, session, &db).await {
+            Ok(res) => Ok(Json(res)),
+            Err(reason) => {
+                println!("[dberr]: {}", reason);
+                Err(ErrorResponse::db_err(reason))
+            }
+        },
         Err(reason) => {
             println!("[dberr]: {}", reason);
             Err(ErrorResponse::input_error())

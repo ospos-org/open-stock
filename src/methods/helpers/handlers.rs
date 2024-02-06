@@ -1,4 +1,6 @@
 use crate::catchers::Validated;
+use crate::guards::Convert;
+use crate::pool::InternalDb;
 use crate::session::ActiveModel;
 use crate::ContactInformationInput;
 use crate::{
@@ -45,14 +47,13 @@ pub fn documented_routes(_settings: &OpenApiSettings) -> (Vec<rocket::Route>, Op
 /// This route does not require authentication, but is not enabled in release mode.
 #[openapi(tag = "Helpers")]
 #[post("/generate")]
-pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error> {
+pub async fn generate_template(db: InternalDb) -> Result<Json<All>, Error> {
     if env::var("DEMO").is_err() || env::var("DEMO").unwrap() == "0" {
         return Err(Error::DemoDisabled(
             "OpenStock is not in DEMO mode.".to_string(),
         ));
     }
 
-    let db = conn.into_inner();
     let tenant_id = "DEFAULT_TENANT";
     let tenant_id2 = "ALTERNATE_TENANT";
     let default_employee = example_employee();
@@ -76,42 +77,39 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
     };
 
     // Add Tenants
-    let tenant = Tenant::generate(&db, tenant_id)
+    let tenant = Tenant::generate(&db.0, tenant_id)
         .await
         .map_err(ErrorResponse::db_err)?;
-    let tenant2 = Tenant::generate(&db, tenant_id2)
+    let tenant2 = Tenant::generate(&db.0, tenant_id2)
         .await
         .map_err(ErrorResponse::db_err)?;
 
     // Add Employees
-    let employee = Employee::generate(&db, session.clone())
-        .await?;
-    let _employee2 = Employee::generate(&db, session2.clone())
-        .await?;
+    let employee = Employee::generate(&db.0, session.clone()).await?;
+    let _employee2 = Employee::generate(&db.0, session2.clone()).await?;
 
     // Add other items (aggregated)
-    let stores = Store::generate(session.clone(), &db)
-        .await
-        .map_err(ErrorResponse::db_err)?;
-    let products = Product::generate(session.clone(), &db)
-        .await
-        .map_err(ErrorResponse::db_err)?;
-    let customer = Customer::generate(session.clone(), &db)
-        .await?;
+    let stores = Store::generate(session.clone(), &db.0).await?;
+    let products = Product::generate(session.clone(), &db.0).await?;
+    let customer = Customer::generate(session.clone(), &db.0).await?;
 
     // Add Kiosks
-    let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), &db)
-        .await?;
+    let kiosk = Kiosk::generate(
+        "adbd48ab-f4ca-4204-9c88-3516f3133621",
+        session.clone(),
+        &db.0,
+    )
+    .await?;
 
     let _kiosk2 = Kiosk::generate(
         "adbd48ab-f4ca-4204-9c88-3516f3133622",
         session2.clone(),
-        &db,
+        &db.0,
     )
     .await?;
 
     let transaction = Transaction::generate(
-        &db,
+        &db.0,
         &customer.id,
         Session {
             id: Uuid::new_v4().to_string(),
@@ -125,9 +123,8 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
     .await
     .map_err(ErrorResponse::db_err)?;
 
-    let promotions = Promotion::generate(session, &db)
-        .await
-        .map_err(ErrorResponse::db_err)?;
+    let promotions = Promotion::generate(session, &db.0)
+        .await?;
 
     Ok(Json(All {
         employee,
@@ -145,11 +142,9 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
 #[openapi(tag = "Helpers")]
 #[post("/new", data = "<tenant_input>")]
 pub async fn new_tenant(
-    conn: Connection<Db>,
+    db: InternalDb,
     tenant_input: Validated<Json<NewTenantInput>>,
-    _cookies: &CookieJar<'_>,
 ) -> Result<Json<NewTenantResponse>, Error> {
-    let db = conn.into_inner();
     let data = tenant_input.0.into_inner();
 
     // Create new Tenant
@@ -162,7 +157,7 @@ pub async fn new_tenant(
         updated_at: Utc::now(),
     };
 
-    Tenant::insert(tenant, &db)
+    Tenant::insert(tenant, &db.0)
         .await
         .map_err(ErrorResponse::db_err)?;
 
@@ -193,52 +188,31 @@ pub async fn new_tenant(
     );
 
     let employee_insert_result =
-        Employee::insert(employee, &db, session.clone(), None, Some(employee_id))
-            .await?;
+        Employee::insert(employee, &db.0, session.clone(), None, Some(employee_id)).await?;
 
-    match session::Entity::insert::<ActiveModel>(session.clone().into())
-        .exec(&db)
-        .await
-    {
-        Ok(_) => Ok(Json(NewTenantResponse {
-            tenant_id,
-            api_key: session.key,
-            employee_id: employee_insert_result.last_insert_id,
-        })),
-        Err(reason) => Err(ErrorResponse::db_err(reason)),
-    }
+    session::Entity::insert::<ActiveModel>(session.clone().into())
+        .exec(&db.0)
+        .await?;
+
+    Ok(Json(NewTenantResponse {
+        tenant_id,
+        api_key: session.key,
+        employee_id: employee_insert_result.last_insert_id,
+    }))
 }
 
 #[openapi(tag = "Helpers")]
 #[get("/session/<key>")]
-pub async fn assign_session_cookie(
-    _conn: Connection<Db>,
-    key: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<()>, Error> {
-    let hard_key = key.to_string();
-    let cookie = create_cookie(hard_key.clone());
-
-    cookies.add(cookie);
-
-    Ok(Json(()))
+pub async fn assign_session_cookie(key: &str, cookies: &CookieJar<'_>) -> Result<(), Error> {
+    cookies.add(create_cookie(key.to_string()));
+    Ok(())
 }
 
 #[openapi(tag = "Helpers")]
 #[post("/address", data = "<address>")]
-pub async fn address_to_geolocation(
-    conn: Connection<Db>,
-    address: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Address>, Error> {
-    let db = conn.into_inner();
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn address_to_geolocation(session: Session, address: &str) -> Convert<Address> {
     check_permissions!(session, Action::FetchGeoLocation);
-
-    match convert_addr_to_geo(address) {
-        Ok(val) => Ok(Json(val)),
-        Err(status) => Err(status),
-    }
+    convert_addr_to_geo(address).into()
 }
 
 pub fn convert_addr_to_geo(address: &str) -> Result<Address, Error> {
@@ -305,47 +279,30 @@ pub fn convert_addresses_to_geo(address: &str, origin: LatLon) -> Result<Vec<Add
 
 #[openapi(tag = "Helpers")]
 #[post("/suggest", data = "<address>")]
-pub async fn suggest_addr(
-    conn: Connection<Db>,
-    address: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Address>>, Error> {
-    let db = conn.into_inner();
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn suggest_addr(address: &str, session: Session) -> Convert<Vec<Address>> {
     check_permissions!(session.clone(), Action::FetchGeoLocation);
 
-    match convert_addresses_to_geo(
+    convert_addresses_to_geo(
         address,
         LatLon {
             lat: session.employee.contact.address.lat,
             lon: session.employee.contact.address.lon,
         },
-    ) {
-        Ok(val) => Ok(Json(val)),
-        Err(status) => Err(status),
-    }
+    )
+    .into()
 }
 
 #[openapi(tag = "Helpers")]
 #[get("/distance/<id>")]
 pub async fn distance_to_stores(
-    conn: Connection<Db>,
+    db: InternalDb,
     id: &str,
-    cookies: &CookieJar<'_>,
+    session: Session,
 ) -> Result<Json<Vec<Distance>>, Error> {
-    let db = conn.into_inner();
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchGeoLocation);
 
-    let customer = match Customer::fetch_by_id(id, session.clone(), &db).await {
-        Ok(c) => c,
-        Err(reason) => return Err(reason),
-    };
-
-    let stores = match Store::fetch_all(session, &db).await {
-        Ok(s) => s,
-        Err(reason) => return Err(ErrorResponse::db_err(reason)),
-    };
+    let customer = Customer::fetch_by_id(id, session.clone(), &db.0).await?;
+    let stores = Store::fetch_all(session, &db.0).await?;
 
     let cust = point!(x: customer.contact.address.lat, y: customer.contact.address.lon);
 

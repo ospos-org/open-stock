@@ -7,7 +7,6 @@ use sea_orm::{DbConn, DbErr, EntityTrait, InsertResult};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-
 use crate::Id;
 
 #[cfg(feature = "types")]
@@ -23,7 +22,7 @@ pub struct Tenant {
     pub settings: TenantSettings,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>
+    pub updated_at: DateTime<Utc>,
 }
 
 #[cfg(feature = "methods")]

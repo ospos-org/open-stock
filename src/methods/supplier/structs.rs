@@ -1,6 +1,6 @@
-use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
+use std::fmt::Display;
 
 #[cfg(feature = "process")]
 use crate::entities::prelude::Supplier as Suppl;
@@ -13,17 +13,17 @@ use crate::methods::{ContactInformation, Name, Transaction};
 #[cfg(feature = "process")]
 use crate::methods::convert_addr_to_geo;
 
+use crate::methods::supplier::example::example_supplier;
+use sea_orm::ActiveValue::Set;
 #[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
     QuerySelect, RuntimeErr,
 };
-use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 use validator::Validate;
-use crate::methods::supplier::example::example_supplier;
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -35,7 +35,7 @@ pub struct Supplier {
     pub transaction_history: Vec<Transaction>,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>
+    pub updated_at: DateTime<Utc>,
 }
 
 #[cfg(feature = "types")]
@@ -55,9 +55,10 @@ impl Supplier {
     ) -> Result<InsertResult<supplier::ActiveModel>, DbErr> {
         let id = Uuid::new_v4().to_string();
 
-        match Suppl::insert(
-            suppl.into_active(id, session.tenant_id.clone())
-        ).exec(db).await {
+        match Suppl::insert(suppl.into_active(id, session.tenant_id.clone()))
+            .exec(db)
+            .await
+        {
             Ok(res) => Ok(res),
             Err(err) => Err(err),
         }
@@ -85,10 +86,7 @@ impl Supplier {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|s| s.clone().into())
-            .collect();
+        let mapped = res.iter().map(|s| s.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -105,10 +103,7 @@ impl Supplier {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|s| s.clone().into())
-            .collect();
+        let mapped = res.iter().map(|s| s.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -125,10 +120,7 @@ impl Supplier {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|s| s.clone().into())
-            .collect();
+        let mapped = res.iter().map(|s| s.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -163,9 +155,7 @@ impl Supplier {
                 let mut new_contact = suppl.contact.clone();
                 new_contact.address = ad;
 
-                let mut supplier = suppl.into_active(
-                    id.to_string(),session.tenant_id.clone()
-                );
+                let mut supplier = suppl.into_active(id.to_string(), session.tenant_id.clone());
                 supplier.contact = Set(json!(new_contact));
 
                 supplier.update(db).await?;

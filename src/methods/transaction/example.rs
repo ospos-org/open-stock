@@ -1,6 +1,11 @@
+use crate::{
+    Address, ContactInformation, CustomerType, DiscountValue, Email, History, Location,
+    MobileNumber, Note, Order, OrderStatus, OrderStatusAssignment, Payment, PaymentAction,
+    PaymentProcessor, PaymentStatus, PickStatus, Price, ProductInstance, ProductPurchase,
+    TransactionCustomer, TransactionInit, TransactionType, TransitInformation,
+};
 use chrono::{Days, Duration, Utc};
 use uuid::Uuid;
-use crate::{Address, ContactInformation, CustomerType, DiscountValue, Email, History, Location, MobileNumber, Note, Order, OrderStatus, OrderStatusAssignment, Payment, PaymentAction, PaymentProcessor, PaymentStatus, PickStatus, Price, ProductInstance, ProductPurchase, TransactionCustomer, TransactionInit, TransactionType, TransitInformation};
 
 pub fn example_transaction(customer_id: &str) -> TransactionInit {
     let torpedo7 = ContactInformation {

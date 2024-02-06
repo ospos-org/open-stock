@@ -6,7 +6,7 @@ use crate::entities::employee::Entity as Employee;
 #[cfg(feature = "process")]
 use crate::entities::session::Entity as SessionEntity;
 
-use crate::{session, AccountType, Employee as EmployeeStruct, EmployeeInput, example_employee};
+use crate::{example_employee, session, AccountType, Employee as EmployeeStruct, EmployeeInput};
 
 #[cfg(feature = "process")]
 use crate::entities;
@@ -466,10 +466,13 @@ impl From<DbErr> for Error {
 }
 
 impl<T: Into<Error>> From<Option<T>> for Error {
-    fn from(value: Option<T>) -> Self where T: Into<Error> {
+    fn from(value: Option<T>) -> Self
+    where
+        T: Into<Error>,
+    {
         match value {
             Some(err) => err.into(),
-            None => ErrorResponse::create_error("Unable to retrieve database instance.")
+            None => ErrorResponse::create_error("Unable to retrieve database instance."),
         }
     }
 }

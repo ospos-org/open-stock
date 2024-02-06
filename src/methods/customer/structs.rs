@@ -1,28 +1,28 @@
-use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
+use std::fmt::Display;
 
 #[cfg(feature = "process")]
 use crate::entities::customer;
+use crate::entities::customer::ActiveModel;
 #[cfg(feature = "process")]
 use crate::entities::prelude::Customer as Cust;
 #[cfg(feature = "process")]
 use crate::methods::convert_addr_to_geo;
 use crate::methods::{Address, ContactInformation, Id, NoteList};
+use crate::{methods::Error, ContactInformationInput, Session};
 #[cfg(feature = "process")]
 use sea_orm::QueryFilter;
 #[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
-    ActiveModelTrait, ColumnTrait, DbBackend, DbConn, EntityTrait, FromQueryResult,
-    InsertResult, JsonValue, QuerySelect, RuntimeErr, Set, Statement,
+    ActiveModelTrait, ColumnTrait, DbBackend, DbConn, EntityTrait, FromQueryResult, InsertResult,
+    JsonValue, QuerySelect, RuntimeErr, Set, Statement,
 };
 use sea_orm::{DbErr, DeleteResult, QueryOrder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use validator::Validate;
-use crate::entities::customer::ActiveModel;
-use crate::{ContactInformationInput, methods::Error, Session};
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -38,7 +38,7 @@ pub struct Customer {
     pub accepts_marketing: bool,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>
+    pub updated_at: DateTime<Utc>,
 }
 
 #[cfg(feature = "process")]
@@ -101,7 +101,10 @@ impl Customer {
         db: &DbConn,
     ) -> Result<InsertResult<ActiveModel>, Error> {
         let insert_crud = cust.into_active(session.tenant_id);
-        Cust::insert(insert_crud).exec(db).await.map_err(|v| v.into())
+        Cust::insert(insert_crud)
+            .exec(db)
+            .await
+            .map_err(|v| v.into())
     }
 
     pub async fn insert_raw(
@@ -110,18 +113,22 @@ impl Customer {
         db: &DbConn,
     ) -> Result<InsertResult<ActiveModel>, Error> {
         let insert_crud = cust.into_active(session.tenant_id);
-        Cust::insert(insert_crud).exec(db).await.map_err(|v| v.into())
+        Cust::insert(insert_crud)
+            .exec(db)
+            .await
+            .map_err(|v| v.into())
     }
 
     pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Customer, Error> {
         match Cust::find_by_id(id.to_string())
             .filter(customer::Column::TenantId.eq(session.tenant_id))
             .one(db)
-            .await? {
+            .await?
+        {
             Some(c) => Ok(c.into()),
-            None => Err(DbErr::RecordNotFound(
-                "Unable to find customer record value".to_string(),
-            ).into()),
+            None => Err(
+                DbErr::RecordNotFound("Unable to find customer record value".to_string()).into(),
+            ),
         }
     }
 
@@ -158,7 +165,7 @@ impl Customer {
                 transactions: c.transactions.clone(),
                 accepts_marketing: c.accepts_marketing,
                 created_at: c.created_at,
-                updated_at: c.updated_at
+                updated_at: c.updated_at,
             })
             .collect();
 
@@ -180,10 +187,7 @@ impl Customer {
             .all(db)
             .await?;
 
-        let mapped: Vec<Customer> = res
-            .iter()
-            .map(|c| c.into())
-            .collect();
+        let mapped: Vec<Customer> = res.iter().map(|c| c.into()).collect();
 
         Ok(mapped)
     }
@@ -208,10 +212,7 @@ impl Customer {
             .all(db)
             .await?;
 
-        let mapped: Vec<Customer> = res
-            .iter()
-            .map(|c| c.into())
-            .collect();
+        let mapped: Vec<Customer> = res.iter().map(|c| c.into()).collect();
 
         Ok(mapped)
     }
@@ -232,10 +233,7 @@ impl Customer {
         Customer::fetch_containing_contact(addr, session, db).await
     }
 
-    pub async fn fetch_recent(
-        session: Session,
-        db: &DbConn,
-    ) -> Result<Vec<Customer>, Error> {
+    pub async fn fetch_recent(session: Session, db: &DbConn) -> Result<Vec<Customer>, Error> {
         let res = customer::Entity::find()
             .filter(customer::Column::TenantId.eq(session.tenant_id))
             .order_by_desc(customer::Column::UpdatedAt)
@@ -243,10 +241,7 @@ impl Customer {
             .all(db)
             .await?;
 
-        let mapped: Vec<Customer> = res
-            .iter()
-            .map(|c| c.into())
-            .collect();
+        let mapped: Vec<Customer> = res.iter().map(|c| c.into()).collect();
 
         Ok(mapped)
     }
@@ -292,12 +287,10 @@ impl Customer {
                 // Derive the default from the provided customer
                 let mut model = cust.clone().into_active(session.tenant_id.clone());
 
-                model.contact = Set(
-                    json!(ContactInformation {
-                        address: ad,
-                        ..cust.contact
-                    })
-                );
+                model.contact = Set(json!(ContactInformation {
+                    address: ad,
+                    ..cust.contact
+                }));
 
                 println!("Have active model: {:?}", model);
 
@@ -305,9 +298,9 @@ impl Customer {
 
                 Self::fetch_by_id(id, session, db).await
             }
-            Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
-                "Invalid address format".to_string(),
-            )).into()),
+            Err(_) => {
+                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())).into())
+            }
         }
     }
 
@@ -332,12 +325,10 @@ impl Customer {
             Ok(ad) => {
                 let mut model = cust.clone().into_active(session.tenant_id.clone());
 
-                model.contact = Set(
-                    json!(ContactInformation {
-                        address: ad,
-                        ..cust.contact
-                    })
-                );
+                model.contact = Set(json!(ContactInformation {
+                    address: ad,
+                    ..cust.contact
+                }));
 
                 println!("Have active model: {:?}", model);
 
@@ -345,9 +336,9 @@ impl Customer {
 
                 Self::fetch_by_id(id, session, db).await
             }
-            Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
-                "Invalid address format".to_string(),
-            )).into()),
+            Err(_) => {
+                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())).into())
+            }
         }
     }
 }

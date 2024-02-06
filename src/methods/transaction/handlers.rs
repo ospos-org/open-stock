@@ -1,18 +1,20 @@
+use crate::catchers::Validated;
 use okapi::openapi3::OpenApi;
 use rocket::get;
 use rocket::http::CookieJar;
+use rocket::post;
 use rocket::serde::json::Json;
-use rocket::{post};
 use rocket_db_pools::Connection;
-use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
-use crate::catchers::Validated;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 
 use super::{Transaction, TransactionInit, TransactionInput};
 use crate::methods::employee::Action;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, QuantityAlterationIntent};
 use crate::pool::Db;
-use crate::{apply_discount, check_permissions, Order, OrderStatus, ProductStatusUpdate, TransactionType};
+use crate::{
+    apply_discount, check_permissions, Order, OrderStatus, ProductStatusUpdate, TransactionType,
+};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -200,8 +202,7 @@ async fn update_product_status(
         .unwrap();
     let id = tsn.get(0).unwrap().id.as_str();
 
-    match Transaction::update_product_status(id, data, session, &db).await
-    {
+    match Transaction::update_product_status(id, data, session, &db).await {
         Ok(res) => Ok(Json(res)),
         Err(_) => Err(ErrorResponse::input_error()),
     }
@@ -304,7 +305,9 @@ pub async fn create(
         }
     };
 
-    Ok(Json(Transaction::fetch_by_id(&insertion.last_insert_id, session, &db).await?))
+    Ok(Json(
+        Transaction::fetch_by_id(&insertion.last_insert_id, session, &db).await?,
+    ))
 }
 
 #[openapi(tag = "Transaction")]

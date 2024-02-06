@@ -55,5 +55,5 @@ pub enum Session {
     #[iden = "tenant_id"]
     TenantId,
     #[iden = "variant"]
-    Variant
+    Variant,
 }

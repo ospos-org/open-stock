@@ -31,7 +31,7 @@ pub struct Auth {
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub enum AccountType {
     FrontLine,
-    Managerial
+    Managerial,
 }
 
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -56,7 +56,7 @@ pub struct Employee {
     pub account_type: AccountType,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>
+    pub updated_at: DateTime<Utc>,
 }
 
 #[cfg(feature = "types")]
@@ -67,7 +67,6 @@ pub struct Access<T> {
 }
 
 use enum_iterator::{all, Sequence};
-
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Sequence, JsonSchema)]
@@ -119,10 +118,12 @@ pub enum Action {
 
 #[cfg(feature = "types")]
 pub fn all_actions() -> Vec<Access<Action>> {
-    all::<Action>().map(| x | Access {
-        action: x,
-        authority: 1
-    }).collect::<Vec<_>>()
+    all::<Action>()
+        .map(|x| Access {
+            action: x,
+            authority: 1,
+        })
+        .collect::<Vec<_>>()
 }
 
 #[cfg(feature = "types")]
@@ -143,7 +144,7 @@ pub struct EmployeeInput {
     pub password: Option<String>,
     pub clock_history: Vec<History<Attendance>>,
     pub level: Vec<Access<Action>>,
-    pub account_type: AccountType
+    pub account_type: AccountType,
 }
 
 impl Display for Employee {
@@ -181,13 +182,13 @@ impl Display for Employee {
     }
 }
 
+use crate::methods::Error;
 #[cfg(feature = "process")]
 use argon2::{self, Config};
 use rand::Rng;
 use schemars::JsonSchema;
 use sea_orm::QueryOrder;
 use validator::Validate;
-use crate::methods::Error;
 
 #[cfg(feature = "methods")]
 impl Employee {
@@ -208,7 +209,7 @@ impl Employee {
         let password = empl.password.clone();
 
         if password.is_none() {
-            return Err(DbErr::AttrNotSet("Field `password` must be present".to_string()).into())
+            return Err(DbErr::AttrNotSet("Field `password` must be present".to_string()).into());
         }
 
         let salt = b"randomsalt";
@@ -217,7 +218,10 @@ impl Employee {
 
         let insert_crud = empl.into_active(id, rid, session.tenant_id, hash);
 
-        Epl::insert(insert_crud).exec(db).await.map_err(|e| e.into())
+        Epl::insert(insert_crud)
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 
     pub async fn verify(
@@ -228,9 +232,7 @@ impl Employee {
     ) -> Result<bool, Error> {
         let employee = Self::fetch_by_id(id, session, db).await?;
 
-        let is_valid = argon2::verify_encoded(
-            &employee.auth.hash, pass.as_bytes()
-        ).unwrap();
+        let is_valid = argon2::verify_encoded(&employee.auth.hash, pass.as_bytes()).unwrap();
 
         Ok(is_valid)
     }
@@ -248,11 +250,13 @@ impl Employee {
         for employee in employee {
             println!("Validating employee");
 
-            let is_valid = argon2::verify_encoded(
-                &employee.auth.hash, pass.as_bytes()
-            ).map_err(|e| DbErr::RecordNotFound(e.to_string()))?;
+            let is_valid = argon2::verify_encoded(&employee.auth.hash, pass.as_bytes())
+                .map_err(|e| DbErr::RecordNotFound(e.to_string()))?;
 
-            println!("Found employee is {}", if is_valid { "Valid" } else { "Invalid" });
+            println!(
+                "Found employee is {}",
+                if is_valid { "Valid" } else { "Invalid" }
+            );
 
             if is_valid && valid_user.is_none() {
                 valid_user = Some(employee);
@@ -266,14 +270,12 @@ impl Employee {
         } else {
             Err(DbErr::Query(RuntimeErr::Internal(
                 "Unable to locate user. No user exists.".to_string(),
-            )).into())
+            ))
+            .into())
         }
     }
 
-    pub async fn fetch_recent(
-        session: Session,
-        db: &DbConn,
-    ) -> Result<Vec<Employee>, Error> {
+    pub async fn fetch_recent(session: Session, db: &DbConn) -> Result<Vec<Employee>, Error> {
         let res = employee::Entity::find()
             .filter(employee::Column::TenantId.eq(session.tenant_id))
             .order_by_desc(employee::Column::UpdatedAt)
@@ -281,10 +283,7 @@ impl Employee {
             .all(db)
             .await?;
 
-        let mapped: Vec<Employee> = res
-            .iter()
-            .map(|c| c.clone().into())
-            .collect();
+        let mapped: Vec<Employee> = res.iter().map(|c| c.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -313,10 +312,7 @@ impl Employee {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|e| e.clone().into())
-            .collect();
+        let mapped = res.iter().map(|e| e.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -333,10 +329,7 @@ impl Employee {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|e| e.clone().into())
-            .collect();
+        let mapped = res.iter().map(|e| e.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -353,10 +346,7 @@ impl Employee {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|e| e.clone().into())
-            .collect();
+        let mapped = res.iter().map(|e| e.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -373,10 +363,7 @@ impl Employee {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|e| e.clone().into())
-            .collect();
+        let mapped = res.iter().map(|e| e.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -411,7 +398,9 @@ impl Employee {
         let old_employee = Self::fetch_by_id(id, session.clone(), db).await?;
         let as_model = employee.from_existing(old_employee, session.tenant_id.clone());
 
-        crate::entities::employee::Entity::update(as_model).exec(db).await?;
+        crate::entities::employee::Entity::update(as_model)
+            .exec(db)
+            .await?;
 
         Self::fetch_by_id(id, session, db).await
     }
@@ -450,7 +439,7 @@ impl Employee {
             tenant_id: Set(session.clone().tenant_id),
             account_type: Set(json!(empl.account_type)),
             created_at: Set(empl.created_at.naive_utc()),
-            updated_at: Set(empl.updated_at.naive_utc())
+            updated_at: Set(empl.updated_at.naive_utc()),
         }
         .update(db)
         .await?;
