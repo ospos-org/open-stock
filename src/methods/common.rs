@@ -6,7 +6,7 @@ use crate::entities::employee::Entity as Employee;
 #[cfg(feature = "process")]
 use crate::entities::session::Entity as SessionEntity;
 
-use crate::{session, AccountType, Employee as EmployeeStruct, EmployeeInput};
+use crate::{session, AccountType, Employee as EmployeeStruct, EmployeeInput, example_employee};
 
 #[cfg(feature = "process")]
 use crate::entities;
@@ -237,6 +237,21 @@ pub struct Session {
     pub expiry: DateTime<Utc>,
     pub tenant_id: String,
     pub variant: SessionVariant,
+}
+
+impl Session {
+    pub fn default_with_tenant(tenant_id: String) -> Self {
+        let default_employee = example_employee();
+
+        Session {
+            id: String::new(),
+            key: String::new(),
+            employee: default_employee.into(),
+            expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+            tenant_id,
+            variant: SessionVariant::AccessToken,
+        }
+    }
 }
 
 impl From<Session> for session::ActiveModel {

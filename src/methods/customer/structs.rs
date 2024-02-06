@@ -14,15 +14,15 @@ use sea_orm::QueryFilter;
 #[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
-    ActiveModelTrait, ColumnTrait, DbBackend, DbConn, DbErr, EntityTrait, FromQueryResult,
+    ActiveModelTrait, ColumnTrait, DbBackend, DbConn, EntityTrait, FromQueryResult,
     InsertResult, JsonValue, QuerySelect, RuntimeErr, Set, Statement,
 };
-use sea_orm::{DeleteResult, QueryOrder};
+use sea_orm::{DbErr, DeleteResult, QueryOrder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use validator::Validate;
 use crate::entities::customer::ActiveModel;
-use crate::{ContactInformationInput, Session};
+use crate::{ContactInformationInput, methods::Error, Session};
 
 #[cfg(feature = "types")]
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -99,33 +99,29 @@ impl Customer {
         cust: CustomerInput,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<ActiveModel>, Error> {
         let insert_crud = cust.into_active(session.tenant_id);
-
-        Cust::insert(insert_crud).exec(db).await
+        Cust::insert(insert_crud).exec(db).await.map_err(|v| v.into())
     }
 
     pub async fn insert_raw(
         cust: Customer,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<ActiveModel>, Error> {
         let insert_crud = cust.into_active(session.tenant_id);
-
-        Cust::insert(insert_crud).exec(db).await
+        Cust::insert(insert_crud).exec(db).await.map_err(|v| v.into())
     }
 
-    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Customer, DbErr> {
-        let cust = Cust::find_by_id(id.to_string())
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Customer, Error> {
+        match Cust::find_by_id(id.to_string())
             .filter(customer::Column::TenantId.eq(session.tenant_id))
             .one(db)
-            .await?;
-
-        match cust {
+            .await? {
             Some(c) => Ok(c.into()),
             None => Err(DbErr::RecordNotFound(
                 "Unable to find customer record value".to_string(),
-            )),
+            ).into()),
         }
     }
 
@@ -133,7 +129,7 @@ impl Customer {
         query: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<CustomerWithTransactionsOut>, DbErr> {
+    ) -> Result<Vec<CustomerWithTransactionsOut>, Error> {
         let as_str: Vec<CustomerWithTransactions> = CustomerWithTransactions::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
                 &format!("SELECT Customer.*, GROUP_CONCAT(`Transactions`.`id`) as transactions
@@ -173,7 +169,7 @@ impl Customer {
         name: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Customer>, DbErr> {
+    ) -> Result<Vec<Customer>, Error> {
         let res = customer::Entity::find()
             .filter(customer::Column::TenantId.eq(session.tenant_id))
             .having(
@@ -192,22 +188,19 @@ impl Customer {
         Ok(mapped)
     }
 
-    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, DbErr> {
-        match crate::entities::customer::Entity::delete_by_id(id)
+    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, Error> {
+        crate::entities::customer::Entity::delete_by_id(id)
             .filter(customer::Column::TenantId.eq(session.tenant_id))
             .exec(db)
             .await
-        {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+            .map_err(|v| v.into())
     }
 
     pub async fn fetch_containing_contact(
         value: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Customer>, DbErr> {
+    ) -> Result<Vec<Customer>, Error> {
         let res = customer::Entity::find()
             .filter(customer::Column::TenantId.eq(session.tenant_id))
             .having(customer::Column::Contact.contains(value))
@@ -227,7 +220,7 @@ impl Customer {
         phone: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Customer>, DbErr> {
+    ) -> Result<Vec<Customer>, Error> {
         Customer::fetch_containing_contact(phone, session, db).await
     }
 
@@ -235,14 +228,14 @@ impl Customer {
         addr: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Customer>, DbErr> {
+    ) -> Result<Vec<Customer>, Error> {
         Customer::fetch_containing_contact(addr, session, db).await
     }
 
     pub async fn fetch_recent(
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Customer>, DbErr> {
+    ) -> Result<Vec<Customer>, Error> {
         let res = customer::Entity::find()
             .filter(customer::Column::TenantId.eq(session.tenant_id))
             .order_by_desc(customer::Column::UpdatedAt)
@@ -259,7 +252,7 @@ impl Customer {
     }
 
     /// Generate and insert a default customer.
-    pub async fn generate(session: Session, db: &DbConn) -> Result<Customer, DbErr> {
+    pub async fn generate(session: Session, db: &DbConn) -> Result<Customer, Error> {
         let cust = example_customer();
         // Insert & Fetch Customer
         let r = Customer::insert(cust, session.clone(), db).await.unwrap();
@@ -271,7 +264,7 @@ impl Customer {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Customer, DbErr> {
+    ) -> Result<Customer, Error> {
         let old_customer = Self::fetch_by_id(id, session.clone(), db).await?;
         let customer = cust.from_existing(old_customer, session.tenant_id.clone());
 
@@ -285,7 +278,7 @@ impl Customer {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Customer, DbErr> {
+    ) -> Result<Customer, Error> {
         let addr = convert_addr_to_geo(&format!(
             "{} {} {} {}",
             cust.contact.address.street,
@@ -314,7 +307,7 @@ impl Customer {
             }
             Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
                 "Invalid address format".to_string(),
-            ))),
+            )).into()),
         }
     }
 
@@ -323,7 +316,7 @@ impl Customer {
         id: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Customer, DbErr> {
+    ) -> Result<Customer, Error> {
         let cust = Self::fetch_by_id(id, session.clone(), db).await?;
 
         // Get geo location for new contact information...
@@ -354,7 +347,7 @@ impl Customer {
             }
             Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
                 "Invalid address format".to_string(),
-            ))),
+            )).into()),
         }
     }
 }

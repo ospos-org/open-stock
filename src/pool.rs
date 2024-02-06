@@ -49,13 +49,16 @@ pub struct InternalDb(pub DbConn);
 
 #[rocket::async_trait]
 impl<'a> FromRequest<'a> for InternalDb {
-    type Error = Option<InternalDb>;
+    type Error = Option<DbErr>;
 
     async fn from_request(
         request: &'a request::Request<'_>,
     ) -> request::Outcome<Self, Self::Error> {
         match request.guard::<Connection<Db>>().await {
-            Outcome::Success(s) => Outcome::Success(InternalDb(s.into_inner())),
+            Outcome::Success(s) => {
+                let database = s.into_inner();
+                Outcome::Success(InternalDb(database))
+            },
             Outcome::Error(e) => Outcome::Error(e),
             Outcome::Forward(f) => Outcome::Forward(f)
         }

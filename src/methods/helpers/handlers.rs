@@ -85,11 +85,9 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
 
     // Add Employees
     let employee = Employee::generate(&db, session.clone())
-        .await
-        .map_err(ErrorResponse::db_err)?;
+        .await?;
     let _employee2 = Employee::generate(&db, session2.clone())
-        .await
-        .map_err(ErrorResponse::db_err)?;
+        .await?;
 
     // Add other items (aggregated)
     let stores = Store::generate(session.clone(), &db)
@@ -99,21 +97,18 @@ pub async fn generate_template(conn: Connection<Db>) -> Result<Json<All>, Error>
         .await
         .map_err(ErrorResponse::db_err)?;
     let customer = Customer::generate(session.clone(), &db)
-        .await
-        .map_err(ErrorResponse::db_err)?;
+        .await?;
 
     // Add Kiosks
     let kiosk = Kiosk::generate("adbd48ab-f4ca-4204-9c88-3516f3133621", session.clone(), &db)
-        .await
-        .map_err(ErrorResponse::db_err)?;
+        .await?;
 
     let _kiosk2 = Kiosk::generate(
         "adbd48ab-f4ca-4204-9c88-3516f3133622",
         session2.clone(),
         &db,
     )
-    .await
-    .map_err(ErrorResponse::db_err)?;
+    .await?;
 
     let transaction = Transaction::generate(
         &db,
@@ -199,8 +194,7 @@ pub async fn new_tenant(
 
     let employee_insert_result =
         Employee::insert(employee, &db, session.clone(), None, Some(employee_id))
-            .await
-            .map_err(ErrorResponse::db_err)?;
+            .await?;
 
     match session::Entity::insert::<ActiveModel>(session.clone().into())
         .exec(&db)
@@ -345,7 +339,7 @@ pub async fn distance_to_stores(
 
     let customer = match Customer::fetch_by_id(id, session.clone(), &db).await {
         Ok(c) => c,
-        Err(reason) => return Err(ErrorResponse::db_err(reason)),
+        Err(reason) => return Err(reason),
     };
 
     let stores = match Store::fetch_all(session, &db).await {

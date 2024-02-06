@@ -20,13 +20,10 @@ use sea_orm::FromQueryResult;
 use crate::entities::{
     prelude::Transactions, sea_orm_active_enums::TransactionType as SeaORMTType, transactions,
 };
-use crate::{
-    methods::{
-        History, Id, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment, Payment,
-        Product, Session, Stock, VariantInformation,
-    },
-    PickStatus, ProductInstance,
-};
+use crate::{methods::{
+    History, Id, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment, Payment,
+    Product, Session, Stock, VariantInformation, Error
+}, PickStatus, ProductInstance};
 #[cfg(feature = "process")]
 use sea_orm::DbConn;
 use validator::Validate;
@@ -332,7 +329,7 @@ impl Transaction {
         id: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Transaction>, DbErr> {
+    ) -> Result<Vec<Transaction>, Error> {
         let tsn = Transactions::find()
             .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(transactions::Column::Customer.contains(id))

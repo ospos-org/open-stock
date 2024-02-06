@@ -1,21 +1,14 @@
 use okapi::openapi3::OpenApi;
-use crate::{check_permissions};
-use crate::methods::{
-    cookie_status_wrapper, Action, ContactInformation, CustomerWithTransactionsOut, Error,
-    ErrorResponse, Transaction,
-};
-use crate::pool::Db;
-
+use crate::{check_permissions, Session};
+use crate::methods::{Action, ContactInformation, CustomerWithTransactionsOut, Error, Transaction};
+use crate::pool::{InternalDb};
 use rocket::get;
-use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::{post};
-
-use rocket_db_pools::Connection;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use rocket_okapi::settings::OpenApiSettings;
 use crate::catchers::Validated;
-
+use crate::guards::Convert;
 use super::{Customer, CustomerInput};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
@@ -40,244 +33,147 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 #[openapi(tag = "Customer")]
 #[get("/<id>")]
 pub async fn get(
-    conn: Connection<Db>,
+    db: InternalDb,
     id: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Customer>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+    session: Session,
+) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-
-    match Customer::fetch_by_id(id, session, &db).await {
-        Ok(customers) => Ok(Json(customers)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Customer::fetch_by_id(id, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[post("/delete/<id>")]
 pub async fn delete(
-    conn: Connection<Db>,
+    db: InternalDb,
     id: &str,
-    cookies: &CookieJar<'_>,
+    session: Session,
 ) -> Result<(), Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::AccessAdminPanel);
-
-    match Customer::delete(id, session, &db).await {
-        Ok(_res) => Ok(()),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Customer::delete(id, session, &db.0).await.map(|_| ())
 }
 
 #[openapi(tag = "Customer")]
 #[get("/recent")]
 pub async fn get_recent(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Customer>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+    db: InternalDb,
+    session: Session,
+) -> Convert<Vec<Customer>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-
-    match Customer::fetch_recent(session, &db).await {
-        Ok(customers) => Ok(Json(customers)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Customer::fetch_recent(session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[get("/name/<name>")]
 pub async fn get_by_name(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     name: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Customer>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Vec<Customer>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-
-    match Customer::fetch_by_name(name, session, &db).await {
-        Ok(customers) => Ok(Json(customers)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Customer::fetch_by_name(name, session, &db.0).await.into()
 }
 
 /// Will search by both name, phone and email.
 #[openapi(tag = "Customer")]
 #[get("/search/<query>")]
 pub async fn search_query(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     query: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<CustomerWithTransactionsOut>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Vec<CustomerWithTransactionsOut>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-
-    match Customer::search(query, session, &db).await {
-        Ok(customers) => Ok(Json(customers)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Customer::search(query, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[get("/transactions/<id>")]
 pub async fn find_related_transactions(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     id: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Transaction>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Vec<Transaction>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-
-    Ok(Json(
-        Transaction::fetch_by_client_id(id, session, &db).await?
-    ))
+    Transaction::fetch_by_client_id(id, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[get("/phone/<phone>")]
 pub async fn get_by_phone(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     phone: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Customer>>, Error> {
-    let db = conn.into_inner();
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Vec<Customer>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-
-    Ok(Json(
-        Customer::fetch_by_phone(phone, session, &db).await?
-    ))
+    Customer::fetch_by_phone(phone, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[get("/addr/<addr>")]
 pub async fn get_by_addr(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     addr: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Customer>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Vec<Customer>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-
-    Ok(Json(
-        Customer::fetch_by_addr(addr, session, &db).await?
-    ))
+    Customer::fetch_by_addr(addr, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[post("/generate")]
 async fn generate(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Customer>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+    db: InternalDb,
+    session: Session,
+) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
-
-    Ok(Json(
-        Customer::generate(session, &db).await?
-    ))
+    Customer::generate(session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<Db>,
-    id: &str,
-    cookies: &CookieJar<'_>,
+    db: InternalDb,
+    session: Session,
     input_data: Validated<Json<Customer>>,
-) -> Result<Json<Customer>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+    id: &str,
+) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::ModifyCustomer);
-
-    Ok(Json(
-        Customer::update(input_data, session, id, &db).await?
-    ))
+    Customer::update(input_data.data(), session, id, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[post("/input/<id>", data = "<input_data>")]
 async fn update_by_input(
-    conn: Connection<Db>,
+    db: InternalDb,
     id: &str,
-    cookies: &CookieJar<'_>,
+    session: Session,
     input_data: Validated<Json<CustomerInput>>,
-) -> Result<Json<Customer>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::ModifyCustomer);
-
-    Ok(Json(
-        Customer::update_by_input(input_data, session, id, &db).await?
-    ))
+    Customer::update_by_input(input_data.data(), session, id, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[post("/contact/<id>", data = "<input_data>")]
 async fn update_contact_info(
-    conn: Connection<Db>,
-    id: &str,
-    cookies: &CookieJar<'_>,
+    db: InternalDb,
+    session: Session,
     input_data: Validated<Json<ContactInformation>>,
-) -> Result<Json<Customer>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-    let session = cookie_status_wrapper(&db, cookies).await?;
-
+    id: &str,
+) -> Convert<Customer> {
     check_permissions!(session.clone(), Action::ModifyCustomer);
-
-    match Customer::update_contact_information(input_data, id, session, &db).await {
-        Ok(res) => Ok(Json(res)),
-        Err(error) => Err(ErrorResponse::db_err(error)),
-    }
+    Customer::update_contact_information(input_data.data(), id, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Customer")]
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
+    db: InternalDb,
+    session: Session,
     input_data: Validated<Json<CustomerInput>>,
 ) -> Result<Json<Customer>, Error> {
-    let new_transaction = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateCustomer);
 
-    match Customer::insert(new_transaction, session.clone(), &db).await {
-        Ok(data) =>
-            match Customer::fetch_by_id(
-                &data.last_insert_id, session, &db
-            ).await {
-                Ok(res) => Ok(Json(res)),
-                Err(reason) => {
-                    println!("[dberr]: {}", reason);
-                    Err(ErrorResponse::create_error(&format!(
-                        "Fetch for customer failed, reason: {}",
-                        reason
-                    )))
-                }
-            },
-        Err(error) => Err(ErrorResponse::db_err(error)),
-    }
+    let data = Customer::insert(input_data.data(), session.clone(), &db.0).await?;
+    let converted: Convert<Customer> = Customer::fetch_by_id(&data.last_insert_id, session, &db.0).await.into();
+    converted.0
 }
