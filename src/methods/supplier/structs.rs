@@ -6,6 +6,7 @@ use std::fmt::Display;
 use crate::entities::prelude::Supplier as Suppl;
 #[cfg(feature = "process")]
 use crate::entities::supplier;
+use crate::methods::Error;
 use crate::Session;
 
 use crate::methods::{ContactInformation, Name, Transaction};
@@ -52,19 +53,12 @@ impl Supplier {
         suppl: SupplierInput,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<supplier::ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<supplier::ActiveModel>, Error> {
         let id = Uuid::new_v4().to_string();
-
-        match Suppl::insert(suppl.into_active(id, session.tenant_id.clone()))
-            .exec(db)
-            .await
-        {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+        Suppl::insert(suppl.into_active(id, session.tenant_id.clone())).exec(db).await.map_err(|e| e.into())
     }
 
-    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Supplier, DbErr> {
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Supplier, Error> {
         let suppl = Suppl::find_by_id(id.to_string())
             .filter(supplier::Column::TenantId.eq(session.tenant_id))
             .one(db)
@@ -78,7 +72,7 @@ impl Supplier {
         name: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Supplier>, DbErr> {
+    ) -> Result<Vec<Supplier>, Error> {
         let res = supplier::Entity::find()
             .filter(supplier::Column::TenantId.eq(session.tenant_id))
             .having(supplier::Column::Name.contains(name))
@@ -95,7 +89,7 @@ impl Supplier {
         phone: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Supplier>, DbErr> {
+    ) -> Result<Vec<Supplier>, Error> {
         let res = supplier::Entity::find()
             .filter(supplier::Column::TenantId.eq(session.tenant_id))
             .having(supplier::Column::Contact.contains(phone))
@@ -112,7 +106,7 @@ impl Supplier {
         addr: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Supplier>, DbErr> {
+    ) -> Result<Vec<Supplier>, Error> {
         let res = supplier::Entity::find()
             .filter(supplier::Column::TenantId.eq(session.tenant_id))
             .having(supplier::Column::Contact.contains(addr))
@@ -126,7 +120,7 @@ impl Supplier {
     }
 
     /// Generate and insert a default customer.
-    pub async fn generate(session: Session, db: &DbConn) -> Result<Supplier, DbErr> {
+    pub async fn generate(session: Session, db: &DbConn) -> Result<Supplier, Error> {
         let cust = example_supplier();
         // Insert & Fetch Customer
         let r = Supplier::insert(cust, session.clone(), db).await.unwrap();
@@ -141,7 +135,7 @@ impl Supplier {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Supplier, DbErr> {
+    ) -> Result<Supplier, Error> {
         let addr = convert_addr_to_geo(&format!(
             "{} {} {} {}",
             suppl.contact.address.street,
@@ -164,7 +158,7 @@ impl Supplier {
             }
             Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
                 "Invalid address format".to_string(),
-            ))),
+            )).into()),
         }
     }
 }
