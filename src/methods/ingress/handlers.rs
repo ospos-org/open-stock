@@ -1,4 +1,7 @@
-use crate::{check_permissions, cookie_status_wrapper, methods::Action, methods::Error, Db, ErrorResponse, Session};
+use crate::{
+    check_permissions, cookie_status_wrapper, methods::Action, methods::Error, Db, ErrorResponse,
+    Session,
+};
 use chrono::Utc;
 use okapi::openapi3::OpenApi;
 
@@ -16,10 +19,7 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 /// curl -X POST -H "Content-Type: text/plain" -d "@/to/file/location/" http://127.0.0.1:8000/api/ingress/upload
 #[openapi(tag = "Ingress")]
 #[post("/upload", format = "plain", data = "<file>")]
-async fn upload(
-    session: Session,
-    file: TempFile<'_>,
-) -> Result<(), Error> {
+async fn upload(session: Session, file: TempFile<'_>) -> Result<(), Error> {
     check_permissions!(session.clone(), Action::AccessAdminPanel);
     receive_file(file, session.tenant_id).await
 }

@@ -55,7 +55,10 @@ impl Supplier {
         db: &DbConn,
     ) -> Result<InsertResult<supplier::ActiveModel>, Error> {
         let id = Uuid::new_v4().to_string();
-        Suppl::insert(suppl.into_active(id, session.tenant_id.clone())).exec(db).await.map_err(|e| e.into())
+        Suppl::insert(suppl.into_active(id, session.tenant_id.clone()))
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 
     pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Supplier, Error> {
@@ -156,9 +159,9 @@ impl Supplier {
 
                 Self::fetch_by_id(id, session, db).await
             }
-            Err(_) => Err(DbErr::Query(RuntimeErr::Internal(
-                "Invalid address format".to_string(),
-            )).into()),
+            Err(_) => {
+                Err(DbErr::Query(RuntimeErr::Internal("Invalid address format".to_string())).into())
+            }
         }
     }
 }

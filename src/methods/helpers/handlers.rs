@@ -123,8 +123,7 @@ pub async fn generate_template(db: InternalDb) -> Result<Json<All>, Error> {
     .await
     .map_err(ErrorResponse::db_err)?;
 
-    let promotions = Promotion::generate(session, &db.0)
-        .await?;
+    let promotions = Promotion::generate(session, &db.0).await?;
 
     Ok(Json(All {
         employee,

@@ -179,7 +179,10 @@ impl Promotion {
             tenant_id: Set(session.tenant_id),
         };
 
-        Promotions::insert(insert_crud).exec(db).await.map_err(|e| e.into())
+        Promotions::insert(insert_crud)
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 
     pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Promotion, Error> {
@@ -293,7 +296,10 @@ impl Promotion {
             }
         });
 
-        Promotions::insert_many(entities).exec(db).await.map_err(|e| e.into())
+        Promotions::insert_many(entities)
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 
     pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Promotion>, Error> {

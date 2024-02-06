@@ -5,8 +5,8 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
-    ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, InsertResult,
-    QueryFilter, QuerySelect, Statement,
+    ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, InsertResult, QueryFilter,
+    QuerySelect, Statement,
 };
 use serde::{
     de::{MapAccess, Visitor},
@@ -360,7 +360,10 @@ impl Product {
             .into_iter()
             .map(|pdt| pdt.into_active(session.clone()));
 
-        Products::insert_many(entities).exec(db).await.map_err(|e| e.into())
+        Products::insert_many(entities)
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 
     pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Product>, Error> {

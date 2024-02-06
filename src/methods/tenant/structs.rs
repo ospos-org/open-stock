@@ -1,5 +1,5 @@
 #[cfg(feature = "process")]
-use crate::{entities::prelude::Tenants, tenants};
+use crate::{entities::prelude::Tenants, methods::Error, tenants};
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 #[cfg(feature = "process")]
@@ -27,19 +27,17 @@ pub struct Tenant {
 
 #[cfg(feature = "methods")]
 impl Tenant {
-    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Tenant, DbErr> {
+    pub async fn fetch_by_id(id: &str, db: &DbConn) -> Result<Tenant, Error> {
         let tsn = Tenants::find_by_id(id.to_string()).one(db).await?;
 
         if tsn.is_none() {
-            return Err(DbErr::Custom(
-                "Unable to query value, returns none".to_string(),
-            ));
+            return Err(DbErr::Custom("Unable to query value, returns none".to_string()).into());
         }
 
         Ok(tsn.unwrap().into())
     }
 
-    pub async fn generate(db: &DbConn, tenant_id: &str) -> Result<Tenant, DbErr> {
+    pub async fn generate(db: &DbConn, tenant_id: &str) -> Result<Tenant, Error> {
         // Create Transaction
         let tsn = example_tenant(tenant_id);
 
@@ -56,8 +54,11 @@ impl Tenant {
     pub async fn insert(
         tnt: Tenant,
         db: &DbConn,
-    ) -> Result<InsertResult<tenants::ActiveModel>, DbErr> {
-        Tenants::insert(tnt.into()).exec(db).await
+    ) -> Result<InsertResult<tenants::ActiveModel>, Error> {
+        Tenants::insert(tnt.into())
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 }
 

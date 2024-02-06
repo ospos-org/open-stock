@@ -1,8 +1,9 @@
 use crate::catchers::Validated;
-use crate::{check_permissions, Session};
+use crate::guards::Convert;
 use crate::methods::employee::Action;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse};
 use crate::pool::{Db, InternalDb};
+use crate::{check_permissions, Session};
 use okapi::openapi3::OpenApi;
 use rocket::get;
 use rocket::http::CookieJar;
@@ -11,7 +12,6 @@ use rocket::serde::json::Json;
 use rocket_db_pools::Connection;
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
-use crate::guards::Convert;
 
 use super::{Supplier, SupplierInput};
 
@@ -30,11 +30,7 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 
 #[openapi(tag = "Supplier")]
 #[get("/<id>")]
-pub async fn get(
-    db: InternalDb,
-    session: Session,
-    id: &str,
-) -> Convert<Supplier> {
+pub async fn get(db: InternalDb, session: Session, id: &str) -> Convert<Supplier> {
     check_permissions!(session.clone(), Action::FetchSupplier);
     Supplier::fetch_by_id(id, session, &db.0).await.into()
 }
@@ -52,22 +48,14 @@ pub async fn get_by_name(
 
 #[openapi(tag = "Supplier")]
 #[get("/phone/<phone>")]
-pub async fn get_by_phone(
-    db: InternalDb,
-    session: Session,
-    phone: &str,
-) -> Convert<Vec<Supplier>> {
+pub async fn get_by_phone(db: InternalDb, session: Session, phone: &str) -> Convert<Vec<Supplier>> {
     check_permissions!(session.clone(), Action::FetchSupplier);
     Supplier::fetch_by_phone(phone, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Supplier")]
 #[get("/addr/<addr>")]
-pub async fn get_by_addr(
-    db: InternalDb,
-    session: Session,
-    addr: &str,
-) -> Convert<Vec<Supplier>> {
+pub async fn get_by_addr(db: InternalDb, session: Session, addr: &str) -> Convert<Vec<Supplier>> {
     check_permissions!(session.clone(), Action::FetchSupplier);
     Supplier::fetch_by_addr(addr, session, &db.0).await.into()
 }
@@ -88,7 +76,9 @@ async fn update(
     id: &str,
 ) -> Convert<Supplier> {
     check_permissions!(session.clone(), Action::ModifySupplier);
-    Supplier::update(input_data.data(), session, id, &db.0).await.into()
+    Supplier::update(input_data.data(), session, id, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Supplier")]
@@ -101,6 +91,8 @@ pub async fn create(
     check_permissions!(session.clone(), Action::ModifySupplier);
 
     let data = Supplier::insert(input_data.data(), session.clone(), &db.0).await?;
-    let converted: Convert<Supplier> = Supplier::fetch_by_id(&data.last_insert_id, session, &db.0).await.into();
+    let converted: Convert<Supplier> = Supplier::fetch_by_id(&data.last_insert_id, session, &db.0)
+        .await
+        .into();
     converted.0
 }

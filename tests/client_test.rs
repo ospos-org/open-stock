@@ -28,7 +28,6 @@ async fn main() {
                 durations.push(duration.as_millis());
             }
         }
-        
     }).await {
         Ok(_) => {},
         Err(_) => panic!("Panic"),
