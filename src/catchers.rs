@@ -1,19 +1,23 @@
-use crate::{guards::UserErrorMessage};
-use rocket::{serde::json::{json, Value}, Request, catch, Data, form};
+use crate::guards::UserErrorMessage;
+use okapi::{
+    openapi3::{MediaType, RequestBody},
+    Map,
+};
 use rocket::data::{FromData, Outcome as DataOutcome};
 use rocket::form::{DataField, FromForm, ValueField};
 use rocket::http::Status;
 use rocket::outcome::Outcome;
 use rocket::request::FromRequest;
 use rocket::serde::json::Json;
+use rocket::{
+    catch, form,
+    serde::json::{json, Value},
+    Data, Request,
+};
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::OpenApiFromData;
 use schemars::JsonSchema;
 use validator::{Validate, ValidationErrors};
-use okapi::{
-    openapi3::{MediaType, RequestBody},
-    Map,
-};
 
 /*
     The below code is a mix between json_validator
@@ -23,9 +27,14 @@ use okapi::{
     https://github.com/owlnext-fr/rust-microservice-skeleton/blob/main/src/core/validation.rs
 */
 
-
 #[derive(Clone, Debug, JsonSchema)]
 pub struct Validated<T>(pub T);
+
+impl<T: Clone> Validated<Json<T>> {
+    pub fn data(self) -> T {
+        self.clone().0.into_inner()
+    }
+}
 
 #[derive(Clone)]
 pub struct CachedValidationErrors(pub Option<ValidationErrors>);
@@ -54,14 +63,18 @@ macro_rules! fn_request_body {
     }};
 }
 
-impl<'r, D: validator::Validate + rocket::serde::Deserialize<'r> + JsonSchema> OpenApiFromData<'r> for Validated<Json<D>> {
+impl<'r, D: validator::Validate + rocket::serde::Deserialize<'r> + JsonSchema> OpenApiFromData<'r>
+    for Validated<Json<D>>
+{
     fn request_body(gen: &mut OpenApiGenerator) -> rocket_okapi::Result<RequestBody> {
         fn_request_body!(gen, D, "application/json")
     }
 }
 
 #[rocket::async_trait]
-impl<'r, D: validator::Validate + rocket::serde::Deserialize<'r> + JsonSchema> FromData<'r> for Validated<Json<D>> {
+impl<'r, D: validator::Validate + rocket::serde::Deserialize<'r> + JsonSchema> FromData<'r>
+    for Validated<Json<D>>
+{
     type Error = Result<ValidationErrors, rocket::serde::json::Error<'r>>;
 
     async fn from_data(req: &'r Request<'_>, data: Data<'r>) -> DataOutcome<'r, Self> {
@@ -107,7 +120,6 @@ impl<'r, D: Validate + FromRequest<'r>> FromRequest<'r> for Validated<D> {
         }
     }
 }
-
 
 #[rocket::async_trait]
 impl<'r, T: Validate + FromForm<'r>> FromForm<'r> for Validated<T> {
@@ -173,14 +185,14 @@ pub fn unprocessable_entry(req: &Request) -> Value {
     let possible_parse_violation = req.local_cache(|| CachedParseErrors(None)).0.as_ref();
     let validation_errors = req.local_cache(|| CachedValidationErrors(None)).0.as_ref();
 
-    let mut message =  "Failed to service request, structure parsing failed.".to_string();
+    let mut message = "Failed to service request, structure parsing failed.".to_string();
 
     if validation_errors.is_some() {
         message.clear();
 
         let erros = validation_errors.unwrap().field_errors();
 
-        for (_,val) in erros.iter() {
+        for (_, val) in erros.iter() {
             for error in val.iter() {
                 message.push_str(error.message.as_ref().unwrap());
             }
@@ -195,8 +207,8 @@ pub fn unprocessable_entry(req: &Request) -> Value {
 
 #[catch(500)]
 pub fn internal_server_error(req: &Request) -> Value {
-    let error_message = req
-        .local_cache(|| Some(UserErrorMessage("Internal server error".to_owned())));
+    let error_message =
+        req.local_cache(|| Some(UserErrorMessage("Internal server error".to_owned())));
 
     json! [{"code": "error.internal", "message": error_message}]
 }

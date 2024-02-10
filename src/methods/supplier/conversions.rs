@@ -1,8 +1,8 @@
+use crate::entities::supplier::{ActiveModel, Model};
+use crate::{ContactInformation, Name, Supplier, SupplierInput, Transaction};
 use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
 use serde_json::json;
-use crate::entities::supplier::{ActiveModel, Model};
-use crate::{ContactInformation, Name, Supplier, SupplierInput, Transaction};
 
 impl From<Model> for Supplier {
     fn from(val: Model) -> Self {
@@ -10,10 +10,12 @@ impl From<Model> for Supplier {
             id: val.id,
             name: serde_json::from_value::<Name>(val.name).unwrap(),
             contact: serde_json::from_value::<ContactInformation>(val.contact).unwrap(),
-            transaction_history: serde_json::from_value::<Vec<Transaction>>(val.transaction_history)
-                .unwrap(),
+            transaction_history: serde_json::from_value::<Vec<Transaction>>(
+                val.transaction_history,
+            )
+            .unwrap(),
             created_at: DateTime::from_naive_utc_and_offset(val.created_at, Utc),
-            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc)
+            updated_at: DateTime::from_naive_utc_and_offset(val.updated_at, Utc),
         }
     }
 }

@@ -6,7 +6,7 @@ use crate::entities::employee::Entity as Employee;
 #[cfg(feature = "process")]
 use crate::entities::session::Entity as SessionEntity;
 
-use crate::{session, AccountType, Employee as EmployeeStruct, EmployeeInput};
+use crate::{example_employee, session, AccountType, Employee as EmployeeStruct, EmployeeInput};
 
 #[cfg(feature = "process")]
 use crate::entities;
@@ -229,7 +229,7 @@ pub enum SessionVariant {
     AccessToken,
 }
 
-#[derive(Debug, Clone, JsonSchema, Validate)]
+#[derive(Debug, Clone, JsonSchema, Validate, Serialize, Deserialize)]
 pub struct Session {
     pub id: String,
     pub key: String,
@@ -237,6 +237,21 @@ pub struct Session {
     pub expiry: DateTime<Utc>,
     pub tenant_id: String,
     pub variant: SessionVariant,
+}
+
+impl Session {
+    pub fn default_with_tenant(tenant_id: String) -> Self {
+        let default_employee = example_employee();
+
+        Session {
+            id: String::new(),
+            key: String::new(),
+            employee: default_employee.into(),
+            expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
+            tenant_id,
+            variant: SessionVariant::AccessToken,
+        }
+    }
 }
 
 impl From<Session> for session::ActiveModel {
@@ -450,6 +465,25 @@ impl From<DbErr> for Error {
     }
 }
 
+impl<T: Into<Error>> From<Option<T>> for Error {
+    fn from(value: Option<T>) -> Self
+    where
+        T: Into<Error>,
+    {
+        match value {
+            Some(err) => err.into(),
+            None => ErrorResponse::create_error("Unable to retrieve database instance."),
+        }
+    }
+}
+
+struct Wrapper<T>(T);
+impl<T: JsonSchema> Into<Json<T>> for Wrapper<T> {
+    fn into(self) -> Json<T> {
+        Json(self.0)
+    }
+}
+
 #[cfg(feature = "process")]
 #[derive(Debug, Responder)]
 pub enum Error {
@@ -468,5 +502,25 @@ pub enum Error {
 impl OpenApiResponderInner for Error {
     fn responses(_gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
         Ok(Responses::default())
+    }
+}
+
+pub struct VoidableResult<T>(pub Result<T, Error>);
+
+impl<T> VoidableResult<T> {
+    pub fn void(self) -> Result<(), Error> {
+        self.into()
+    }
+}
+
+impl<T> From<Result<T, Error>> for VoidableResult<T> {
+    fn from(value: Result<T, Error>) -> Self {
+        VoidableResult(value)
+    }
+}
+
+impl<T> Into<Result<(), Error>> for VoidableResult<T> {
+    fn into(self) -> Result<(), Error> {
+        self.0.map(|_| ())
     }
 }

@@ -1,7 +1,8 @@
 use crate::catchers::Validated;
 use crate::entities::session;
+use crate::guards::Convert;
 use crate::methods::{cookie_status_wrapper, Error, ErrorResponse, History, Name};
-use crate::pool::Db;
+use crate::pool::{Db, InternalDb};
 use crate::SessionVariant;
 use crate::{
     check_permissions, create_cookie, example_employee, tenants, Auth, AuthenticationLog, Customer,
@@ -45,314 +46,122 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 
 #[openapi(tag = "Employee")]
 #[get("/")]
-pub async fn whoami(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Employee>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn whoami(session: Session) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::FetchEmployee);
-
-    Ok(Json(session.employee))
+    Ok(session.employee).into()
 }
 
 #[openapi(tag = "Employee")]
 #[get("/<id>")]
-pub async fn get(
-    conn: Connection<Db>,
-    id: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Employee>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get(db: InternalDb, id: &str, session: Session) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::FetchEmployee);
 
     if session.employee.id == id {
-        Ok(Json(session.employee))
+        Ok(session.employee).into()
     } else {
-        match Employee::fetch_by_id(id, session, &db).await {
-            Ok(employee) => Ok(Json(employee)),
-            Err(err) => Err(ErrorResponse::db_err(err)),
-        }
+        Employee::fetch_by_id(id, session, &db.0).await.into()
     }
 }
 
 #[openapi(tag = "Employee")]
 #[get("/rid/<rid>")]
-pub async fn get_by_rid(
-    conn: Connection<Db>,
-    rid: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Employee>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get_by_rid(db: InternalDb, rid: &str, session: Session) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchEmployee);
-
-    match Employee::fetch_by_rid(rid, session, &db).await {
-        Ok(employee) => Ok(Json(employee)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Employee::fetch_by_rid(rid, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Employee")]
 #[get("/recent")]
-pub async fn get_recent(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Employee>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get_recent(db: InternalDb, session: Session) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchCustomer);
-
-    match Employee::fetch_recent(session, &db).await {
-        Ok(employees) => Ok(Json(employees)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Employee::fetch_recent(session, &db.0).await.into()
 }
 
 #[openapi(tag = "Employee")]
 #[get("/name/<name>")]
-pub async fn get_by_name(
-    conn: Connection<Db>,
-    name: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Employee>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get_by_name(db: InternalDb, session: Session, name: &str) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchEmployee);
-
-    match Employee::fetch_by_name(name, session, &db).await {
-        Ok(employees) => Ok(Json(employees)),
-        Err(reason) => Err(ErrorResponse::db_err(reason)),
-    }
+    Employee::fetch_by_name(name, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Employee")]
 #[get("/!name", data = "<name>")]
 pub async fn get_by_name_exact(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     name: Json<Name>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Employee>>, Error> {
-    let db = conn.into_inner();
-    let new_transaction = name.clone().into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    if session.employee.name == new_transaction {
-        Ok(Json(vec![session.employee]))
+    if session.employee.name == name.0 {
+        Ok(vec![session.employee]).into()
     } else {
-        match Employee::fetch_by_name_exact(json!(new_transaction), session, &db).await {
-            Ok(employees) => Ok(Json(employees)),
-            Err(reason) => Err(ErrorResponse::db_err(reason)),
-        }
+        Employee::fetch_by_name_exact(json!(name.0), session, &db.0)
+            .await
+            .into()
     }
 }
 
 #[openapi(tag = "Employee")]
 #[get("/level/<level>")]
-pub async fn get_by_level(
-    conn: Connection<Db>,
-    level: i32,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Employee>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get_by_level(db: InternalDb, session: Session, level: i32) -> Convert<Vec<Employee>> {
     check_permissions!(session.clone(), Action::FetchEmployee);
-
-    match Employee::fetch_by_level(level, session, &db).await {
-        Ok(employees) => Ok(Json(employees)),
-        Err(reason) => Err(ErrorResponse::db_err(reason)),
-    }
+    Employee::fetch_by_level(level, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Employee")]
 #[post("/generate")]
-async fn generate(conn: Connection<Db>, cookies: &CookieJar<'_>) -> Result<Json<Employee>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+async fn generate(db: InternalDb, session: Session) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
-
-    match Employee::generate(&db, session).await {
-        Ok(res) => Ok(Json(res)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Employee::generate(&db.0, session).await.into()
 }
 
 #[openapi(tag = "Employee")]
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     id: &str,
-    cookies: &CookieJar<'_>,
     input_data: Validated<Json<Employee>>,
-) -> Result<Json<Employee>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::ModifyEmployee);
-
-    if session
-        .clone()
-        .employee
-        .level
-        .into_iter()
-        .find(|x| x.action == Action::ModifyEmployee)
-        .unwrap()
-        .authority
-        >= 1
-    {
-        Ok(Json(Employee::update(input_data, session, id, &db).await?))
-    } else {
-        Err(ErrorResponse::unauthorized(Action::ModifyEmployee))
-    }
+    Employee::update(input_data.data(), session, id, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Employee")]
 #[post("/input/<id>", data = "<input_data>")]
 async fn update_by_input(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     id: &str,
-    cookies: &CookieJar<'_>,
     input_data: Validated<Json<EmployeeInput>>,
-) -> Result<Json<Employee>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+) -> Convert<Employee> {
     check_permissions!(session.clone(), Action::ModifyEmployee);
-
-    Ok(Json(
-        Employee::update_by_input(input_data, session, id, &db).await?,
-    ))
+    Employee::update_by_input(input_data.data(), session, id, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Employee")]
 #[post("/auth/<id>", data = "<input_data>")]
 pub async fn auth(
+    db: InternalDb,
+    input_data: Validated<Json<Auth>>,
+    cookies: &CookieJar<'_>,
     id: &str,
-    conn: Connection<Db>,
-    input_data: Validated<Json<Auth>>,
-    cookies: &CookieJar<'_>,
 ) -> Result<Json<String>, Error> {
-    let input = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
+    let input = input_data.data();
+    let default_session = Session::default_with_tenant(input.tenant_id.clone());
 
-    let default_employee = example_employee();
+    let verified = Employee::verify(id, default_session, &input.pass, &db.0).await?;
 
-    match Employee::verify(
-        id,
-        Session {
-            id: String::new(),
-            key: String::new(),
-            employee: default_employee.into(),
-            expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
-            tenant_id: input.tenant_id.clone(),
-            variant: SessionVariant::AccessToken,
-        },
-        &input.pass,
-        &db,
-    )
-    .await
-    {
-        Ok(data) => {
-            if !data {
-                Err(ErrorResponse::custom_unauthorized(
-                    "Invalid password or id.",
-                ))
-            } else {
-                // User is authenticated, lets give them an API key to work with...
-                let api_key = Uuid::new_v4().to_string();
-                let session_id = Uuid::new_v4().to_string();
-                let exp = Utc::now()
-                    .checked_add_signed(ChronoDuration::minutes(10))
-                    .unwrap();
-
-                let tenant_data = match tenants::Entity::find_by_id(input.tenant_id.clone())
-                    .one(&db)
-                    .await
-                {
-                    Ok(optional_data) => match optional_data {
-                        Some(data) => data,
-                        None => {
-                            return Err(ErrorResponse::custom_unauthorized(
-                                "Tenant ID does not exist.",
-                            ))
-                        }
-                    },
-                    Err(error) => return Err(ErrorResponse::db_err(error)),
-                };
-
-                match session::Entity::insert(session::ActiveModel {
-                    id: Set(session_id.to_string()),
-                    key: Set(api_key.clone()),
-                    employee_id: Set(id.to_string()),
-                    expiry: Set(exp.naive_utc()),
-                    tenant_id: Set(tenant_data.tenant_id),
-                    variant: Set(json!(SessionVariant::AccessToken)),
-                })
-                .exec(&db)
-                .await
-                {
-                    Ok(_) => {
-                        cookies.add(create_cookie(api_key.clone()));
-                        Ok(Json(api_key))
-                    }
-                    Err(reason) => Err(ErrorResponse::db_err(reason)),
-                }
-            }
-        }
-        Err(reason) => {
-            println!("[dberr]: {}", reason);
-            Err(ErrorResponse::db_err(reason))
-        }
-    }
-}
-
-#[openapi(tag = "Employee")]
-#[post("/auth/rid/<rid>", data = "<input_data>")]
-pub async fn auth_rid(
-    rid: &str,
-    conn: Connection<Db>,
-    input_data: Validated<Json<Auth>>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<String>, Error> {
-    let input = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let default_employee = example_employee();
-    let session = Session {
-        id: String::new(),
-        key: String::new(),
-        employee: default_employee.into(),
-        expiry: Utc::now().checked_add_days(Days::new(1)).unwrap(),
-        tenant_id: input.tenant_id.clone(),
-        variant: SessionVariant::AccessToken,
-    };
-
-    match Employee::verify_with_rid(rid, session.clone(), &input.pass, &db).await {
-        Ok(data) => {
-            Kiosk::auth_log(
-                &input.kiosk_id,
-                session.clone(),
-                AuthenticationLog {
-                    employee_id: data.id.to_string(),
-                    successful: true,
-                },
-                &db,
-            )
-            .await
-            .map_err(ErrorResponse::db_err)?;
-
+    match verified {
+        false => Err(ErrorResponse::custom_unauthorized(
+            "Invalid password or id.",
+        )),
+        true => {
             // User is authenticated, lets give them an API key to work with...
             let api_key = Uuid::new_v4().to_string();
             let session_id = Uuid::new_v4().to_string();
@@ -360,55 +169,92 @@ pub async fn auth_rid(
                 .checked_add_signed(ChronoDuration::minutes(10))
                 .unwrap();
 
-            let tenant_data = match tenants::Entity::find_by_id(input.tenant_id.clone())
-                .one(&db)
-                .await
-            {
-                Ok(optional_data) => match optional_data {
-                    Some(data) => data,
-                    None => {
-                        return Err(ErrorResponse::custom_unauthorized(
-                            "Tenant ID does not exist.",
-                        ))
-                    }
-                },
-                Err(error) => return Err(ErrorResponse::db_err(error)),
-            };
+            let tenant_data: Option<tenants::Model> =
+                tenants::Entity::find_by_id(input.tenant_id.clone())
+                    .one(&db.0)
+                    .await?;
 
-            match session::Entity::insert(session::ActiveModel {
-                id: Set(session_id.to_string()),
-                key: Set(api_key.clone()),
-                employee_id: Set(data.id.to_string()),
-                expiry: Set(exp.naive_utc()),
-                tenant_id: Set(tenant_data.tenant_id),
-                variant: Set(json!(SessionVariant::AccessToken)),
-            })
-            .exec(&db)
-            .await
-            {
-                Ok(_) => {
+            match tenant_data {
+                Some(data) => {
+                    session::Entity::insert(session::ActiveModel {
+                        id: Set(session_id.to_string()),
+                        key: Set(api_key.clone()),
+                        employee_id: Set(id.to_string()),
+                        expiry: Set(exp.naive_utc()),
+                        tenant_id: Set(data.tenant_id),
+                        variant: Set(json!(SessionVariant::AccessToken)),
+                    })
+                    .exec(&db.0)
+                    .await?;
+
                     cookies.add(create_cookie(api_key.clone()));
                     Ok(Json(api_key))
                 }
-                Err(reason) => Err(ErrorResponse::db_err(reason)),
+                None => Err(ErrorResponse::create_error("Tenant does not exist.")),
             }
         }
-        Err(reason) => {
-            Kiosk::auth_log(
-                &input.kiosk_id,
-                session.clone(),
-                AuthenticationLog {
-                    employee_id: rid.to_string(),
-                    successful: false,
-                },
-                &db,
-            )
-            .await
-            .map_err(ErrorResponse::db_err)?;
+    }
+}
+
+#[openapi(tag = "Employee")]
+#[post("/auth/rid/<rid>", data = "<input_data>")]
+pub async fn auth_rid(
+    db: InternalDb,
+    input_data: Validated<Json<Auth>>,
+    cookies: &CookieJar<'_>,
+    rid: &str,
+) -> Result<Json<String>, Error> {
+    let input = input_data.data();
+    let session = Session::default_with_tenant(input.tenant_id.clone());
+
+    match Employee::verify_with_rid(rid, session.clone(), &input.pass, &db.0).await {
+        Ok(data) => {
+            let auth_log = AuthenticationLog {
+                employee_id: data.id.to_string(),
+                successful: true,
+            };
+            Kiosk::auth_log(&input.kiosk_id, session.clone(), auth_log, &db.0).await?;
+
+            let api_key = Uuid::new_v4().to_string();
+            let session_id = Uuid::new_v4().to_string();
+            let exp = Utc::now()
+                .checked_add_signed(ChronoDuration::minutes(10))
+                .unwrap();
+
+            let tenant_data: Option<tenants::Model> =
+                tenants::Entity::find_by_id(input.tenant_id.clone())
+                    .one(&db.0)
+                    .await?;
+
+            match tenant_data {
+                Some(tenant) => {
+                    session::Entity::insert(session::ActiveModel {
+                        id: Set(session_id.to_string()),
+                        key: Set(api_key.clone()),
+                        employee_id: Set(data.id.to_string()),
+                        expiry: Set(exp.naive_utc()),
+                        tenant_id: Set(tenant.tenant_id),
+                        variant: Set(json!(SessionVariant::AccessToken)),
+                    })
+                    .exec(&db.0)
+                    .await?;
+
+                    cookies.add(create_cookie(api_key.clone()));
+                    Ok(Json(api_key))
+                }
+                None => Err(ErrorResponse::create_error("Tenant does not exist.")),
+            }
+        }
+        Err(err) => {
+            let auth_log = AuthenticationLog {
+                employee_id: rid.to_string(),
+                successful: false,
+            };
+            Kiosk::auth_log(&input.kiosk_id, session.clone(), auth_log, &db.0).await?;
 
             Err(ErrorResponse::custom_unauthorized(&format!(
-                "Invalid password or id. Reason: {}",
-                reason
+                "Invalid password or id. Reason: {:?}",
+                err
             )))
         }
     }
@@ -417,44 +263,30 @@ pub async fn auth_rid(
 #[openapi(tag = "Employee")]
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     input_data: Validated<Json<EmployeeInput>>,
-    cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
-    let new_transaction = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::CreateEmployee);
 
-    match Employee::insert(new_transaction, &db, session.clone(), None, None).await {
-        Ok(data) => match Employee::fetch_by_id(&data.last_insert_id, session, &db).await {
-            Ok(res) => Ok(Json(res)),
-            Err(reason) => {
-                println!("[dberr]: {}", reason);
-                Err(ErrorResponse::db_err(reason))
-            }
-        },
-        Err(reason) => {
-            println!("[dberr]: {}", reason);
-            Err(ErrorResponse::input_error())
-        }
-    }
+    let data = Employee::insert(input_data.data(), &db.0, session.clone(), None, None).await?;
+    let converted: Convert<Employee> = Employee::fetch_by_id(&data.last_insert_id, session, &db.0)
+        .await
+        .into();
+    converted.0
 }
 
 #[openapi(tag = "Employee")]
 #[post("/log/<id>", data = "<input_data>")]
 pub async fn log(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     input_data: Validated<Json<LogRequest>>,
     id: &str,
-    cookies: &CookieJar<'_>,
 ) -> Result<Json<Employee>, Error> {
-    let db = conn.into_inner();
-    let data = input_data.0.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
+
+    let data = input_data.data();
 
     let track_type = if data.in_or_out.to_lowercase() == "in" {
         TrackType::In
@@ -467,63 +299,43 @@ pub async fn log(
             track_type,
             kiosk: data.kiosk,
         },
-        reason: "".to_string(),
+        reason: "OpenStock - Log".to_string(),
         timestamp: Utc::now(),
     };
 
-    match Employee::fetch_by_id(id, session.clone(), &db).await {
-        Ok(mut data) => {
-            data.clock_history.push(new_attendance);
+    let mut data = Employee::fetch_by_id(id, session.clone(), &db.0).await?;
+    data.clock_history.push(new_attendance);
 
-            match Employee::update_no_geom(data, session, id, &db).await {
-                Ok(data) => Ok(Json(data)),
-                Err(reason) => {
-                    println!("[dberr]: {}", reason);
-                    Err(ErrorResponse::db_err(reason))
-                }
-            }
-        }
-        Err(reason) => {
-            println!("[dberr]: {}", reason);
-            Err(ErrorResponse::input_error())
-        }
-    }
+    let converted: Convert<Employee> = Employee::update_no_geom(data, session, id, &db.0)
+        .await
+        .into();
+    converted.0
 }
 
 #[openapi(tag = "Employee")]
 #[get("/log/<id>")]
 pub async fn get_status(
-    conn: Connection<Db>,
+    db: InternalDb,
+    session: Session,
     id: &str,
-    cookies: &CookieJar<'_>,
 ) -> Result<Json<History<Attendance>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchEmployee);
 
-    match Employee::fetch_by_id(id, session, &db).await {
-        Ok(mut data) => {
-            // First time employee is just considered "clocked out"
-            if data.clock_history.is_empty() {
-                return Ok(Json(History {
-                    item: Attendance {
-                        track_type: TrackType::Out,
-                        kiosk: "new-employee".to_string(),
-                    },
-                    reason: String::new(),
-                    timestamp: Utc::now(),
-                }));
-            }
+    let mut data = Employee::fetch_by_id(id, session, &db.0).await?;
 
-            data.clock_history
-                .sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-
-            Ok(Json(data.clock_history[0].clone()))
-        }
-        Err(reason) => {
-            println!("[dberr]: {}", reason);
-            Err(ErrorResponse::input_error())
-        }
+    // First time employee is just considered "clocked out"
+    if data.clock_history.is_empty() {
+        return Ok(Json(History {
+            item: Attendance {
+                track_type: TrackType::Out,
+                kiosk: "new-employee".to_string(),
+            },
+            reason: "This employee has never clocked in.".to_string(),
+            timestamp: Utc::now(),
+        }));
     }
+
+    data.clock_history
+        .sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    Ok(Json(data.clock_history[0].clone()))
 }

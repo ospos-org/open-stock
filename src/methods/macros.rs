@@ -4,7 +4,8 @@ macro_rules! check_permissions {
         if !$session.has_permission($permission) {
             return Err($crate::methods::ErrorResponse::custom_unauthorized(
                 "User is unauthorized, may not have a valid session.",
-            ));
+            ))
+            .into();
         }
     };
 }

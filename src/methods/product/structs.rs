@@ -1,12 +1,12 @@
 use std::fmt::Display;
 
-use crate::{History, Session, TransactionType};
+use crate::{methods::Error, History, Session, TransactionType};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "process")]
 use sea_orm::{
     sea_query::{Expr, Func},
-    ActiveModelTrait, ColumnTrait, Condition, DbConn, DbErr, EntityTrait, InsertResult,
-    QueryFilter, QuerySelect, Statement,
+    ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, InsertResult, QueryFilter,
+    QuerySelect, Statement,
 };
 use serde::{
     de::{MapAccess, Visitor},
@@ -15,8 +15,7 @@ use serde::{
 use uuid::Uuid;
 
 use super::{
-    Promotion, PromotionBuy, PromotionGet,
-    VariantCategoryList, VariantIdTag, VariantInformation,
+    Promotion, PromotionBuy, PromotionGet, VariantCategoryList, VariantIdTag, VariantInformation,
 };
 #[cfg(feature = "process")]
 use crate::entities::prelude::Products;
@@ -25,6 +24,7 @@ use crate::entities::prelude::Promotion as Promotions;
 #[cfg(feature = "process")]
 use crate::entities::products;
 
+use crate::product::example::example_products;
 use crate::{
     methods::{DiscountValue, TagList, Url},
     Note,
@@ -33,7 +33,6 @@ use crate::{
 use futures::future::join_all;
 use schemars::JsonSchema;
 use validator::Validate;
-use crate::product::example::example_products;
 
 #[cfg(feature = "types")]
 #[derive(Deserialize, Serialize, Clone, JsonSchema)]
@@ -79,7 +78,7 @@ pub struct Product {
     pub visible: ProductVisibility,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>
+    pub updated_at: DateTime<Utc>,
 }
 
 #[cfg(feature = "types")]
@@ -115,16 +114,16 @@ impl Product {
         pdt: Product,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<products::ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<products::ActiveModel>, Error> {
         let insert_crud = pdt.into_active(session);
 
         match Products::insert(insert_crud).exec(db).await {
             Ok(res) => Ok(res),
-            Err(err) => Err(err),
+            Err(err) => Err(err.into()),
         }
     }
 
-    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Product, DbErr> {
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Product, Error> {
         let pdt = Products::find_by_id(id.to_string())
             .filter(products::Column::TenantId.eq(session.tenant_id))
             .one(db)
@@ -139,7 +138,7 @@ impl Product {
         id: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<ProductWPromotion, DbErr> {
+    ) -> Result<ProductWPromotion, Error> {
         let pdt = Products::find_by_id(id.to_string())
             .filter(products::Column::TenantId.eq(session.tenant_id))
             .one(db)
@@ -189,7 +188,7 @@ impl Product {
         })
     }
 
-    pub async fn search(query: &str, session: Session, db: &DbConn) -> Result<Vec<Product>, DbErr> {
+    pub async fn search(query: &str, session: Session, db: &DbConn) -> Result<Vec<Product>, Error> {
         let res = products::Entity::find()
             .filter(products::Column::TenantId.eq(session.tenant_id))
             .filter(
@@ -205,10 +204,7 @@ impl Product {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|p| p.clone().into())
-            .collect();
+        let mapped = res.iter().map(|p| p.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -217,7 +213,7 @@ impl Product {
         query: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<ProductWPromotion>, DbErr> {
+    ) -> Result<Vec<ProductWPromotion>, Error> {
         let res = products::Entity::find()
             .from_raw_sql(
                 Statement::from_sql_and_values(
@@ -303,7 +299,7 @@ impl Product {
         name: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Product>, DbErr> {
+    ) -> Result<Vec<Product>, Error> {
         let res = products::Entity::find()
             .having(products::Column::Name.contains(name))
             .filter(products::Column::TenantId.eq(session.tenant_id))
@@ -311,10 +307,7 @@ impl Product {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|p| p.clone().into())
-            .collect();
+        let mapped = res.iter().map(|p| p.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -323,7 +316,7 @@ impl Product {
         name: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Product>, DbErr> {
+    ) -> Result<Vec<Product>, Error> {
         let res = products::Entity::find()
             .having(products::Column::Name.eq(name))
             .filter(products::Column::TenantId.eq(session.tenant_id))
@@ -331,10 +324,7 @@ impl Product {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|p| p.clone().into())
-            .collect();
+        let mapped = res.iter().map(|p| p.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -344,24 +334,19 @@ impl Product {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Product, DbErr> {
-        pdt.into_active(session.clone())
-            .update(db)
-            .await?;
+    ) -> Result<Product, Error> {
+        pdt.into_active(session.clone()).update(db).await?;
 
         Self::fetch_by_id(id, session, db).await
     }
 
-    pub async fn fetch_all(session: Session, db: &DbConn) -> Result<Vec<Product>, DbErr> {
+    pub async fn fetch_all(session: Session, db: &DbConn) -> Result<Vec<Product>, Error> {
         let products = Products::find()
             .filter(products::Column::TenantId.eq(session.tenant_id))
             .all(db)
             .await?;
 
-        let mapped = products
-            .iter()
-            .map(|p| p.clone().into())
-            .collect();
+        let mapped = products.iter().map(|p| p.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -370,18 +355,18 @@ impl Product {
         products: Vec<Product>,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<products::ActiveModel>, DbErr> {
-        let entities = products.into_iter().map(|pdt|
-            pdt.into_active(session.clone())
-        );
+    ) -> Result<InsertResult<products::ActiveModel>, Error> {
+        let entities = products
+            .into_iter()
+            .map(|pdt| pdt.into_active(session.clone()));
 
-        match Products::insert_many(entities).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+        Products::insert_many(entities)
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 
-    pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Product>, DbErr> {
+    pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Product>, Error> {
         let products = example_products();
 
         match Product::insert_many(products, session.clone(), db).await {

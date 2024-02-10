@@ -1,18 +1,16 @@
-use okapi::openapi3::OpenApi;
-use crate::check_permissions;
-use crate::methods::employee::Action;
-use crate::methods::{cookie_status_wrapper, Error, ErrorResponse};
-use crate::pool::Db;
-use rocket::get;
-use rocket::http::CookieJar;
-use rocket::serde::json::Json;
-use rocket::{post};
-use rocket_db_pools::Connection;
-use rocket_okapi::{openapi, openapi_get_routes_spec};
-use rocket_okapi::settings::OpenApiSettings;
-use crate::catchers::Validated;
-
 use super::{Supplier, SupplierInput};
+use crate::catchers::Validated;
+use crate::guards::Convert;
+use crate::methods::employee::Action;
+use crate::methods::Error;
+use crate::pool::InternalDb;
+use crate::{check_permissions, Session};
+use okapi::openapi3::OpenApi;
+use rocket::get;
+use rocket::post;
+use rocket::serde::json::Json;
+use rocket_okapi::settings::OpenApiSettings;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -29,140 +27,65 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
 
 #[openapi(tag = "Supplier")]
 #[get("/<id>")]
-pub async fn get(
-    conn: Connection<Db>,
-    id: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Supplier>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get(db: InternalDb, session: Session, id: &str) -> Convert<Supplier> {
     check_permissions!(session.clone(), Action::FetchSupplier);
-
-    match Supplier::fetch_by_id(id, session, &db).await {
-        Ok(supplier) => Ok(Json(supplier)),
-        Err(reason) => Err(ErrorResponse::db_err(reason)),
-    }
+    Supplier::fetch_by_id(id, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Supplier")]
 #[get("/name/<name>")]
-pub async fn get_by_name(
-    conn: Connection<Db>,
-    name: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Supplier>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get_by_name(db: InternalDb, session: Session, name: &str) -> Convert<Vec<Supplier>> {
     check_permissions!(session.clone(), Action::FetchSupplier);
-
-    match Supplier::fetch_by_name(name, session, &db).await {
-        Ok(suppliers) => Ok(Json(suppliers)),
-        Err(reason) => Err(ErrorResponse::db_err(reason)),
-    }
+    Supplier::fetch_by_name(name, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Supplier")]
 #[get("/phone/<phone>")]
-pub async fn get_by_phone(
-    conn: Connection<Db>,
-    phone: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Supplier>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get_by_phone(db: InternalDb, session: Session, phone: &str) -> Convert<Vec<Supplier>> {
     check_permissions!(session.clone(), Action::FetchSupplier);
-
-    match Supplier::fetch_by_phone(phone, session, &db).await {
-        Ok(suppliers) => Ok(Json(suppliers)),
-        Err(reason) => Err(ErrorResponse::db_err(reason)),
-    }
+    Supplier::fetch_by_phone(phone, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Supplier")]
 #[get("/addr/<addr>")]
-pub async fn get_by_addr(
-    conn: Connection<Db>,
-    addr: &str,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Vec<Supplier>>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+pub async fn get_by_addr(db: InternalDb, session: Session, addr: &str) -> Convert<Vec<Supplier>> {
     check_permissions!(session.clone(), Action::FetchSupplier);
-
-    match Supplier::fetch_by_addr(addr, session, &db).await {
-        Ok(suppliers) => Ok(Json(suppliers)),
-        Err(reason) => Err(ErrorResponse::db_err(reason)),
-    }
+    Supplier::fetch_by_addr(addr, session, &db.0).await.into()
 }
 
 #[openapi(tag = "Supplier")]
 #[post("/generate")]
-async fn generate(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<Supplier>, Error> {
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+async fn generate(session: Session, db: InternalDb) -> Convert<Supplier> {
     check_permissions!(session.clone(), Action::GenerateTemplateContent);
-
-    match Supplier::generate(session, &db).await {
-        Ok(res) => Ok(Json(res)),
-        Err(err) => Err(ErrorResponse::db_err(err)),
-    }
+    Supplier::generate(session, &db.0).await.into()
 }
 
 #[openapi(tag = "Supplier")]
 #[post("/<id>", data = "<input_data>")]
 async fn update(
-    conn: Connection<Db>,
-    id: &str,
-    cookies: &CookieJar<'_>,
+    session: Session,
+    db: InternalDb,
     input_data: Validated<Json<SupplierInput>>,
-) -> Result<Json<Supplier>, Error> {
-    let input_data = input_data.clone().0.into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
+    id: &str,
+) -> Convert<Supplier> {
     check_permissions!(session.clone(), Action::ModifySupplier);
-
-    match Supplier::update(input_data, session, id, &db).await {
-        Ok(res) => Ok(Json(res)),
-        Err(_) => Err(ErrorResponse::input_error()),
-    }
+    Supplier::update(input_data.data(), session, id, &db.0)
+        .await
+        .into()
 }
 
 #[openapi(tag = "Supplier")]
 #[post("/", data = "<input_data>")]
 pub async fn create(
-    conn: Connection<Db>,
-    cookies: &CookieJar<'_>,
-    input_data: Json<SupplierInput>,
+    session: Session,
+    db: InternalDb,
+    input_data: Validated<Json<SupplierInput>>,
 ) -> Result<Json<Supplier>, Error> {
-    let new_data = input_data.clone().into_inner();
-    let db = conn.into_inner();
-
-    let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::ModifySupplier);
 
-    match Supplier::insert(new_data, session.clone(), &db).await {
-        Ok(data) =>
-            match Supplier::fetch_by_id(
-                &data.last_insert_id, session, &db
-            ).await {
-                Ok(res) => Ok(Json(res)),
-                Err(reason) => {
-                    println!("[dberr]: {}", reason);
-                    Err(ErrorResponse::db_err(reason))
-                }
-            },
-        Err(reason) => {
-            println!("[dberr]: {}", reason);
-            Err(ErrorResponse::input_error())
-        }
-    }
+    let data = Supplier::insert(input_data.data(), session.clone(), &db.0).await?;
+    let converted: Convert<Supplier> = Supplier::fetch_by_id(&data.last_insert_id, session, &db.0)
+        .await
+        .into();
+    converted.0
 }

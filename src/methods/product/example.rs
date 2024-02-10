@@ -1,4 +1,8 @@
-use crate::{Address, ContactInformation, DiscountValue, Email, Location, MobileNumber, Product, ProductIdentification, ProductVisibility, Quantity, Stock, StockInformation, Variant, VariantCategory, VariantInformation};
+use crate::{
+    Address, ContactInformation, DiscountValue, Email, Location, MobileNumber, Product,
+    ProductIdentification, ProductVisibility, Quantity, Stock, StockInformation, Variant,
+    VariantCategory, VariantInformation,
+};
 
 pub fn example_products() -> Vec<Product> {
     let mt_wellington = Location {

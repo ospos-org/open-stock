@@ -1,5 +1,5 @@
-use chrono::Utc;
 use crate::{Address, ContactInformation, Email, MobileNumber, Store};
+use chrono::Utc;
 
 pub fn example_stores() -> Vec<Store> {
     vec![

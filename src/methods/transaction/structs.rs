@@ -20,17 +20,17 @@ use sea_orm::FromQueryResult;
 use crate::entities::{
     prelude::Transactions, sea_orm_active_enums::TransactionType as SeaORMTType, transactions,
 };
+use crate::transaction::example::example_transaction;
 use crate::{
     methods::{
-        History, Id, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment, Payment,
-        Product, Session, Stock, VariantInformation,
+        Error, History, Id, NoteList, Order, OrderList, OrderStatus, OrderStatusAssignment,
+        Payment, Product, Session, Stock, VariantInformation,
     },
     PickStatus, ProductInstance,
 };
 #[cfg(feature = "process")]
 use sea_orm::DbConn;
 use validator::Validate;
-use crate::transaction::example::example_transaction;
 
 #[cfg(feature = "types")]
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Validate)]
@@ -103,7 +103,7 @@ pub struct Transaction {
     pub kiosk: Id,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>
+    pub updated_at: DateTime<Utc>,
 }
 
 #[cfg(feature = "process")]
@@ -165,7 +165,7 @@ pub struct ProductStatusUpdate {
     pub transaction_id: String,
     pub product_purchase_id: String,
     pub product_instance_id: String,
-    pub new_status: PickStatus
+    pub new_status: PickStatus,
 }
 
 #[cfg(feature = "methods")]
@@ -174,12 +174,15 @@ impl Transaction {
         tsn: TransactionInit,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<transactions::ActiveModel>, Error> {
         let id = Uuid::new_v4().to_string();
 
-        match Transactions::insert(tsn.into_active(id, session)).exec(db).await {
+        match Transactions::insert(tsn.into_active(id, session))
+            .exec(db)
+            .await
+        {
             Ok(res) => Ok(res),
-            Err(err) => Err(err),
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -187,10 +190,13 @@ impl Transaction {
         tsn: Transaction,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
-        match Transactions::insert(tsn.into_active(session.tenant_id)).exec(db).await {
+    ) -> Result<InsertResult<transactions::ActiveModel>, Error> {
+        match Transactions::insert(tsn.into_active(session.tenant_id))
+            .exec(db)
+            .await
+        {
             Ok(res) => Ok(res),
-            Err(err) => Err(err),
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -198,7 +204,7 @@ impl Transaction {
         query: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Order>, DbErr> {
+    ) -> Result<Vec<Order>, Error> {
         let as_str: Vec<DerivableTransaction> =
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
@@ -233,7 +239,7 @@ impl Transaction {
         query: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Order>, DbErr> {
+    ) -> Result<Vec<Order>, Error> {
         let as_str: Vec<DerivableTransaction> =
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
@@ -268,22 +274,20 @@ impl Transaction {
         id: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         let tsn = Transactions::find_by_id(id.to_string())
             .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .one(db)
             .await?;
 
         if tsn.is_none() {
-            return Err(DbErr::Custom(
-                "Unable to query value, returns none".to_string(),
-            ));
+            return Err(DbErr::Custom("Unable to query value, returns none".to_string()).into());
         }
 
         Ok(tsn.unwrap().into())
     }
 
-    pub async fn fetch_all_saved(session: Session, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
+    pub async fn fetch_all_saved(session: Session, db: &DbConn) -> Result<Vec<Transaction>, Error> {
         let res = Transactions::find()
             .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(
@@ -296,10 +300,7 @@ impl Transaction {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|t| t.clone().into())
-            .collect();
+        let mapped = res.iter().map(|t| t.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -308,7 +309,7 @@ impl Transaction {
         reference: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Transaction>, DbErr> {
+    ) -> Result<Vec<Transaction>, Error> {
         let res = Transactions::find()
             .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(
@@ -320,10 +321,7 @@ impl Transaction {
             .all(db)
             .await?;
 
-        let mapped = res
-            .iter()
-            .map(|t| t.clone().into())
-            .collect();
+        let mapped = res.iter().map(|t| t.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -332,17 +330,14 @@ impl Transaction {
         id: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Transaction>, DbErr> {
+    ) -> Result<Vec<Transaction>, Error> {
         let tsn = Transactions::find()
             .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(transactions::Column::Customer.contains(id))
             .all(db)
             .await?;
 
-        let mapped = tsn
-            .iter()
-            .map(|t| t.clone().into())
-            .collect();
+        let mapped = tsn.iter().map(|t| t.clone().into()).collect();
 
         Ok(mapped)
     }
@@ -352,7 +347,7 @@ impl Transaction {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         tsn.into_active(id.to_string(), session.clone())
             .update(db)
             .await?;
@@ -365,7 +360,7 @@ impl Transaction {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         tsn.into_active(session.tenant_id.clone())
             .update(db)
             .await?;
@@ -379,7 +374,7 @@ impl Transaction {
         status: OrderStatus,
         session: Session,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         let mut transaction = Transaction::fetch_by_id(id, session.clone(), db).await?;
 
         let new_orders = transaction
@@ -417,7 +412,7 @@ impl Transaction {
         update: ProductStatusUpdate,
         session: Session,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         let mut transaction = Transaction::fetch_by_id(id, session.clone(), db).await?;
 
         let new_orders = transaction
@@ -442,7 +437,8 @@ impl Transaction {
                                                 timestamp: i.fulfillment_status.last_updated,
                                             });
                                             i.fulfillment_status.last_updated = Utc::now();
-                                            i.fulfillment_status.pick_status = update.new_status.clone();
+                                            i.fulfillment_status.pick_status =
+                                                update.new_status.clone();
                                         }
 
                                         i
@@ -470,7 +466,7 @@ impl Transaction {
         db: &DbConn,
         customer_id: &str,
         session: Session,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         // Create Transaction
         let tsn = example_transaction(customer_id);
 
@@ -580,7 +576,7 @@ impl Transaction {
         futures::future::join_all(intent_processor).await
     }
 
-    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, DbErr> {
+    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, Error> {
         Transactions::delete(transactions::ActiveModel {
             id: Set(id.to_string()),
             tenant_id: Set(session.tenant_id),
@@ -588,6 +584,7 @@ impl Transaction {
         })
         .exec(db)
         .await
+        .map_err(|e| e.into())
     }
 }
 

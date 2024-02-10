@@ -1,12 +1,13 @@
+#[cfg(feature = "process")]
+use crate::entities::sea_orm_active_enums::TransactionType as SeaORMTType;
+use crate::transactions::{ActiveModel, Model};
+use crate::{
+    NoteList, OrderList, Payment, Session, Transaction, TransactionCustomer, TransactionInit,
+    TransactionInput, TransactionType,
+};
 use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
 use serde_json::json;
-#[cfg(feature = "process")]
-use crate::entities::{
-    sea_orm_active_enums::TransactionType as SeaORMTType
-};
-use crate::{NoteList, OrderList, Payment, Session, Transaction, TransactionCustomer, TransactionInit, TransactionInput, TransactionType};
-use crate::transactions::{ActiveModel, Model};
 
 impl From<SeaORMTType> for TransactionType {
     fn from(value: SeaORMTType) -> Self {
@@ -89,7 +90,7 @@ impl Transaction {
             kiosk: Set(self.kiosk),
             tenant_id: Set(tenant_id),
             created_at: Set(self.created_at.naive_utc()),
-            updated_at: Set(self.updated_at.naive_utc())
+            updated_at: Set(self.updated_at.naive_utc()),
         }
     }
 }

@@ -1,8 +1,11 @@
+use crate::products::{ActiveModel, Model};
+use crate::{
+    Product, ProductIdentification, ProductVisibility, Session, TagList, Url, VariantCategoryList,
+    VariantInformation,
+};
 use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
 use serde_json::json;
-use crate::{Product, ProductIdentification, ProductVisibility, Session, TagList, Url, VariantCategoryList, VariantInformation};
-use crate::products::{ActiveModel, Model};
 
 impl Product {
     pub(crate) fn into_active(self, session: Session) -> ActiveModel {

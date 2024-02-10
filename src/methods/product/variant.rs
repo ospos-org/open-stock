@@ -1,4 +1,5 @@
 use chrono::{DateTime, Days, Utc};
+use rocket_okapi::JsonSchema;
 #[cfg(feature = "process")]
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, InsertResult, QueryFilter,
@@ -6,12 +7,12 @@ use sea_orm::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use rocket_okapi::JsonSchema;
 
 #[cfg(feature = "process")]
 use crate::entities::prelude::Promotion as Promotions;
 #[cfg(feature = "process")]
 use crate::entities::promotion;
+use crate::methods::Error;
 use crate::methods::{DiscountValue, HistoryList, Id, StockList, Url};
 #[cfg(feature = "process")]
 use crate::products;
@@ -165,7 +166,7 @@ impl Promotion {
         prm: PromotionInput,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<promotion::ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<promotion::ActiveModel>, Error> {
         let id = Uuid::new_v4().to_string();
 
         let insert_crud = promotion::ActiveModel {
@@ -178,13 +179,13 @@ impl Promotion {
             tenant_id: Set(session.tenant_id),
         };
 
-        match Promotions::insert(insert_crud).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+        Promotions::insert(insert_crud)
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 
-    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Promotion, DbErr> {
+    pub async fn fetch_by_id(id: &str, session: Session, db: &DbConn) -> Result<Promotion, Error> {
         let pdt = Promotions::find_by_id(id.to_string())
             .filter(products::Column::TenantId.eq(session.tenant_id))
             .one(db)
@@ -205,7 +206,7 @@ impl Promotion {
         query: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Promotion>, DbErr> {
+    ) -> Result<Vec<Promotion>, Error> {
         let res = Promotions::find()
             .filter(products::Column::TenantId.eq(session.tenant_id))
             // Is the bought product
@@ -239,7 +240,7 @@ impl Promotion {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Promotion, DbErr> {
+    ) -> Result<Promotion, Error> {
         promotion::ActiveModel {
             id: Set(id.to_string()),
             name: Set(prm.name.to_string()),
@@ -255,7 +256,7 @@ impl Promotion {
         Self::fetch_by_id(id, session, db).await
     }
 
-    pub async fn fetch_all(session: Session, db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
+    pub async fn fetch_all(session: Session, db: &DbConn) -> Result<Vec<Promotion>, Error> {
         let stores = Promotions::find()
             .filter(promotion::Column::TenantId.eq(session.tenant_id))
             .all(db)
@@ -280,7 +281,7 @@ impl Promotion {
         stores: Vec<PromotionInput>,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<promotion::ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<promotion::ActiveModel>, Error> {
         let entities = stores.into_iter().map(|prm| {
             let id = Uuid::new_v4().to_string();
 
@@ -295,13 +296,13 @@ impl Promotion {
             }
         });
 
-        match Promotions::insert_many(entities).exec(db).await {
-            Ok(res) => Ok(res),
-            Err(err) => Err(err),
-        }
+        Promotions::insert_many(entities)
+            .exec(db)
+            .await
+            .map_err(|e| e.into())
     }
 
-    pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Promotion>, DbErr> {
+    pub async fn generate(session: Session, db: &DbConn) -> Result<Vec<Promotion>, Error> {
         let promotions = example_promotions();
 
         match Promotion::insert_many(promotions, session.clone(), db).await {
