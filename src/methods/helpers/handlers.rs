@@ -77,12 +77,8 @@ pub async fn generate_template(db: InternalDb) -> Result<Json<All>, Error> {
     };
 
     // Add Tenants
-    let tenant = Tenant::generate(&db.0, tenant_id)
-        .await
-        .map_err(ErrorResponse::db_err)?;
-    let tenant2 = Tenant::generate(&db.0, tenant_id2)
-        .await
-        .map_err(ErrorResponse::db_err)?;
+    let tenant = Tenant::generate(&db.0, tenant_id).await?;
+    let tenant2 = Tenant::generate(&db.0, tenant_id2).await?;
 
     // Add Employees
     let employee = Employee::generate(&db.0, session.clone()).await?;
@@ -120,8 +116,7 @@ pub async fn generate_template(db: InternalDb) -> Result<Json<All>, Error> {
             variant: SessionVariant::AccessToken,
         },
     )
-    .await
-    .map_err(ErrorResponse::db_err)?;
+    .await?;
 
     let promotions = Promotion::generate(session, &db.0).await?;
 
@@ -156,9 +151,7 @@ pub async fn new_tenant(
         updated_at: Utc::now(),
     };
 
-    Tenant::insert(tenant, &db.0)
-        .await
-        .map_err(ErrorResponse::db_err)?;
+    Tenant::insert(tenant, &db.0).await?;
 
     // Create Primary Employee
     let employee = EmployeeInput {
@@ -332,15 +325,8 @@ pub async fn distance_to_stores_from_store(
     let session = cookie_status_wrapper(&db, cookies).await?;
     check_permissions!(session.clone(), Action::FetchGeoLocation);
 
-    let store_ = match Store::fetch_by_id(store_id, session.clone(), &db).await {
-        Ok(c) => c,
-        Err(reason) => return Err(ErrorResponse::db_err(reason)),
-    };
-
-    let stores = match Store::fetch_all(session, &db).await {
-        Ok(s) => s,
-        Err(reason) => return Err(ErrorResponse::db_err(reason)),
-    };
+    let store_ = Store::fetch_by_id(store_id, session.clone(), &db).await?;
+    let stores = Store::fetch_all(session, &db).await?;
 
     let cust = point!(x: store_.contact.address.lat, y: store_.contact.address.lon);
 

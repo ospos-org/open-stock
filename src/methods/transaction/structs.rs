@@ -174,7 +174,7 @@ impl Transaction {
         tsn: TransactionInit,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<transactions::ActiveModel>, Error> {
         let id = Uuid::new_v4().to_string();
 
         match Transactions::insert(tsn.into_active(id, session))
@@ -182,7 +182,7 @@ impl Transaction {
             .await
         {
             Ok(res) => Ok(res),
-            Err(err) => Err(err),
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -190,13 +190,13 @@ impl Transaction {
         tsn: Transaction,
         session: Session,
         db: &DbConn,
-    ) -> Result<InsertResult<transactions::ActiveModel>, DbErr> {
+    ) -> Result<InsertResult<transactions::ActiveModel>, Error> {
         match Transactions::insert(tsn.into_active(session.tenant_id))
             .exec(db)
             .await
         {
             Ok(res) => Ok(res),
-            Err(err) => Err(err),
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -204,7 +204,7 @@ impl Transaction {
         query: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Order>, DbErr> {
+    ) -> Result<Vec<Order>, Error> {
         let as_str: Vec<DerivableTransaction> =
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
@@ -239,7 +239,7 @@ impl Transaction {
         query: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Order>, DbErr> {
+    ) -> Result<Vec<Order>, Error> {
         let as_str: Vec<DerivableTransaction> =
             DerivableTransaction::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
@@ -274,22 +274,20 @@ impl Transaction {
         id: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         let tsn = Transactions::find_by_id(id.to_string())
             .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .one(db)
             .await?;
 
         if tsn.is_none() {
-            return Err(DbErr::Custom(
-                "Unable to query value, returns none".to_string(),
-            ));
+            return Err(DbErr::Custom("Unable to query value, returns none".to_string()).into());
         }
 
         Ok(tsn.unwrap().into())
     }
 
-    pub async fn fetch_all_saved(session: Session, db: &DbConn) -> Result<Vec<Transaction>, DbErr> {
+    pub async fn fetch_all_saved(session: Session, db: &DbConn) -> Result<Vec<Transaction>, Error> {
         let res = Transactions::find()
             .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(
@@ -311,7 +309,7 @@ impl Transaction {
         reference: &str,
         session: Session,
         db: &DbConn,
-    ) -> Result<Vec<Transaction>, DbErr> {
+    ) -> Result<Vec<Transaction>, Error> {
         let res = Transactions::find()
             .filter(transactions::Column::TenantId.eq(session.tenant_id))
             .having(
@@ -349,7 +347,7 @@ impl Transaction {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         tsn.into_active(id.to_string(), session.clone())
             .update(db)
             .await?;
@@ -362,7 +360,7 @@ impl Transaction {
         session: Session,
         id: &str,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         tsn.into_active(session.tenant_id.clone())
             .update(db)
             .await?;
@@ -376,7 +374,7 @@ impl Transaction {
         status: OrderStatus,
         session: Session,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         let mut transaction = Transaction::fetch_by_id(id, session.clone(), db).await?;
 
         let new_orders = transaction
@@ -414,7 +412,7 @@ impl Transaction {
         update: ProductStatusUpdate,
         session: Session,
         db: &DbConn,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         let mut transaction = Transaction::fetch_by_id(id, session.clone(), db).await?;
 
         let new_orders = transaction
@@ -468,7 +466,7 @@ impl Transaction {
         db: &DbConn,
         customer_id: &str,
         session: Session,
-    ) -> Result<Transaction, DbErr> {
+    ) -> Result<Transaction, Error> {
         // Create Transaction
         let tsn = example_transaction(customer_id);
 
@@ -578,7 +576,7 @@ impl Transaction {
         futures::future::join_all(intent_processor).await
     }
 
-    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, DbErr> {
+    pub async fn delete(id: &str, session: Session, db: &DbConn) -> Result<DeleteResult, Error> {
         Transactions::delete(transactions::ActiveModel {
             id: Set(id.to_string()),
             tenant_id: Set(session.tenant_id),
@@ -586,6 +584,7 @@ impl Transaction {
         })
         .exec(db)
         .await
+        .map_err(|e| e.into())
     }
 }
 

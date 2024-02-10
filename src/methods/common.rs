@@ -508,7 +508,7 @@ impl OpenApiResponderInner for Error {
 pub struct VoidableResult<T>(pub Result<T, Error>);
 
 impl<T> VoidableResult<T> {
-    fn void(self) -> Result<(), Error> {
+    pub fn void(self) -> Result<(), Error> {
         self.into()
     }
 }

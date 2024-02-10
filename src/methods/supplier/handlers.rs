@@ -1,19 +1,16 @@
+use super::{Supplier, SupplierInput};
 use crate::catchers::Validated;
 use crate::guards::Convert;
 use crate::methods::employee::Action;
-use crate::methods::{cookie_status_wrapper, Error, ErrorResponse};
-use crate::pool::{Db, InternalDb};
+use crate::methods::Error;
+use crate::pool::InternalDb;
 use crate::{check_permissions, Session};
 use okapi::openapi3::OpenApi;
 use rocket::get;
-use rocket::http::CookieJar;
 use rocket::post;
 use rocket::serde::json::Json;
-use rocket_db_pools::Connection;
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
-
-use super::{Supplier, SupplierInput};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -37,11 +34,7 @@ pub async fn get(db: InternalDb, session: Session, id: &str) -> Convert<Supplier
 
 #[openapi(tag = "Supplier")]
 #[get("/name/<name>")]
-pub async fn get_by_name(
-    db: InternalDb,
-    session: Session,
-    name: &str,
-) -> Result<Json<Vec<Supplier>>, Error> {
+pub async fn get_by_name(db: InternalDb, session: Session, name: &str) -> Convert<Vec<Supplier>> {
     check_permissions!(session.clone(), Action::FetchSupplier);
     Supplier::fetch_by_name(name, session, &db.0).await.into()
 }
@@ -86,7 +79,7 @@ async fn update(
 pub async fn create(
     session: Session,
     db: InternalDb,
-    input_data: Json<SupplierInput>,
+    input_data: Validated<Json<SupplierInput>>,
 ) -> Result<Json<Supplier>, Error> {
     check_permissions!(session.clone(), Action::ModifySupplier);
 

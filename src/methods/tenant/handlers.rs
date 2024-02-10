@@ -1,8 +1,8 @@
-use open_stock::InternalDb;
 use rocket::get;
 use rocket::routes;
 
 use crate::guards::Convert;
+use crate::pool::InternalDb;
 use crate::Tenant;
 
 pub fn routes() -> Vec<rocket::Route> {

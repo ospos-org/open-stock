@@ -3,17 +3,19 @@ use crate::catchers::Validated;
 use crate::guards::Convert;
 use crate::methods::employee::Action;
 use crate::methods::{Error, ErrorResponse, QuantityAlterationIntent};
+use crate::pool::InternalDb;
+use crate::Session;
 use crate::{
     apply_discount, check_permissions, Order, OrderStatus, ProductStatusUpdate, TransactionType,
+    VoidableResult,
 };
 use okapi::openapi3::OpenApi;
-use open_stock::{InternalDb, Session};
 use rocket::get;
 use rocket::post;
 use rocket::serde::json::Json;
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
-use sea_orm::DbErr;
+use sea_orm::{DbErr, DeleteResult};
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
@@ -114,22 +116,19 @@ async fn update_order_status(
     db: InternalDb,
     session: Session,
     refer: &str,
-    status: Validated<Json<OrderStatus>>,
+    status: Json<OrderStatus>,
 ) -> Result<Json<Transaction>, Error> {
     check_permissions!(session.clone(), Action::ModifyTransaction);
 
     let fetched_transaction = Transaction::fetch_by_ref(refer, session.clone(), &db.0).await?;
 
     match fetched_transaction.get(0) {
-        Some(transaction) => Transaction::update_order_status(
-            transaction.id.as_str(),
-            refer,
-            status.data(),
-            session,
-            &db.0,
-        )
-        .await
-        .into(),
+        Some(transaction) => {
+            let data = status.0;
+            Transaction::update_order_status(transaction.id.as_str(), refer, data, session, &db.0)
+                .await
+                .map(|v| Json(v))
+        }
         None => Err(DbErr::RecordNotFound("Could not retrieve transaction".to_string()).into()),
     }
 }
@@ -149,9 +148,11 @@ async fn update_product_status(
 
     match fetched_transaction.get(0) {
         Some(transaction) => {
-            Transaction::update_product_status(transaction.id.as_str(), data, session, &db.0)
-                .await
-                .into()
+            let converted: Convert<Transaction> =
+                Transaction::update_product_status(transaction.id.as_str(), data, session, &db.0)
+                    .await
+                    .into();
+            converted.0
         }
         None => Err(DbErr::RecordNotFound("Could not retrieve transaction".to_string()).into()),
     }
@@ -242,14 +243,20 @@ pub async fn create(
         }
     };
 
-    Transaction::fetch_by_id(&insertion.last_insert_id, session, &db.0)
-        .await
-        .into()
+    let converted: Convert<Transaction> =
+        Transaction::fetch_by_id(&insertion.last_insert_id, session, &db.0)
+            .await
+            .into();
+
+    converted.0
 }
 
 #[openapi(tag = "Transaction")]
 #[post("/delete/<id>")]
+// #[guard(Action::DeleteTransaction)]
 async fn delete(db: InternalDb, session: Session, id: &str) -> Convert<()> {
     check_permissions!(session.clone(), Action::DeleteTransaction);
-    Transaction::delete(id, session, &db.0).await.into()
+
+    let voided: VoidableResult<DeleteResult> = Transaction::delete(id, session, &db.0).await.into();
+    voided.void().into()
 }

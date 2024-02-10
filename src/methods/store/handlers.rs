@@ -1,12 +1,13 @@
 use crate::catchers::Validated;
+use crate::Session;
 use okapi::openapi3::OpenApi;
-use open_stock::{InternalDb, Session};
 use rocket::{get, http::CookieJar, post, serde::json::Json};
 use rocket_db_pools::Connection;
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 
 use crate::guards::Convert;
+use crate::pool::InternalDb;
 use crate::{
     check_permissions,
     methods::{cookie_status_wrapper, Action, Error, ErrorResponse},
@@ -56,7 +57,7 @@ async fn update(
     session: Session,
     input_data: Validated<Json<Store>>,
     id: &str,
-) -> Result<Json<Store>, Error> {
+) -> Convert<Store> {
     check_permissions!(session.clone(), Action::ModifyStore);
     Store::update(input_data.data(), session, id, &db.0)
         .await
