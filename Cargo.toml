@@ -60,9 +60,6 @@ rocket-validation = { version = "0.1.4", git = "https://github.com/bennjii/rocke
 validator="0.16.1"
 
 # Automations
-macro_test = { path = "../../macro_test" }
-
-# Automations
 #macro_test = { path = "../../macro_test" }
 
 [features]
