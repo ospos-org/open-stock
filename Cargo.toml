@@ -62,6 +62,9 @@ validator="0.16.1"
 # Automations
 macro_test = { path = "../../macro_test" }
 
+# Automations
+#macro_test = { path = "../../macro_test" }
+
 [features]
 types = []
 process = [
