@@ -163,21 +163,21 @@ impl<'r, T: Validate + FromForm<'r>> FromForm<'r> for Validated<T> {
 
 #[catch(400)]
 pub fn general_catcher(req: &Request) -> Value {
-    json!([{
+    json!({
         "code": "error.general",
         "message": "Bad Request. The request could not be understood by the server due to malformed syntax.",
         "errors": req.local_cache(|| CachedValidationErrors(None)).0.as_ref(),
-    }])
+    })
 }
 
-#[catch(403)]
+#[catch(401)]
 pub fn not_authorized() -> Value {
-    json!([{"code": "error.unauthorized", "message": "Not authorized to make request"}])
+    json!({"code": "error.unauthorized", "message": "Not authorized to make request"})
 }
 
 #[catch(404)]
 pub fn not_found() -> Value {
-    json!([{"code": "error.not_found", "message": "The requested route was not found."}])
+    json!({"code": "error.not_found", "message": "The requested route was not found."})
 }
 
 #[catch(422)]
@@ -202,7 +202,7 @@ pub fn unprocessable_entry(req: &Request) -> Value {
         message.push_str(possible_parse_violation.unwrap());
     }
 
-    json! [{ "code": "error.input", "message": &message }]
+    json!({ "code": "error.input", "message": &message })
 }
 
 #[catch(500)]
@@ -210,5 +210,5 @@ pub fn internal_server_error(req: &Request) -> Value {
     let error_message =
         req.local_cache(|| Some(UserErrorMessage("Internal server error".to_owned())));
 
-    json! [{"code": "error.internal", "message": error_message}]
+    json!({"code": "error.internal", "message": error_message})
 }
