@@ -1,5 +1,5 @@
 use crate::catchers::Validated;
-use crate::Session;
+use crate::{Employee, Session, StoreInput};
 use okapi::openapi3::OpenApi;
 use rocket::{get, http::CookieJar, post, serde::json::Json};
 use rocket_db_pools::Connection;
@@ -18,8 +18,24 @@ use super::Store;
 
 pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![
-        settings: get, get_all, get_by_code, generate, update
+        settings: get, get_all, get_by_code, generate, update, create
     ]
+}
+
+#[openapi(tag = "Store")]
+#[post("/", data = "<input_data>")]
+pub async fn create(
+    db: InternalDb,
+    session: Session,
+    input_data: Validated<Json<StoreInput>>
+) -> Result<Json<Store>, Error> {
+    check_permissions!(session.clone(), Action::CreateStore);
+
+    let data = Store::insert(input_data.data().into(), session.clone(), &db.0).await?;
+    let converted: Convert<Store> = Store::fetch_by_id(&data.last_insert_id, session, &db.0)
+        .await
+        .into();
+    converted.0
 }
 
 #[openapi(tag = "Store")]

@@ -18,7 +18,7 @@ use crate::methods::convert_addr_to_geo;
 
 use crate::methods::store::example::example_stores;
 use crate::methods::{ContactInformation, Id};
-use crate::{methods::Error, Session};
+use crate::{ContactInformationInput, methods::Error, Session};
 use serde_json::json;
 use validator::Validate;
 
@@ -33,6 +33,14 @@ pub struct Store {
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[cfg(feature = "types")]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, Validate)]
+pub struct StoreInput {
+    pub name: String,
+    pub contact: ContactInformationInput,
+    pub code: String,
 }
 
 #[cfg(feature = "methods")]

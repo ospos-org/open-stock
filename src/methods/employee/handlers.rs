@@ -41,6 +41,7 @@ pub fn documented_routes(settings: &OpenApiSettings) -> (Vec<rocket::Route>, Ope
         generate,
         auth,
         get_status,
+        logout
     ]
 }
 
@@ -142,6 +143,15 @@ async fn update_by_input(
     Employee::update_by_input(input_data.data(), session, id, &db.0)
         .await
         .into()
+}
+
+#[openapi(tag = "Employee")]
+#[post("/logout")]
+pub async fn logout(cookies: &CookieJar<'_>,) -> Result<(), Error> {
+    match cookies.get("os-stock-key") {
+        Some(cookie) => Ok(cookies.remove(cookie.clone())),
+        None => Err(ErrorResponse::create_error("Cookie not found."))
+    }
 }
 
 #[openapi(tag = "Employee")]

@@ -94,7 +94,7 @@ fn rocket() -> _ {
             }),
         );
 
-    let openapi_settings = rocket_okapi::settings::OpenApiSettings::new();
+    let openapi_settings = rocket_okapi::settings::OpenApiSettings::default();
 
     mount_endpoints_and_merged_docs! {
         launcher, "/api".to_owned(), openapi_settings,

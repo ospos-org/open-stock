@@ -1,7 +1,7 @@
 use crate::methods::common::Error;
 use crate::{cookie_status_wrapper, Db, ErrorResponse, Session};
 use futures::TryStreamExt;
-use okapi::openapi3::Responses;
+use okapi::openapi3::{MediaType, RefOr, Response, Responses};
 use rocket::request::{FromRequest, Outcome};
 use rocket::response::Responder;
 use rocket::serde::json::Json;
@@ -11,10 +11,12 @@ use rocket::{
     request::{local_cache, Request},
     response,
 };
+use rocket::form::{FromForm, Options};
 use rocket_db_pools::Connection;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_okapi::response::OpenApiResponderInner;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -106,9 +108,34 @@ impl<T> From<Result<T, Error>> for Convert<T> {
     }
 }
 
-impl<K> OpenApiResponderInner for Convert<K> {
-    fn responses(_: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
-        Ok(Responses::default())
+impl<K: Serialize + JsonSchema> OpenApiResponderInner for Convert<K> {
+    fn responses(gen: &mut OpenApiGenerator) -> rocket_okapi::Result<Responses> {
+        let mut responses = Responses::default();
+
+        // Define response for successful response
+        let success_schema = gen.json_schema::<K>();
+        let success_response = Response {
+            description: "Success".to_string(),
+            content:
+                vec![("application/json".to_string(), MediaType {
+                    schema: Some(success_schema),
+                    ..Default::default()
+                })].into_iter().collect(),
+
+            ..Default::default()
+        };
+
+        // Define response for internal server error
+        let internal_error_response = Response {
+            description: "Internal Server Error".to_string(),
+            ..Default::default()
+        };
+
+        // Insert responses into the map
+        responses.responses.insert("200".to_string(), RefOr::from(success_response));
+        responses.responses.insert("500".to_string(), RefOr::from(internal_error_response));
+
+        Ok(responses)
     }
 }
 
