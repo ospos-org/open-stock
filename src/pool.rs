@@ -24,6 +24,7 @@ use sea_orm_migration::prelude::*;
 #[cfg(feature = "process")]
 use sea_orm_rocket::rocket::figment::Figment;
 use std::{env, fs, sync::Arc, time::Duration};
+use serde::de::Error;
 #[cfg(feature = "process")]
 use tokio::sync::Mutex;
 
@@ -196,7 +197,13 @@ pub async fn ingest_file(db: &DbConn, file_path: String) {
         Vec<Transaction>,
         Vec<Store>,
         Vec<Kiosk>,
-    ) = serde_json::from_str(&to_ingest.unwrap()).unwrap();
+    ) = match serde_json::from_str(&to_ingest.unwrap()) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Caught error, {}", e);
+            return;
+        }
+    };
 
     let file_ending = file_path.split('/').last();
 
