@@ -20,6 +20,7 @@ use sea_orm::{
     JsonValue, QuerySelect, RuntimeErr, Set, Statement,
 };
 use sea_orm::{DbErr, DeleteResult, QueryOrder};
+use sea_orm::DbErr::Query;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use validator::Validate;
@@ -139,14 +140,20 @@ impl Customer {
     ) -> Result<Vec<CustomerWithTransactionsOut>, Error> {
         let as_str: Vec<CustomerWithTransactions> = CustomerWithTransactions::find_by_statement(Statement::from_sql_and_values(
                 DbBackend::MySql,
-                &format!("SELECT Customer.*, GROUP_CONCAT(`Transactions`.`id`) as transactions
+            r#"
+                SELECT
+                    Customer.*, GROUP_CONCAT(`Transactions`.`id`) as transactions
                 FROM Customer
-                LEFT JOIN Transactions ON (REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '\"', '')) = Customer.id
-                WHERE (LOWER(Customer.name) LIKE '%{}%' OR Customer.contact LIKE '%{}%') AND Customer.tenant_id = '{}'
+                LEFT JOIN Transactions
+                ON
+                    (REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '"', '')) = Customer.id
+                WHERE
+                    (LOWER(Customer.name) LIKE '?1' OR Customer.contact LIKE '?1')
+                AND Customer.tenant_id = '?2'
                 GROUP BY Customer.id
-                LIMIT 25",
-                query, query, session.tenant_id),
-                vec![]
+                LIMIT 25
+                "#,
+                vec![query.to_string().into(), session.tenant_id.into()]
             ))
             .all(db)
             .await?;
