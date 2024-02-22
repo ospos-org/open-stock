@@ -146,7 +146,7 @@ pub async fn session_ingress_worker(db: &DbConn) {
     loop {
         interval.tick().await;
 
-        if let Ok(dir) = fs::read_dir("/ingress/") {
+        if let Ok(dir) = fs::read_dir("./ingress/") {
             let found_files = dir
                 .map(|directory| directory.unwrap().path().to_str().unwrap().to_string())
                 .collect::<Vec<String>>();

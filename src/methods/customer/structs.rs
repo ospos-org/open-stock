@@ -148,7 +148,7 @@ impl Customer {
                 ON
                     (REPLACE(JSON_EXTRACT(Transactions.customer, '$.customer_id'), '"', '')) = Customer.id
                 WHERE
-                    (LOWER(Customer.name) LIKE '?1' OR Customer.contact LIKE '?1')
+                    (LOWER(Customer.name) LIKE '%?1%' OR Customer.contact LIKE '%?1%')
                 AND Customer.tenant_id = '?2'
                 GROUP BY Customer.id
                 LIMIT 25

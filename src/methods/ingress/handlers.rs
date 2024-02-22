@@ -26,7 +26,7 @@ async fn upload(session: Session, file: TempFile<'_>) -> Result<(), Error> {
 
 async fn receive_file(mut file: TempFile<'_>, tenant_id: String) -> Result<(), Error> {
     let current_date = Utc::now().to_rfc3339();
-    let path = "/ingress/".to_string();
+    let path = "./ingress/".to_string();
     if let Err(error) = std::fs::create_dir_all(path.clone()) {
         return Err(ErrorResponse::create_error(&format!(
             "Unable to create file path, {}",

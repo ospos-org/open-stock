@@ -146,7 +146,7 @@ async fn update_product_status(
     let fetched_transaction =
         Transaction::fetch_by_ref(&data.transaction_id, session.clone(), &db.0).await?;
 
-    match fetched_transaction.get(0) {
+    match fetched_transaction.first() {
         Some(transaction) => {
             let converted: Convert<Transaction> =
                 Transaction::update_product_status(transaction.id.as_str(), data, session, &db.0)
