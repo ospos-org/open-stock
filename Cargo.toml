@@ -56,7 +56,7 @@ rocket_db_pools = { version = "0.1.0" }
 rocket_okapi = { version = "0.8.0", features = ["uuid", "swagger", "rocket_db_pools"] }
 schemars = { version = "0.8.16" , features = ["chrono"]}
 okapi = { version = "0.7.0", features = ["impl_json_schema"] }
-rocket-validation = { version = "0.1.4", git = "https://github.com/bennjii/rocket-validation.git", branch = "main" }
+rocket-validation = { version = "0.2.0" }
 validator="0.16.1"
 
 # Automations

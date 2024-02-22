@@ -2341,8 +2341,9 @@ dependencies = [
 
 [[package]]
 name = "rocket-validation"
-version = "0.1.4"
-source = "git+https://github.com/bennjii/rocket-validation.git?branch=main#ed3adf7fa0954a89518050a3200201004dc237a9"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b0bd0f76c16ddcc84567f362bdf9c0075968e096288da9a42bf1da9a3e42e47"
 dependencies = [
  "rocket",
  "validator",
